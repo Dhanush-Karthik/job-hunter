@@ -562,7 +562,7 @@ After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start 
 
 | # | State |
 |---|---|
-| 0.1 | ◐ D6 decided (reminder-only); CV received → `data/careerops/cv.md` (master), `data/cv/cv_a.md` (variant A, same facts reordered), career-ops `profile.yml` + `modes/_profile.md`. Pending from owner: verified AI workflow for variant B, notice period, current/expected CTC, alert accounts + `.eml` exports, golden labels. Gmail app password: owner enters in Setup page (Wave 3) |
+| 0.1 | ◐ D6 decided (reminder-only); CV received → `data/careerops/cv.md` (master), `data/cv/cv_a.md` (variant A, same facts reordered), `data/cv/cv_b.md` (variant B, adds AI Developer Tooling verified from the owner's own repos), career-ops `profile.yml` + `modes/_profile.md` (expected CTC 15 LPA, notice 30 days). Pending from owner: review of variant B wording, alert accounts + `.eml` exports, golden labels. Gmail app password: owner enters in Setup page (Wave 3) |
 | 0.2 | ✅ `uv run python -m jobhunter.api.dump_openapi --check`, `uv run pytest` (6 pass) |
 | 0.3 | ✅ `cd web && npm run build && npm run test` (3 pass on MSW) |
 | 0.4 | ✅ `npm install --no-package-lock` (career-ops ships no lockfile; submodule tree stays clean), `doctor.mjs` with `CAREER_OPS_DATA_DIR=data/careerops`: 0 errors, only `portals.yml` missing (Wave 1 `build_portals.py`) |
