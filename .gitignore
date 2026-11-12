@@ -1,0 +1,28 @@
+# runtime + personal data (never commit)
+data/
+.env
+*.sqlite
+*.sqlite3
+*.db
+docs/*.pdf
+tests/fixtures/private/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.hypothesis/
+*.egg-info/
+
+# web
+web/node_modules/
+web/dist/
+web/test-results/
+web/playwright-report/
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/
