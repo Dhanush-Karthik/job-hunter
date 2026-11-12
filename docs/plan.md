@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **v3.2, Wave 4 next** (Waves 0-3 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3.3, Wave 4 in progress** (Waves 0-3 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -538,13 +538,23 @@ Open on the owner side: real alert samples exist for LinkedIn (3), Instahyre (2)
 none yet for Naukri, Hirist, foundit, Uplers, so those parsers start from synthetic fixtures and are marked
 unverified until real mail arrives (section 9 gate: ≥ 3 real per sender).
 
-### Wave 4: integration + ops (lead; tester for final pass)
-| # | Task | Acceptance |
-|---|---|---|
-| 4.1 | Final `start.sh` (all section 10 commands), `cli.py` | section 10 acceptance |
-| 4.2 | Curate `portals.yml` (~300 companies), tune the query matrix from the first days of data | scan returns Chennai/Bengaluru/remote roles |
-| 4.3 | Final tester pass + golden eval | all suites green |
-| 4.4 | One real day with the owner, dashboard only | owner completes section 7.4 without a terminal |
+### Wave 4: integration + ops
+
+Revised 12 Nov (v3.3). Findings from the first real day that reshape 4.2: every `careerops_scan` run timed out
+at 600 s (0 career-page leads; Workday tenants like VMware return 400+ worldwide postings with per-posting
+detail fetches, all-or-nothing on timeout), and 153 of 177 `portals.yml` companies are websearch fallbacks
+that the API scan skips ("no public API provider"). One CV run failed on a Claude 5-hour usage limit, surfaced
+only as "exit status 1". Headless `claude -p` also loads the owner's user hooks/plugins (a style hook got
+injected into the CV session): drafts must run without user settings.
+
+| Agent (role) | Task | Files | Acceptance |
+|---|---|---|---|
+| `scan` (codex_builder) | 4.2a scan that finishes: India/remote location pre-filter in node before output (keep India cities, "India", remote/anywhere/APAC, empty), per-entry timeout, concurrency 8, overall deadline that returns partial results instead of failing, bridge timeout for scan 1500 s; claude runs isolated from user settings (no user hooks/plugins, auth still works); usage-limit events → clear `BridgeError` with reset time (IST) | `careerops/**`, `tests/test_careerops.py`, `tests/fixtures/careerops/**` | `uv run pytest tests/test_careerops.py` + real scan run < 15 min with careerops_scan leads > 0 |
+| `portals` (codex_builder) | 4.2b ATS resolver: for each websearch entry probe careers page links + known ATS slugs (greenhouse, lever, ashby, workable, smartrecruiters, recruitee, darwinbox, keka, zoho-recruit, turbohire, workday) and write `provider` + API url only when a live probe returns postings; grow the seed to ~300 Chennai/Bengaluru/remote-India product companies that hire Java/backend | `scripts/build_portals.py`, `config/seed_companies.yml`, `tests/test_build_portals.py`, `tests/fixtures/portals/**` | `uv run pytest tests/test_build_portals.py`; real build → ≥ 280 companies, ≥ 180 API-resolvable (career-ops `resolveProvider`), doctor green |
+| `ops` (builder) | 4.1 `cli.py` (`jobhunter db migrate`, `run <kind> [--wait]`, `health`, `doctor-json`), final `start.sh` (`autostart on\|off` launchd plist at `~/Library/LaunchAgents/com.jobhunter.server.plist` → `./start.sh foreground`, RunAtLoad + KeepAlive, PATH baked in; migrate via cli; usage text) | `src/jobhunter/cli.py`, `start.sh`, `tests/test_cli.py`, `tests/test_start_sh.py` | `uv run pytest tests/test_cli.py tests/test_start_sh.py` + section 10 acceptance (2nd `up` < 10 s, `stop` no orphans, `doctor` exit 1 without claude) |
+| lead | query matrix tuning from real data (drop reasons, score by source), real scan + intake re-run after `scan`/`portals` land | `config/jobhunter.example.yml`, `data/config.yml` | scan returns Chennai/Bengaluru/remote roles |
+| `tester` (after the 3 land) | 4.3 full pass: all pytest, golden eval, vitest, Playwright mock + real server; regression tests for scan partial results and usage-limit error | `tests/integration/**`, `web/e2e/**`, `tests/fakes/**` | `uv run pytest && uv run python scripts/eval_golden.py && cd web && npm run test && npx playwright test` |
+| owner | 4.4 one real day, dashboard only | — | owner completes section 7.4 without a terminal |
 
 ### Timeline (target)
 | When | Milestone |
