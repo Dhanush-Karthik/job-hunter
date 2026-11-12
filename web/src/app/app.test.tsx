@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { makeOutreach } from '@/mocks/fixtures'
 import { server } from '@/mocks/node'
+import './test-utils' // ResizeObserver stub for Radix form controls
 import { AppProviders } from './providers'
 import { AppRoutes } from './routes'
 import { THEME_STORAGE_KEY } from './theme'
@@ -56,14 +57,32 @@ describe('app shell', () => {
     expect(await within(nav).findByRole('link', { name: /Outreach & Follow-ups\s*2\s*pending/ })).toBeInTheDocument()
   })
 
-  it('renders placeholders, including the lead id on job detail', async () => {
-    setup('/jobs/42')
-    expect(await screen.findByRole('heading', { name: 'Job detail' })).toBeInTheDocument()
-    expect(screen.getByText('Lead #42')).toBeInTheDocument()
+  it('routes the Wave 2 pages (job detail, tracker, replies, settings)', async () => {
+    setup('/jobs/7')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Java Developer' })).toBeInTheDocument()
     cleanup()
     setup('/tracker')
     expect(await screen.findByRole('heading', { name: 'Tracker' })).toBeInTheDocument()
-    expect(screen.getByText(/Coming in Wave 2/)).toBeInTheDocument()
+    expect(await screen.findByRole('region', { name: 'Applied column' })).toBeInTheDocument()
+    cleanup()
+    setup('/replies')
+    expect(await screen.findByRole('heading', { name: 'Replies & Inbound' })).toBeInTheDocument()
+    expect(await screen.findByText('Inbound recruiters')).toBeInTheDocument()
+    expect(screen.queryByText(/Coming in Wave/)).not.toBeInTheDocument()
+    cleanup()
+    setup('/settings')
+    expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
+    expect(await screen.findByLabelText('Claude concurrency')).toBeInTheDocument()
+  })
+
+  it('keeps Outreach and Analytics as Wave 3 placeholders', async () => {
+    setup('/outreach')
+    expect(await screen.findByRole('heading', { name: 'Outreach & Follow-ups' })).toBeInTheDocument()
+    expect(screen.getByText(/Coming in Wave 3/)).toBeInTheDocument()
+    cleanup()
+    setup('/analytics')
+    expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
+    expect(screen.getByText(/Coming in Wave 3/)).toBeInTheDocument()
   })
 
   it('persists the theme choice in localStorage', async () => {

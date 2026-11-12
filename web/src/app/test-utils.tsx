@@ -6,6 +6,13 @@ import { MemoryRouter, useLocation } from 'react-router-dom'
 import { afterEach } from 'vitest'
 import { makeQueryClient } from './query-client'
 
+// jsdom has no ResizeObserver; Radix form controls (a Checkbox inside a <form>) construct one.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+
 // vitest globals are off, so Testing Library's auto-cleanup is not registered.
 afterEach(cleanup)
 

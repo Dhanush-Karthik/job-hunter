@@ -19,7 +19,7 @@ const DONE: Record<BulkActionName, string> = {
 export function useInvalidateWork() {
   const qc = useQueryClient()
   return useCallback(
-    () => Promise.all(['leads', 'today', 'nav'].map((k) => qc.invalidateQueries({ queryKey: [k] }))),
+    () => Promise.all(['leads', 'today', 'nav', 'job', 'tracker', 'replies'].map((k) => qc.invalidateQueries({ queryKey: [k] }))),
     [qc],
   )
 }
