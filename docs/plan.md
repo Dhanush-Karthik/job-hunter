@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **v3.2, Wave 3 in progress** (Waves 0-2 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3.2, Wave 4 next** (Waves 0-3 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -618,3 +618,16 @@ Totals: `uv run pytest` 157 passed, vitest 28, Playwright 8. Golden seed labels 
 
 Totals: `uv run pytest` 335 passed. Real board fetch: 358 fetched, 336 new, 120 duplicates, 126 dropped.
 Pipeline tuning (score spread at the top, city-in-title drop) landed in 1a7fd32.
+
+**Wave 3 status (12 Nov 2026): ✅ done**
+
+| Task | Result |
+|---|---|
+| gmail | read-only IMAP (readonly folder, no initial writable select, `mark_seen=False`), UID cursor, classifier, alert parsers for 9 senders (Indeed added after the real-mailbox run), inbound + reply proposals, conversation dedupe, newsletter/promo filter, decoded subjects; 79 tests, 61 sanitized fixtures; reply + inbound precision 100% on fixtures |
+| ops | follow-ups (IST business days + 2026-27 holidays, drafts, second follow-up), ghosted proposals, osascript notifications (dedupe, quiet hours), rule-based insights, companies CRUD on `portals.yml`, gmail-test, gmail + followups runs scheduled |
+| web | Analytics, Outreach & Follow-ups, Settings (setup wizard, companies, prefilter, schedules, follow-up rules, run logs); 98 vitest |
+| tester | `test_wave3_flow.py` (inbound → convert, alerts idempotent, rejection/interview proposals → calls KPI, follow-ups, ghosted, companies, gmail-test); Playwright mock 14, real 3 |
+
+Totals: `uv run pytest` 650 passed, vitest 98, Playwright 14 + 3 real.
+**Real mailbox run (390 mails):** first pass gave 7 inbound + 4 needs-eyes, only 1 right (Indeed digests, newsletters, promos). After the fix: 534 job cards from 36 alerts (LinkedIn 150, Indeed 374, Cutshort 10), 1 inbound (a LinkedIn InMail, correct), 1 needs-eyes (a rejection from a company with no application, correct), re-run adds nothing, no Application/Event writes.
+Open: no real alerts yet from Naukri, Hirist, foundit, Uplers, Instahyre in the last 60 days (those parsers rely on synthetic fixtures); the owner's Indeed alerts are fresher/intern searches (307 of 374 cards dropped as fresher/intern).
