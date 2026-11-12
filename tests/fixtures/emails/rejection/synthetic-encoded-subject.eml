@@ -1,0 +1,9 @@
+From: Test Recruiter <recruiter@unknown.example>
+To: Test Owner <owner@example.com>
+Subject: =?utf-8?q?Acme_application_decision_=E2=80=93_Java_Developer?=
+Message-ID: <synthetic-encoded-subject@example.com>
+X-Jobhunter-Synthetic: yes
+X-Jobhunter-Expected-Template: rejection
+Content-Type: text/plain; charset=utf-8
+
+We are not moving forward with your application.

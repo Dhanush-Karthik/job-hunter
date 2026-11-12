@@ -33,7 +33,7 @@ from sqlmodel import Session
 from jobhunter.schemas import ServiceHealth, Settings
 
 # sender key -> From-address domains/patterns. Parsers live in gmail/alerts/<key>.py.
-ALERT_SENDERS = ("linkedin", "naukri", "instahyre", "hirist", "cutshort", "foundit", "wellfound", "uplers")
+ALERT_SENDERS = ("linkedin", "naukri", "instahyre", "hirist", "cutshort", "foundit", "wellfound", "uplers", "indeed")
 
 
 class GmailError(Exception):

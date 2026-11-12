@@ -12,6 +12,7 @@ from jobhunter import secrets
 from jobhunter.gmail import GmailError, GmailResult, imap
 from jobhunter.gmail.alerts import parse as parse_alert
 from jobhunter.gmail.classify import classify, sender_key
+from jobhunter.gmail.conversations import application_thread, duplicate_inbound, inbound_payload
 from jobhunter.gmail.inbound import parse as parse_inbound
 from jobhunter.gmail.match import match_application
 from jobhunter.gmail.replies import template, to_status
@@ -71,7 +72,7 @@ def run_intake(session: Session, settings: Settings, *, log: TextIO | None = Non
                 if should_cancel():
                     break
                 result.messages += 1
-                kind = classify(message)
+                kind = classify(message, application_thread=application_thread(session, message))
                 raw_jobs = []
                 if kind == 'alert':
                     key = sender_key(message)
@@ -81,7 +82,9 @@ def run_intake(session: Session, settings: Settings, *, log: TextIO | None = Non
                     if not raw_jobs:
                         result.parse_failures.append(f'{key}: {message.subject}')
                 elif kind == 'inbound' and message.message_id not in existing:
-                    raw_jobs = [parse_inbound(message)]
+                    raw = parse_inbound(message)
+                    if not duplicate_inbound(session, message, raw.company):
+                        raw_jobs = [raw]
                 if raw_jobs:
                     ingested = ingest(session, raw_jobs, settings)
                     for field in ('fetched', 'new', 'updated', 'duplicates', 'dropped'):
@@ -90,7 +93,7 @@ def run_intake(session: Session, settings: Settings, *, log: TextIO | None = Non
                         lead = session.exec(select(Lead).where(Lead.source == raw_jobs[0].source,
                                                               Lead.source_ref == message.message_id)).one()
                         session.add(Proposal(type=ProposalType.inbound, lead_id=lead.id,
-                                             payload={'message_id': message.message_id},
+                                             payload=inbound_payload(message, raw_jobs[0].company),
                                              evidence=message.evidence, confidence=0.9))
                         result.inbound += 1
                         existing.add(message.message_id)
@@ -100,6 +103,8 @@ def run_intake(session: Session, settings: Settings, *, log: TextIO | None = Non
                         application, confidence = match_application(session, message)
                         status = to_status(reply)
                         payload = {'message_id': message.message_id}
+                        if message.thread_ids:
+                            payload['thread_ids'] = list(message.thread_ids)
                         if application and status:
                             payload['to_status'] = status.value
                             if reply == 'rejection':

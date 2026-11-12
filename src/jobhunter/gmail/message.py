@@ -4,13 +4,25 @@ from __future__ import annotations
 import hashlib
 import re
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from email import policy
+from email.header import decode_header, make_header
 from email.message import Message as EmailMessage
 from email.parser import BytesParser
-from email.utils import parseaddr
+from email.utils import parseaddr, parsedate_to_datetime
 from urllib.parse import parse_qsl, unquote, urlencode, urlsplit, urlunsplit
 
 from selectolax.lexbor import LexborHTMLParser
+
+
+def decode_subject(value: str) -> str:
+    """Decode compat32 headers too: imap-tools uses that legacy email policy."""
+    try:
+        result = str(make_header(decode_header(value)))
+    except LookupError:
+        result = ''.join(piece.decode('utf-8', errors='replace') if isinstance(piece, bytes) else piece
+                         for piece, _ in decode_header(value))
+    return ' '.join(result.split())
 
 
 def clean_url(value: str) -> str | None:
@@ -55,6 +67,13 @@ class Message:
     text: str
     html: str = ''
     uid: int = 0
+    list_unsubscribe: bool = False
+    bulk: bool = False
+    thread_ids: tuple[str, ...] = ()
+    sent_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, 'subject', decode_subject(self.subject))
 
     @property
     def domain(self) -> str:
@@ -91,5 +110,16 @@ class Message:
         identity = str(mail.get('Message-ID', '')).strip()
         if not identity:
             identity = 'sha256:' + hashlib.sha256(mail.as_bytes()).hexdigest()
+        sent_at = None
+        if mail.get('Date'):
+            try:
+                sent_at = parsedate_to_datetime(str(mail['Date']))
+                sent_at = sent_at.replace(tzinfo=UTC) if sent_at.tzinfo is None else sent_at.astimezone(UTC)
+            except (ValueError, TypeError, OverflowError):
+                pass
+        references = ' '.join(str(mail.get(key, '')) for key in ('References', 'In-Reply-To'))
         return cls(identity, str(mail.get('Subject', '')), parseaddr(str(mail.get('From', '')))[1],
-                   text, markup, uid)
+                   text, markup, uid, bool(mail.get('List-Unsubscribe') or mail.get('List-ID')),
+                   str(mail.get('Precedence', '')).lower() in {'bulk', 'list', 'junk'},
+                   tuple(dict.fromkeys(re.findall(r'<[^<>\s]+>', references))), sent_at)
+

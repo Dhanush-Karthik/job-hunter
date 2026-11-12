@@ -14,3 +14,10 @@ The Instahyre profile reminder is under `other`: it contains preferences rather 
 job cards. The supplied Amazon rejection sample has a status-update subject but no
 readable decision body. It must produce `needs_eyes`, never an inferred rejection.
 The Amazon assessment-completed message is an acknowledgement, not another invitation.
+
+The `regression-*` samples are seven sanitized messages from the mailbox classification
+audit. Indeed's two digests contain 21 and 27 cards. Supabase, Adobe and Glassdoor mail
+are marketing and produce no proposals. The two LinkedIn InMail notifications belong
+to one Liquidnitro Games conversation. Original platform sender account names are kept;
+personal names and tracking paths are replaced. The earlier InMail fixtures now also
+retain their original platform account names. Indeed is verified on supplied real mail.

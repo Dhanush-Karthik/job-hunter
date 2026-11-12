@@ -2,6 +2,7 @@
 import re
 
 from jobhunter.gmail.message import Message
+from jobhunter.gmail.signals import is_marketing
 from jobhunter.models import AppStatus
 
 REJECTION = (
@@ -29,6 +30,8 @@ ASSESSMENT = (
 
 
 def template(message: Message) -> str | None:
+    if is_marketing(message):
+        return None
     text = ' '.join((message.subject + '\n' + message.text).lower().split())
     # Ignore quoted history: a previous rejection must not become a new decision.
     text = re.split(r' on .{5,100} wrote:|-----original message-----', text)[0]

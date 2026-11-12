@@ -3,7 +3,9 @@ from __future__ import annotations
 
 import io
 import re
+from datetime import timedelta
 from email import policy
+from email.message import EmailMessage
 from email.parser import BytesParser
 from pathlib import Path
 from types import SimpleNamespace
@@ -15,6 +17,7 @@ from jobhunter import paths, secrets
 from jobhunter.gmail import ALERT_SENDERS, GmailError, check_login, health, imap, run_intake
 from jobhunter.gmail.alerts import parse
 from jobhunter.gmail.classify import classify, sender_key
+from jobhunter.gmail.conversations import duplicate_inbound, inbound_payload, normalized_subject
 from jobhunter.gmail.inbound import parse as parse_inbound
 from jobhunter.gmail.match import match_application
 from jobhunter.gmail.message import Message, clean_url
@@ -84,7 +87,7 @@ class FakeMailbox:
         self.searches.append(str(criteria))
         # Deliberately return everything: intake must guard the IMAP UID n:* edge case itself.
         for uid, path in enumerate(self.files, 1):
-            yield SimpleNamespace(uid=str(uid), obj=BytesParser(policy=policy.default).parsebytes(path.read_bytes()))
+            yield SimpleNamespace(uid=str(uid), obj=BytesParser(policy=policy.compat32).parsebytes(path.read_bytes()))
 
     def logout(self):
         self.logouts += 1
@@ -435,3 +438,160 @@ def test_unparsed_alert_records_health(session, settings, monkeypatch, tmp_path)
     assert result.parse_failures == ['linkedin: Your job alert']
     assert not health(session).ok
     assert session.get(SourceHealth, 'gmail_alert').last_error
+
+
+REGRESSIONS = {
+    'inbound-2': ('indeed', 'alert', 21),
+    'inbound-6': ('indeed', 'alert', 27),
+    'inbound-10': ('other', 'other', 0),
+    'needs_eyes-1': ('other', 'other', 0),
+    'needs_eyes-4': ('other', 'other', 0),
+    'inbound-5': ('inbound', 'inbound', 0),
+    'inbound-7': ('inbound', 'inbound', 0),
+}
+
+
+@pytest.mark.parametrize('name', REGRESSIONS)
+def test_real_misclassification_regressions(name, session, settings, monkeypatch):
+    folder, expected, count = REGRESSIONS[name]
+    path = FIXTURES / folder / f'regression-{name}.eml'
+    mail = message(path)
+    assert classify(mail) == expected
+    install(monkeypatch, FakeMailbox([path]))
+    result = run_intake(session, settings)
+    assert result.cards == count
+    assert not result.parse_failures
+    assert result.proposals == result.needs_eyes == 0
+    assert result.inbound == (expected == 'inbound')
+    proposals = list(session.exec(select(Proposal)))
+    assert len(proposals) == (expected == 'inbound')
+    if expected == 'alert':
+        assert sender_key(mail) == 'indeed'
+        leads = list(session.exec(select(Lead)))
+        assert len(leads) == count
+        assert all(lead.source == Source.gmail_alert and lead.source_detail == 'indeed' for lead in leads)
+
+
+def test_inbound_precision_on_all_fixtures():
+    predicted = correct = positives = recalled = 0
+    for path in MAILS:
+        expected = path.parent.name == 'inbound'
+        actual = classify(message(path)) == 'inbound'
+        predicted += actual
+        correct += actual and expected
+        positives += expected
+        recalled += actual and expected
+    assert positives >= 5 and predicted > 0
+    assert correct / predicted >= 0.98
+    assert recalled / positives >= 0.98
+
+
+def test_regression_mailbox_creates_one_inbound_conversation(session, settings, monkeypatch):
+    files = [FIXTURES / folder / f'regression-{name}.eml' for name, (folder, _, _) in REGRESSIONS.items()]
+    install(monkeypatch, FakeMailbox(files))
+    result = run_intake(session, settings)
+    assert result.messages == 7 and result.cards == 48
+    assert result.inbound == 1 and result.needs_eyes == result.proposals == 0
+    assert len(list(session.exec(select(Lead)))) == 49
+    proposals = list(session.exec(select(Proposal)))
+    assert len(proposals) == 1 and proposals[0].type == ProposalType.inbound
+    assert not list(session.exec(select(Application)))
+    assert not list(session.exec(select(Event)))
+
+
+def test_inmail_followup_in_later_run_does_not_duplicate(session, settings, monkeypatch):
+    box = FakeMailbox([fixture('inbound', 'regression-inbound-5.eml')])
+    install(monkeypatch, box)
+    assert run_intake(session, settings).inbound == 1
+    box.files.append(fixture('inbound', 'regression-inbound-7.eml'))
+    result = run_intake(session, settings)
+    assert result.messages == 1 and result.inbound == result.needs_eyes == 0
+    assert len(list(session.exec(select(Lead)))) == len(list(session.exec(select(Proposal)))) == 1
+    assert session.get(SettingRow, 'gmail_cursor').value['last_uid'] == 2
+
+
+@pytest.mark.parametrize('legacy', [False, True])
+def test_conversation_identity_window_company_and_threads(session, legacy):
+    initial = message(fixture('inbound', 'regression-inbound-5.eml'))
+    lead = Lead(source=Source.gmail_inbound, source_ref=initial.message_id, title='Software Engineer',
+                company='Liquidnitro Games', found_at=initial.sent_at)
+    session.add(lead)
+    session.flush()
+    payload = {'message_id': initial.message_id} if legacy else inbound_payload(initial, lead.company)
+    session.add(Proposal(type=ProposalType.inbound, lead_id=lead.id, payload=payload, evidence=initial.evidence))
+    session.commit()
+    for prefix in ['Message replied:', 'Re:', 'Fwd: Re: Message replied:']:
+        followup = Message('followup', prefix + ' ' + initial.subject, 'hit-reply@linkedin.com',
+                           'InMail: please share your profile.', sent_at=initial.sent_at + timedelta(days=30))
+        assert duplicate_inbound(session, followup, lead.company)
+        assert normalized_subject(followup.subject) == normalized_subject(initial.subject)
+        assert not duplicate_inbound(session, followup, 'Another Company')
+    expired = Message('expired', initial.subject, initial.sender, initial.text,
+                      sent_at=initial.sent_at + timedelta(days=31))
+    assert not duplicate_inbound(session, expired, lead.company)
+    linked = Message('linked', 'A completely different subject', initial.sender, 'InMail',
+                     thread_ids=(initial.message_id,), sent_at=expired.sent_at)
+    assert duplicate_inbound(session, linked, lead.company)
+
+
+def test_encoded_subject_is_decoded_for_matching_classification_and_evidence(session, settings, monkeypatch):
+    path = fixture('rejection', 'synthetic-encoded-subject.eml')
+    # Match the email policy used by imap-tools, which leaves encoded words undecoded.
+    compat = BytesParser(policy=policy.compat32).parsebytes(path.read_bytes())
+    assert '=?utf-8?' in compat['Subject'].lower()
+    mail = Message.from_email(compat)
+    assert mail.subject == 'Acme application decision – Java Developer'
+    assert mail.evidence.startswith(mail.subject + '\n') and '=?' not in mail.evidence
+    assert classify(mail) == 'reply'
+    lead = Lead(source=Source.manual, source_ref='encoded', company='Acme', title='Java Developer')
+    session.add(lead)
+    session.flush()
+    app = Application(lead_id=lead.id, status=AppStatus.applied)
+    session.add(app)
+    session.commit()
+    install(monkeypatch, FakeMailbox([path]))
+    assert run_intake(session, settings).proposals == 1
+    proposal = session.exec(select(Proposal)).one()
+    assert proposal.application_id == app.id and proposal.evidence.startswith(mail.subject + '\n')
+    assert '=?' not in proposal.evidence
+
+
+@pytest.mark.parametrize('subject,body,sender,bulk', [
+    ('Hiring this month', 'We are hiring Software Engineers. Browse all roles.', 'updates@example.com', False),
+    ('Interview tips', 'Prepare for interview questions with our community.', 'newsletter@example.com', False),
+    ('Display problem', 'Unfortunately, your email client cannot display HTML.', 'mail@example.com', False),
+    ('Product updates', 'Hi Test Owner, I am reaching out about a Software Engineer role.', 'person@example.com', False),
+    ('Your application', 'This is a marketing email. Buy now.', 'mail@myworkday.com', True),
+    ('Role opportunity', 'Hi Test Owner, we are hiring a Java Developer. Please share your resume.', 'person@example.com', True),
+])
+def test_low_confidence_and_bulk_never_create_proposal_candidates(subject, body, sender, bulk):
+    mail = Message('negative', subject, sender, body, bulk=bulk, list_unsubscribe=True)
+    assert classify(mail) == 'other'
+
+
+def test_personal_consultancy_outreach_requires_targeted_role():
+    mail = Message('consultancy', 'Java Developer opportunity', 'alex@consultancy.example',
+                   'Hi Test Owner, I am recruiting a Java Developer for Acme. Please share your resume.')
+    assert classify(mail) == 'inbound'
+    unknown = Message('unknown', 'Opportunity', 'alex@example.com', 'We are hiring across all departments.')
+    assert classify(unknown) == 'other'
+
+
+def test_known_application_thread_can_need_eyes(session, settings, monkeypatch, tmp_path):
+    lead = Lead(source=Source.manual, source_ref='thread', company='Acme', title='Java Developer')
+    session.add(lead)
+    session.flush()
+    session.add(Application(lead_id=lead.id, status=AppStatus.applied, recruiter='alex@acme.example'))
+    session.commit()
+    mail = EmailMessage()
+    mail['From'] = 'Test Recruiter <alex@acme.example>'
+    mail['Subject'] = 'Re: Java Developer'
+    mail['Message-ID'] = '<thread-response@example.com>'
+    mail['In-Reply-To'] = '<owner-application@example.com>'
+    mail.set_content('Could you let me know about Tuesday?')
+    path = tmp_path / 'thread.eml'
+    path.write_bytes(mail.as_bytes())
+    install(monkeypatch, FakeMailbox([path]))
+    result = run_intake(session, settings)
+    assert result.needs_eyes == 1 and result.inbound == 0
+    assert session.exec(select(Proposal)).one().application_id is not None

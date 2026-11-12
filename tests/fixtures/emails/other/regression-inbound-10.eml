@@ -1,0 +1,961 @@
+From: Test Recruiter <welcome@supabase.com>
+To: Test Owner <owner@example.com>
+Subject: Supa Update November 2026
+Message-ID: <regression-inbound-10@example.com>
+Date: Sun, 08 Nov 2026 20:24:15 +0000
+List-Unsubscribe: <https://example.com/unsubscribe>
+X-Jobhunter-Sanitized: yes
+X-Jobhunter-Regression: inbound-10
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============6526293699499357932=="
+
+--===============6526293699499357932==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Everything that happened in the last month at Supabase
+
+Supabase
+
+*******************************
+Supabase Update — November 2026
+*******************************
+
+Hey there 👋,
+
+Here’s everything that happened with Supabase in the last month:
+
+Supabase now works with Grok Bot
+
+--------------------------------
+Supabase now works with Grok Bot
+--------------------------------
+
+With Grok Bot connected to Cursor, anyone on your team can request a change in chat, and Cursor builds and runs it on your Supabase backend through the Supabase MCP server.
+
+Read the blog → ( https://supabase.com/blog/ship-changes-to-your-supabase-backend-with-grok-bot )
+
+Supabase .NET SDK is now officially supported
+
+---------------------------------------------
+Supabase .NET SDK is now officially supported
+---------------------------------------------
+
+v8 puts every package under one version number and adds a dependency injection package for registering Supabase in ASP.NET Core.
+
+Read the blog → ( https://supabase.com/blog/introducing-the-unified-supabase-net-sdk )
+
+Stripe Data Pipeline now syncs real-time data to Supabase
+
+---------------------------------------------------------
+Stripe Data Pipeline now syncs real-time data to Supabase
+---------------------------------------------------------
+
+Pick a Supabase project from the Stripe Dashboard and Stripe backfills your payment, customer, and subscription data into your own database and keeps it in sync, with no webhooks to maintain, so you can query it alongside everything else your app stores. Available in public preview.
+
+Read the blog → ( https://supabase.com/blog/stripe-data-pipeline-now-syncs-real-time-data-to-supabase )
+
+Supabase Knowledge Base is live in public beta
+
+----------------------------------------------
+Supabase Knowledge Base is live in public beta
+----------------------------------------------
+
+Troubleshooting and migration guides for developers and their agents.
+
+Visit the Knowledge Base → ( https://supabase.com/kb )
+
+Status page moves to incident.io
+
+--------------------------------
+Status page moves to incident.io
+--------------------------------
+
+status.supabase.com now runs on incident.io: Email subscribers carry over automatically, but SMS, Slack, webhook, and RSS subscribers all need to resubscribe, and the new page only supports Email, RSS, and Slack going forward.
+
+View the changelog → ( https://supabase.com/changelog/status-page-migration )
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+---------------------------
+Quick Product Announcements
+---------------------------
+
+* Query your database and manage projects from Make scenarios and AI agents, connected with your Supabase account through the MCP server, on every Make plan (open beta on Make's side). [Blog ( https://supabase.com/blog/automate-your-supabase-backend-with-make )]
+* Supabase Go SDK is now in public alpha. Verify end-user access tokens and query your database as that user under Row Level Security, now from Go. [GitHub ( https://github.com/supabase/supabase-go )]
+* Organization invites on Team and Enterprise now support a No access role, so you can add someone to the org with no project access until an admin grants it. [Changelog ( https://supabase.com/changelog/no-access-org-role )]
+* Four outdated TLS 1.2 ciphers will be removed from project HTTP APIs starting Nov 10 at the earliest, so clients on end-of-life systems may need updating. Direct Postgres and pooler connections are not affected. [Changelog ( https://supabase.com/changelog/cbc-tls-ciphers-deprecated )]
+
+----------------------
+Meet the Supabase team
+----------------------
+
+* KubeCon North America, Nov 9 to 12 in Salt Lake City: visit us at booth 227. [Event ( https://events.linuxfoundation.org/kubecon-cloudnativecon-north-america/ )]
+* AWS re:Invent, Nov 30 to Dec 4 in Las Vegas: visit us at booth 2183. [Event ( https://aws.amazon.com/events/reinvent/ )]
+* Stacksync x Supabase, Nov 17 in Midtown Manhattan, NYC: join us for fireside chats on AI agents that do real work. [Event ( https://luma.com/stacksync-supabase-nyc )]
+* Supabase × iru x Claude Community Meetup, Nov 11 in Dublin. [Event ( https://luma.com/supabase-sziy )]
+* Dreambase Supabase meetup, Nov 12 in Denver. [Event ( https://luma.com/veetlvjc )]
+* Supabase Meetup, Nov 17 in Tokyo. [Event ( https://luma.com/supabase-eh6n )]
+
+------------------
+Made with Supabase
+------------------
+
+* Langtok - a Spanish learning app that feels like scrolling social media. Swipe through short stories with word-by-word subtitles, tap any word to translate it, and learn frequent words. [App Store ( https://apps.apple.com/us/app/langtok-learn-spanish/id6756219777 )]
+* Firmin - helps small and medium-sized businesses manage internal processes like holiday requests, contracts, and employee working time. [Website ( https://firmin.cloud/ )]
+* Primary AI - answers clinical questions for Canadian clinicians, with citations verified against PubMed and DOI lookups. [Website ( https://primaryai.world/ )]
+* Cornerman - an AI coach that keeps you on track with your goals. Pick a coach style to get clear next steps and regular check-ins to build discipline. [App Store ( https://apps.apple.com/us/app/cornerman-ai-coach-mentor/id6739544014 )]
+
+--------------------
+Community Highlights
+--------------------
+
+* Setting up and deploying a car rental management SaaS with Supabase for the database and auth, with Claude Code handling the setup. [Video ( https://www.youtube.com/watch )]
+* A walkthrough of moving a Google Apps Script app's data from Sheets to a Supabase Postgres database. [Video ( https://www.youtube.com/watch )]
+* How to build against local Supabase with the CLI and migration files, with Claude Code writing the schema as versioned migrations. [Video ( https://www.youtube.com/watch )]
+
+------------
+We're Hiring
+------------
+
+Come join one of the fastest-growing open source projects ever 🤗.
+
+We are hiring across all departments ( https://supabase.com/careers ). Here are the Jobs of the Month:
+
+* Product Lead - Infrastructure ( https://jobs.ashbyhq.com/supabase/sanitized )
+* Product Manager - Strategic Partner Integrations (regular travel to Bay Area) ( https://jobs.ashbyhq.com/supabase/sanitized )
+* Software Engineer - Auth ( https://jobs.ashbyhq.com/supabase/sanitized )
+* Support Engineer (AMER - Weekends) ( https://jobs.ashbyhq.com/supabase/sanitized )
+
+------------------------
+⚠️ Baking hot meme zone ⚠️
+------------------------
+
+Meme of the month ( https://x.com/supabase/status/2110372776011825539 )
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+©2026 Supabase Inc.
+3500 S. DuPont Highway, Kent 19901, Dover, Delaware, USA
+
+The email was sent to Test owner@example.com. To no longer receive these emails, unsubscribe ( https://track.customer.io/sanitized ) here.
+
+--===============6526293699499357932==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+<!DOCTYPE html><html lang="und" dir="auto" xmlns:v="urn:schemas-microsoft-com:vml" xmlns:o="urn:schemas-microsoft-com:office:office"><head>
+      <meta charset="utf-8"/>
+      <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+      <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes"/>
+      <meta name="format-detection" content="telephone=no, date=no, address=no, email=no, url=no"/>
+      <meta name="x-apple-disable-message-reformatting"/>
+      <meta name="color-scheme" content="light dark"/>
+      <meta name="supported-color-schemes" content="light dark"/>
+      <title>Supa Update November 2026</title>
+      <!--[if mso]>
+        <noscript>
+          <xml>
+            <o:OfficeDocumentSettings>
+              <o:PixelsPerInch>96</o:PixelsPerInch>
+            </o:OfficeDocumentSettings>
+          </xml>
+        </noscript>
+      <![endif]-->
+      <style>
+        :root {
+          color-scheme: light dark;
+          supported-color-schemes: light dark;
+        }
+      </style>
+      <style>
+        .x-wrapper {
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+        }
+        a[x-apple-data-detectors]{
+          word-break:normal;
+        }
+      </style>
+      <style>
+        body {
+          margin: 0;
+          padding:0 !important;
+        }
+        table.mso {
+          mso-cellspacing: 0;
+          padding: 0;
+          font-size: 16;
+          line-height: 120%;
+          font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+        }
+        table.mso td{
+          vertical-align: top;
+        }
+        h1,h2,h3,h4,h5,h6,p,li,td{mso-hyphenate: none;}
+        strong, b { font-weight: 700; }
+      </style>
+      <style>.c1x30091{max-width:100% !important;}.covbl52{mso-ansi-font-size:0;}@media (prefers-color-scheme: dark) { .c19sznxk{color:#d4d4d4 !important;} .c1omrpw9{background:#1c1c1c !important;} a.inline-link{color:#ffffff !important;} .ca49raw{color:#ffffff !important;} .c1fiw14f{border-top-color:#3c3c3c !important;} .c19bfebu{border-top-color:#4a4a4a !important;} }u+.body img+div>span>button{display: none;}</style><style data-isolated="thunderbird" media="(prefers-color-scheme: dark)">
+.moz-text-html .c19sznxk{color:#d4d4d4 !important;}
+.moz-text-html .c1omrpw9{background:#1c1c1c !important;}
+.moz-text-html a.inline-link{color:#ffffff !important;}
+.moz-text-html .ca49raw{color:#ffffff !important;}
+.moz-text-html .c1fiw14f{border-top-color:#3c3c3c !important;}
+.moz-text-html .c19bfebu{border-top-color:#4a4a4a !important;}</style></head>
+    <body class="body c1omrpw9" style="background: #fcfcfc;">
+      <div role="article" aria-roledescription="email" aria-label="Supa Update November 2026" lang="und" dir="auto" style="font-size: max(16px, 1rem);color: #3c3c3c; background: #fcfcfc; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; word-break: normal; word-wrap: normal; word-spacing: normal;" class="c19sznxk c1omrpw9 x-wrapper"><div style="display: none">Everything that happened in the last month at Supabase  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏  ͏ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ ­ </div>
+        <div style="font-size: 16px;">
+          
+
+  <!--[if mso]><span style="display: inline-block; max-height: 0; max-width: 0; mso-font-width: 0%; mso-style-textfill-type: none; white-space: nowrap;"><span style="max-height: 1px; max-width: 1px; display: inline-block; overflow: hidden; font-size: 1px; color: rgba(0, 0, 0, 0); text-indent: 9px;"><![endif]--><!--[if !mso]><! --><span style="float: left; max-height: 0; max-width: 0; overflow: hidden; font-size: 0; line-height: 0; mso-font-width: 0%; mso-style-textfill-type: none; white-space: nowrap;"><span style="max-height: 1px; max-width: 1px; overflow: hidden; font-size: 1px; color: rgba(0, 0, 0, 0); text-indent: 9px;"><!-- <![endif]-->Everything that happened in the last month at Supabase</span></span>
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 20px 10px 5px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 20px 10px 5px; overflow: auto;">
+            
+      
+    
+  <div style="text-align: left;" class="covbl52">
+  
+      
+      
+        
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/1751877778416_supabase-logo-icon_01JZJ0TZBPZWHTZA1XDSPGVPF9.png" alt="Supabase" width="48" style="vertical-align: middle; max-width: 100%; width: 48px;"/>
+        
+        </div>
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 20px 10px 15px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 20px 10px 15px; overflow: auto;">
+            
+      
+    
+  
+  <h1 style="color: #000000; font-size: 28px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0;" class="ca49raw"><strong>Supabase Update —</strong> November 2026</h1>
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 5px 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 5px 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <p style="color: #000000; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 16px;" class="ca49raw">Hey there 👋,</p>
+  
+    
+  
+  <p style="color: #000000; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0;" class="ca49raw">Here’s everything that happened with Supabase in the last month:</p>
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 0 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 0 10px; overflow: auto;">
+            
+      
+    <div data-layer-label="News Item" style="padding: 20px 0;">
+    
+  <div style="margin: 0 0 14px; text-align: center;" class="covbl52">
+  
+      
+      
+        <!--[if !mso]><! -->
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGN91JFD1T2S36AF5H63W.png" alt="Supabase now works with Grok Bot" width="" style="vertical-align: middle; max-width: 100%; width: 460px;"/>
+        
+        <!-- <![endif]--><!--[if mso]>
+          <img
+            class="c1x30091"
+            src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGN91JFD1T2S36AF5H63W.png"
+            alt="Supabase now works with Grok Bot"
+            width="460"
+            
+            style="vertical-align: middle; max-width: 100%; width: 460px;"
+          >
+        <![endif]--></div>
+  
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 14px;" class="ca49raw">Supabase now works with Grok Bot</h2>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 12px;" class="c19sznxk">With Grok Bot connected to Cursor, anyone on your team can request a change in chat, and Cursor builds and runs it on your Supabase backend through the Supabase MCP server.</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0;" class="c19sznxk"><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Read the blog →</a></p>
+  
+  </div>
+    <div data-layer-label="News Item" style="padding: 20px 0;">
+    
+  <div style="margin: 0 0 14px; text-align: center;" class="covbl52">
+  
+      
+      
+        <!--[if !mso]><! -->
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMKVKG3DEX7BWYX6RMG5.png" alt="Supabase .NET SDK is now officially supported" width="" style="vertical-align: middle; max-width: 100%; width: 460px;"/>
+        
+        <!-- <![endif]--><!--[if mso]>
+          <img
+            class="c1x30091"
+            src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMKVKG3DEX7BWYX6RMG5.png"
+            alt="Supabase .NET SDK is now officially supported"
+            width="460"
+            
+            style="vertical-align: middle; max-width: 100%; width: 460px;"
+          >
+        <![endif]--></div>
+  
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 14px;" class="ca49raw">Supabase .NET SDK is now officially supported</h2>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 12px;" class="c19sznxk">v8 puts every package under one version number and adds a dependency injection package for registering Supabase in ASP.NET Core.</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0;" class="c19sznxk"><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Read the blog →</a></p>
+  
+  </div>
+    <div data-layer-label="News Item" style="padding: 20px 0;">
+    
+  <div style="margin: 0 0 14px; text-align: center;" class="covbl52">
+  
+      
+      
+        <!--[if !mso]><! -->
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMMHF3J9G2MXQ86243TX.png" alt="Stripe Data Pipeline now syncs real-time data to Supabase" width="" style="vertical-align: middle; max-width: 100%; width: 460px;"/>
+        
+        <!-- <![endif]--><!--[if mso]>
+          <img
+            class="c1x30091"
+            src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMMHF3J9G2MXQ86243TX.png"
+            alt="Stripe Data Pipeline now syncs real-time data to Supabase"
+            width="460"
+            
+            style="vertical-align: middle; max-width: 100%; width: 460px;"
+          >
+        <![endif]--></div>
+  
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 14px;" class="ca49raw">Stripe Data Pipeline now syncs real-time data to Supabase</h2>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 12px;" class="c19sznxk">Pick a Supabase project from the Stripe Dashboard and Stripe backfills your payment, customer, and subscription data into your own database and keeps it in sync, with no webhooks to maintain, so you can query it alongside everything else your app stores. Available in public preview.</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0;" class="c19sznxk"><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Read the blog →</a></p>
+  
+  </div>
+    <div data-layer-label="News Item" style="padding: 20px 0;">
+    
+  <div style="margin: 0 0 14px; text-align: center;" class="covbl52">
+  
+      
+      
+        <!--[if !mso]><! -->
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMKQNPYAGGW0G68KDFNS.png" alt="Supabase Knowledge Base is live in public beta" width="" style="vertical-align: middle; max-width: 100%; width: 460px;"/>
+        
+        <!-- <![endif]--><!--[if mso]>
+          <img
+            class="c1x30091"
+            src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMKQNPYAGGW0G68KDFNS.png"
+            alt="Supabase Knowledge Base is live in public beta"
+            width="460"
+            
+            style="vertical-align: middle; max-width: 100%; width: 460px;"
+          >
+        <![endif]--></div>
+  
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 14px;" class="ca49raw">Supabase Knowledge Base is live in public beta</h2>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 12px;" class="c19sznxk">Troubleshooting and migration guides for developers and their agents.</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0;" class="c19sznxk"><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Visit the Knowledge Base →</a></p>
+  
+  </div>
+    <div data-layer-label="News Item" style="padding: 20px 0;">
+    
+  <div style="margin: 0 0 14px; text-align: center;" class="covbl52">
+  
+      
+      
+        <!--[if !mso]><! -->
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMKQRJ032DTXFAWP59Z5.png" alt="Status page moves to incident.io" width="" style="vertical-align: middle; max-width: 100%; width: 460px;"/>
+        
+        <!-- <![endif]--><!--[if mso]>
+          <img
+            class="c1x30091"
+            src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXGMKQRJ032DTXFAWP59Z5.png"
+            alt="Status page moves to incident.io"
+            width="460"
+            
+            style="vertical-align: middle; max-width: 100%; width: 460px;"
+          >
+        <![endif]--></div>
+  
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 14px;" class="ca49raw">Status page moves to incident.io</h2>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 12px;" class="c19sznxk">status.supabase.com now runs on incident.io: Email subscribers carry over automatically, but SMS, Slack, webhook, and RSS subscribers all need to resubscribe, and the new page only supports Email, RSS, and Slack going forward.</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0;" class="c19sznxk"><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">View the changelog →</a></p>
+  
+  </div>
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 0 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 0 10px; overflow: auto;">
+            
+      
+    <div style="margin: 10px 0; mso-para-margin: 0;">
+    <!--[if !mso]><! -->
+    <hr style="border-width: 0; border-top: 1px solid #d3d3d3; margin-top: 0; margin-bottom: 0;" class="c1fiw14f" align="center"/>
+    <!-- <![endif]-->
+    <!--[if mso]>
+    <div style="line-height:1;font-size:10px;"> </div
+      ><table role="none" style="border-top: 1.5px solid #d3d3d3; width: 100%;"  align="center"></table
+        ><div style="line-height:1;font-size:10px;"> </div><![endif]--></div>
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 16px;" class="ca49raw">Quick Product Announcements</h2>
+  
+    
+  
+    <ul class="c19sznxk" style="list-style: disc; margin: 0; padding: 0 0 0 20px; color: #3c3c3c; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%;">
+      
+      <li>Query your database and manage projects from Make scenarios and AI agents, connected with your Supabase account through the MCP server, on every Make plan (open beta on Make's side). [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Blog</a>]</li>
+      <li>Supabase Go SDK is now in public alpha. Verify end-user access tokens and query your database as that user under Row Level Security, now from Go. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">GitHub</a>]</li>
+      <li>Organization invites on Team and Enterprise now support a No access role, so you can add someone to the org with no project access until an admin grants it. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Changelog</a>]</li>
+      <li>Four outdated TLS 1.2 ciphers will be removed from project HTTP APIs starting Nov 10 at the earliest, so clients on end-of-life systems may need updating. Direct Postgres and pooler connections are not affected. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Changelog</a>]</li>
+    
+    </ul>
+  
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 16px;" class="ca49raw">Meet the Supabase team</h2>
+  
+    
+  
+    <ul class="c19sznxk" style="list-style: disc; margin: 0; padding: 0 0 0 20px; color: #3c3c3c; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%;">
+      <li>KubeCon North America, Nov 9 to 12 in Salt Lake City: visit us at booth 227. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Event</a>]</li>
+      <li>AWS re:Invent, Nov 30 to Dec 4 in Las Vegas: visit us at booth 2183. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Event</a>]</li>
+      <li>Stacksync x Supabase, Nov 17 in Midtown Manhattan, NYC: join us for fireside chats on AI agents that do real work. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Event</a>]</li>
+      <li>Supabase × iru x Claude Community Meetup, Nov 11 in Dublin. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline" target="_blank">Event</a>]</li>
+      <li>Dreambase Supabase meetup, Nov 12 in Denver. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline" target="_blank">Event</a>]</li>
+      <li>Supabase Meetup, Nov 17 in Tokyo. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline" target="_blank">Event</a>]</li>
+    </ul>
+  
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 16px;" class="ca49raw">Made with Supabase</h2>
+  
+    
+  
+    <ul class="c19sznxk" style="list-style: disc; margin: 0; padding: 0 0 0 20px; color: #3c3c3c; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%;">
+      
+      <li>Langtok - a Spanish learning app that feels like scrolling social media. Swipe through short stories with word-by-word subtitles, tap any word to translate it, and learn frequent words. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">App Store</a>]</li>
+      <li>Firmin - helps small and medium-sized businesses manage internal processes like holiday requests, contracts, and employee working time. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Website</a>]</li>
+      <li>Primary AI - answers clinical questions for Canadian clinicians, with citations verified against PubMed and DOI lookups. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Website</a>]</li>
+      <li>Cornerman - an AI coach that keeps you on track with your goals. Pick a coach style to get clear next steps and regular check-ins to build discipline. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">App Store</a>]</li>
+    
+    </ul>
+  
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 16px;" class="ca49raw">Community Highlights</h2>
+  
+    
+  
+    <ul class="c19sznxk" style="list-style: disc; margin: 0; padding: 0 0 0 20px; color: #3c3c3c; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%;">
+      
+      <li>Setting up and deploying a car rental management SaaS with Supabase for the database and auth, with Claude Code handling the setup. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Video</a>]</li>
+      <li>A walkthrough of moving a Google Apps Script app's data from Sheets to a Supabase Postgres database. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Video</a>]</li>
+      <li>How to build against local Supabase with the CLI and migration files, with Claude Code writing the schema as versioned migrations. [<a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Video</a>]</li>
+    
+    </ul>
+  
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 16px;" class="ca49raw">We're Hiring</h2>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 16px;" class="c19sznxk">Come join one of the fastest-growing open source projects ever 🤗.</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: left; margin: 0 0 16px;" class="c19sznxk"><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">We are hiring across all departments</a>. Here are the Jobs of the Month:</p>
+  
+    
+  
+    <ul class="c19sznxk" style="list-style: disc; margin: 0; padding: 0 0 0 20px; color: #3c3c3c; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.2; mso-line-height-alt: 120%;">
+      
+      <li><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Product Lead - Infrastructure</a></li>
+      <li><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Product Manager - Strategic Partner Integrations (regular travel to Bay Area)</a></li>
+      <li><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Software Engineer - Auth</a></li>
+      <li><a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">Support Engineer (AMER - Weekends)</a></li>
+    
+    </ul>
+  
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px; overflow: auto;">
+            
+      
+    
+  
+  <h2 style="color: #000000; font-size: 22px; line-height: 1.2; mso-line-height-alt: 120%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; font-weight: 400; text-align: left; margin: 0 0 16px;" class="ca49raw">⚠️ Baking hot meme zone ⚠️</h2>
+  
+    
+  <div style="text-align: center;" class="covbl52">
+  <a href="https://email.supabase.com/sanitized" style="text-decoration: none; display: inline-block;">
+      
+      
+        <!--[if !mso]><! -->
+          <img class="c1x30091" src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXQZYQ52XN9MNRA3WFPGN6.png" alt="Meme of the month" width="" style="vertical-align: middle; max-width: 100%; width: 460px;"/>
+        
+        <!-- <![endif]--><!--[if mso]>
+          <img
+            class="c1x30091"
+            src="https://userimg-assets.customeriomail.com/images/client-env-187397/01M6EXQZYQ52XN9MNRA3WFPGN6.png"
+            alt="Meme of the month"
+            width="460"
+            
+            style="vertical-align: middle; max-width: 100%; width: 460px;"
+          >
+        <![endif]--></a></div>
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 0 10px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 0 10px; overflow: auto;">
+            
+      
+    <div style="margin: 10px 0; mso-para-margin: 0;">
+    <!--[if !mso]><! -->
+    <hr style="border-width: 0; border-top: 1px solid #bbbbbb; margin-top: 0; margin-bottom: 0;" class="c19bfebu" align="center"/>
+    <!-- <![endif]-->
+    <!--[if mso]>
+    <div style="line-height:1;font-size:10px;"> </div
+      ><table role="none" style="border-top: 1.5px solid #bbbbbb; width: 100%;"  align="center"></table
+        ><div style="line-height:1;font-size:10px;"> </div><![endif]--></div>
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+  
+  <div>
+    
+  <!--[if true]><table
+    role="none"
+    class="mso"
+    align="left"
+    style="width: 100%;"
+  >
+    <tr>
+      <td></td><td style="width: 480px; padding: 10px 10px 30px;">
+        <![endif]--><!--[if !true]><! --><div style="max-width: 480px; margin-left: auto; margin-right: auto;">
+        
+          <!-- <![endif]--><div style="padding: 10px 10px 30px; overflow: auto;">
+            
+      
+    
+  
+  <p style="color: #3c3c3c; font-size: 12px; line-height: 1.4; mso-line-height-alt: 140%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; margin: 0 0 8px;" class="c19sznxk">©2026 Supabase Inc.<br/>3500 S. DuPont Highway, Kent 19901, Dover, Delaware, USA</p>
+  
+    
+  
+  <p style="color: #3c3c3c; font-size: 12px; line-height: 1.4; mso-line-height-alt: 140%; font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; text-align: center; margin: 0;" class="c19sznxk">The email was sent to Test owner@example.com. To no longer receive these emails, <a class="inline-link" href="https://email.supabase.com/sanitized" style="color: #000000;
+font-weight: 400;
+text-decoration: underline">unsubscribe</a> here.</p>
+  
+  
+    
+          </div>
+          <!--[if !true]><! -->
+      </div>
+        <!-- <![endif]--><!--[if true]></td>
+      <td></td></tr>
+  </table>
+  <![endif]-->
+  </div>
+  
+
+
+        </div>
+      </div>
+    
+  <img src="https://email.supabase.com/sanitized" style="height: 1px !important; max-height: 1px !important; max-width: 1px !important; width: 1px !important; display: none !important;" alt=""/></body></html>
+
+--===============6526293699499357932==--
