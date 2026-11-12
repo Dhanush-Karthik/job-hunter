@@ -425,3 +425,25 @@ def test_score_uses_cv_vocabulary():
     iam = {"title": "Software Engineer", "skills": ["Keycloak", "OIDC"], "posted_at": NOW - timedelta(days=5)}
     kafka = {"title": "Software Engineer", "skills": ["Kafka", "Kubernetes"], "posted_at": NOW - timedelta(days=5)}
     assert score(cv_scorer, **iam) > score(cv_scorer, **kafka)
+
+
+# ---------- unparseable URLs ----------
+
+BAD_URLS = ["http://[", "https://[::1", "http://[abc", "ht tp://[x]/y"]
+
+
+@pytest.mark.parametrize("url", BAD_URLS)
+def test_unparseable_url_is_unusable_not_fatal(url):
+    assert canonical_url(url) is None
+
+
+def test_ingest_survives_malformed_urls(session):
+    rows = [raw("bad1", job_url="http://[", apply_url="http://[", title="Java Developer"),
+            raw("bad2", job_url="https://[::1", apply_url="http://[abc", title="Backend Engineer"),
+            raw("ok", job_url="https://www.naukri.com/job-listings-java-123456")]
+    res = ingest(session, rows, SETTINGS, now=NOW, cv_text="")
+    assert res.new == 3 and res.fetched == 3
+    leads = {lead.source_ref: lead for lead in stored(session)}
+    assert set(leads) == {"bad1", "bad2", "ok"}
+    assert leads["bad1"].canonical_url is None and leads["ok"].canonical_url is not None
+    assert ingest(session, rows[:1], SETTINGS, now=NOW, cv_text="").updated == 1  # refetch is fine too

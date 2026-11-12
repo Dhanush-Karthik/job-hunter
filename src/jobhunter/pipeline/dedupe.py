@@ -19,14 +19,14 @@ from __future__ import annotations
 
 import re
 from dataclasses import dataclass
-from urllib.parse import parse_qsl, urlsplit
+from urllib.parse import parse_qsl
 
 from rapidfuzz import fuzz, process
 from sqlmodel import Session, select
 
 from jobhunter.models import Lead, WorkMode
 from jobhunter.pipeline.location import CITY_STATE, LocationInfo, parse_location
-from jobhunter.pipeline.normalize import Normalized, canonical_url, is_ats_url
+from jobhunter.pipeline.normalize import Normalized, canonical_url, is_ats_url, split_url
 
 COMPANY_CUTOFF = 93
 TITLE_CUTOFF = 92
@@ -104,7 +104,7 @@ def url_keys(canon: str | None, apply_url: str | None) -> set[str]:
 
 
 def _identifies_posting(url: str) -> bool:
-    p = urlsplit(url)
+    p = split_url(url)
     if is_ats_url(url):
         return _specific(url)
     return bool(p.path.strip("/") or p.query)
@@ -112,7 +112,7 @@ def _identifies_posting(url: str) -> bool:
 
 def _specific(url: str) -> bool:
     """True when an ATS URL points at one posting, not a company's listing page."""
-    p = urlsplit(url if "://" in url else "https://" + url)
+    p = split_url(url)
     if any(k.lower() in {"gh_jid", "jobid", "job_id", "jid", "id", "reqid", "requisitionid"} for k, _ in parse_qsl(p.query)):
         return True
     segs = [s for s in p.path.split("/") if s]

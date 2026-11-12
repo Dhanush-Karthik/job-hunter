@@ -8,7 +8,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from urllib.parse import parse_qsl, urlencode, urlsplit
+from urllib.parse import SplitResult, parse_qsl, urlencode, urlsplit
 
 from jobhunter.intake.types import RawJob
 from jobhunter.models import ApplyChannel, RoleFamily, Source, WorkMode
@@ -27,13 +27,21 @@ _TRACKING = {
 }
 
 
+def split_url(url: str) -> SplitResult:
+    """urlsplit that treats an unparseable URL (e.g. 'http://[' -> Invalid IPv6 URL) as empty: no host, no path."""
+    try:
+        return urlsplit(url if "://" in url else "https://" + url)
+    except ValueError:
+        return SplitResult("", "", "", "", "")
+
+
 def canonical_url(url: str | None) -> str | None:
     """https, lowercase host without 'www.', tracking params and fragment dropped, params sorted.
     LinkedIn collapses to /jobs/view/<id>, Indeed to /viewjob?jk=<id>."""
     if not url or not url.strip() or url.strip().lower().startswith("mailto:"):
         return None
     url = url.strip()
-    parts = urlsplit(url if "://" in url else "https://" + url)
+    parts = split_url(url)
     host = (parts.hostname or "").lower().removeprefix("www.")
     if not host:
         return None
@@ -70,7 +78,7 @@ def _host(url: str | None) -> str:
     if not url or not url.strip():
         return ""
     url = url.strip()
-    return (urlsplit(url if "://" in url else "https://" + url).hostname or "").lower()
+    return (split_url(url).hostname or "").lower()
 
 
 def is_ats_url(url: str | None) -> bool:

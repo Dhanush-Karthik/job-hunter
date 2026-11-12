@@ -1,15 +1,37 @@
 from __future__ import annotations
 
+import os
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from jobhunter import __version__, paths
 from jobhunter.api import applications, config, health, inbox, insight, leads, runs
+from jobhunter.jobs import runner, scheduler
+
+
+@asynccontextmanager
+async def lifespan(_: FastAPI) -> AsyncIterator[None]:
+    """Scheduler + run workers live and die with the server; JOBHUNTER_NO_SCHEDULER=1 skips them (tests, dev)."""
+    managed = os.environ.get("JOBHUNTER_NO_SCHEDULER") != "1"
+    if managed:
+        scheduler.start()
+    try:
+        yield
+    finally:
+        if managed:
+            scheduler.shutdown()
+            runner.shutdown()
 
 
 def create_app(serve_web: bool = True) -> FastAPI:
-    app = FastAPI(title="job-hunter", version=__version__, openapi_url="/api/openapi.json", docs_url="/api/docs")
+    app = FastAPI(
+        title="job-hunter", version=__version__, openapi_url="/api/openapi.json", docs_url="/api/docs",
+        lifespan=lifespan,
+    )
     for r in (health.router, leads.router, applications.router, inbox.proposals, inbox.outreach,
               runs.router, insight.router, config.router):
         app.include_router(r)
