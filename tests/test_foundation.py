@@ -29,7 +29,8 @@ def test_transitions_cover_all_states():
     assert AppStatus.screening in TRANSITIONS[AppStatus.ghosted]
 
 
-def test_settings_defaults_seed(session):
+def test_settings_defaults_seed(session, monkeypatch, tmp_path):
+    monkeypatch.setattr(paths, "CONFIG_PATH", tmp_path / "absent.yml")  # ignore local data/config.yml
     s = get_settings(session)
     assert s.auto_evaluate_top_n == 10 and s.prefilter.ctc_min_lpa == 10
     assert get_settings(session) == s == load_defaults(paths.CONFIG_EXAMPLE)

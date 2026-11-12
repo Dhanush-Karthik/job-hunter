@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **draft v3, nothing implemented**. Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3, Wave 0 in progress** (0.2, 0.3, 0.5 done; 0.4/0.6 partly blocked, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -61,9 +61,9 @@ Volume target: the PDF says 30-40 applications/week. With quick-apply batching a
 | # | Channel | Platforms | Ingestion | Cadence |
 |---|---|---|---|---|
 | 1 | Major boards | **LinkedIn** (guest search), **Naukri**, **Indeed India**, **Glassdoor India** | JobSpy | every 3 h, 07:00-23:00 |
-| 2 | Aggregator | **Google Jobs** (indexes foundit, Shine, TimesJobs, company pages, more) | JobSpy `google` | every 3 h |
+| 2 | Aggregator | ~~Google Jobs~~ (JobSpy returns 0 rows, spike section 13; off by default) | JobSpy `google` | off |
 | 3 | Company career pages | ~300 targets: Chennai/Bengaluru product companies, GCCs, fintech, SaaS, plus remote-first companies hiring in India (Workday, Greenhouse, Lever, Ashby, SuccessFactors, Darwinbox, Zoho Recruit, ...) | career-ops `scan.mjs` (public ATS APIs) | 2× daily |
-| 4 | Remote boards | Remotive, WeWorkRemotely, YC Work at a Startup (in career-ops); Himalayas, RemoteOK (public APIs/RSS; small fetcher if career-ops lacks them) | career-ops + `intake/remote_boards.py` | 2× daily |
+| 4 | Remote boards | Remotive, WeWorkRemotely, Himalayas, RemoteOK (all career-ops providers, confirmed in spike) | career-ops scan | 2× daily |
 | 5 | Login-only India platforms | **Hirist** (tech/Java-heavy), **Instahyre**, **Cutshort**, **foundit**, **Wellfound**, **Uplers** | Their job-alert emails → Gmail parsers | every 30 min |
 | 6 | Inbound recruiters | Naukri recruiter mails, LinkedIn InMail notifications, Instahyre/Hirist/Cutshort interest mails, consultancy mails | Gmail inbound classifier → "Inbound" lead (top priority + notification) | every 30 min |
 | 7 | Referrals | Employees at shortlisted companies (public info via career-ops contact finder) | Drafts; owner sends on LinkedIn | on shortlist |
@@ -452,8 +452,8 @@ vendor/career-ops/                     submodule · nobody edits
 data/                                  gitignored runtime
 config/jobhunter.example.yml           lead
 contracts/openapi.json                 lead
-src/jobhunter/models.py, db/**         lead (contract)
-src/jobhunter/intake/boards.py, remote_boards.py   codex_builder W1
+src/jobhunter/models.py, schemas.py, settings.py, paths.py, db/**   lead (contract)
+src/jobhunter/intake/boards.py         codex_builder W1 (remote boards come from career-ops scan)
 scripts/build_portals.py               codex_builder W1
 src/jobhunter/pipeline/**              builder W1
 src/jobhunter/careerops/**             codex_builder W2
@@ -474,7 +474,7 @@ Roles from `agents.conf` (unchanged). At most 3 builders + 1 tester at a time. E
 
 **Parallelism:** `agent.sh task` blocks for up to 10 min, so the lead fires the three tasks as background shells and collects with `read`/`list`. Over-cap tasks keep running and the lead polls. Builders are reused across waves, the tester is spawned and killed per wave, and everything is killed after Wave 4.
 
-**Do not touch (all agents, all waves):** `models.py`, `db/**`, `contracts/**`, `web/src/api/**`, `web/src/mocks/**`, `vendor/**`, `data/**`, `start.sh`, other agents' files.
+**Do not touch (all agents, all waves):** `models.py`, `schemas.py`, `settings.py`, `paths.py`, `db/**`, `contracts/**`, `web/src/api/**`, `web/src/mocks/**`, `vendor/**`, `data/**`, `start.sh`, other agents' files.
 
 ### Wave 0: foundation (lead + owner)
 | # | Task | Acceptance |
@@ -489,7 +489,7 @@ Roles from `agents.conf` (unchanged). At most 3 builders + 1 tester at a time. E
 ### Wave 1: discovery engine + UI shell (dashboard on mocks)
 | Agent | Task | Files | Acceptance |
 |---|---|---|---|
-| codex_builder | JobSpy query-matrix fetcher (rotation, caps, backoff, auto-pause), remote board fetcher, portals builder (seed → ATS detect → `portals.yml`) | `intake/boards.py`, `intake/remote_boards.py`, `scripts/build_portals.py`, `tests/test_boards.py`, `tests/fixtures/boards/**` | `uv run pytest tests/test_boards.py` (recorded fixtures) |
+| codex_builder | JobSpy query-matrix fetcher (rotation, caps, backoff, auto-pause), portals builder (seed → ATS detect → `portals.yml`, incl. remote boards via career-ops providers) | `intake/boards.py`, `scripts/build_portals.py`, `tests/test_boards.py`, `tests/fixtures/boards/**` | `uv run pytest tests/test_boards.py` (recorded fixtures) |
 | builder | normalize, dedupe, India prefilter (section 4), quick score, store, golden eval | `pipeline/**`, `tests/test_pipeline.py`, `scripts/eval_golden.py` | `uv run pytest tests/test_pipeline.py && uv run python scripts/eval_golden.py` (recall ≥ .95, dedupe prec ≥ .99) |
 | builder2 | App shell (nav, light/dark), **Today**, **Leads** + Quick-apply view on MSW | `web/src/app/**`, `pages/today/**`, `pages/leads/**`, `web/src/components/**` | `cd web && npm run build && npm run test` |
 | tester | fixtures → pipeline → DB integration; Playwright smoke on mocks | `tests/integration/**`, `web/e2e/**` | `uv run pytest tests/integration && npx playwright test` |
@@ -530,5 +530,36 @@ After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start 
 | Day 7 | Wave 4: hardened, autostart |
 | After | No new features; tune queries/filters weekly from "calls by source" |
 
-## 13. Spike notes (filled in Wave 0)
-_empty_
+## 13. Spike notes (filled in Wave 0, 12 Nov 2026)
+
+**Toolchain:** Python 3.13 (uv 0.13), Node 22.23, Claude CLI 2.1.287, codex 0.167. Web pins **TypeScript 5.9** (openapi-typescript needs the TS 5 JS API; TS 7 native breaks it). MSW is **v3** (`onUnhandledFrame`, not `onUnhandledRequest`). openapi-fetch client late-binds `fetch` so MSW can patch it.
+
+**JobSpy 1.4.1 smoke from India** (1 query, 5 results, `hours_old=72`):
+
+| Site | Result | Notes |
+|---|---|---|
+| LinkedIn (guest) | ✅ 5 rows, 0.8 s | relevant Chennai Java roles; descriptions only with `linkedin_fetch_description=True` (~3 s per 2 rows) |
+| Naukri | ✅ 5 rows, 0.9 s | best metadata: `experience_range`, `skills`, salary INR/yearly, `work_from_home_type`; `fetch_description=True` gives ~350-char snippets |
+| Indeed India | ✅ 5 rows, 2.8 s | descriptions included; location granularity is state ("TN, India") → prefilter must map states |
+| Glassdoor India | ✅ 5 rows, 0.9 s | salaries sometimes **monthly** INR → ×12 rule needed |
+| Google Jobs | ❌ 0 rows, 3 phrasings | JobSpy's Google scraper returns nothing. **Removed from default `query_matrix.sites`**; coverage it gave (foundit, Shine, company pages) comes from career-ops scan + Gmail alerts. Revisit if JobSpy fixes it |
+
+**career-ops (v1.40.0, submodule):**
+- Data root via env `CAREER_OPS_DATA_DIR=data/careerops` → vendor stays untouched (set in `start.sh`).
+- Already has providers for **Himalayas, RemoteOK, Remotive, WeWorkRemotely**, plus Indian ATSs **Darwinbox, Keka, TurboHire, Zoho Recruit**, and Workday/Greenhouse/Lever/Ashby/SuccessFactors/SmartRecruiters. → `intake/remote_boards.py` dropped from Wave 1.
+- Evaluation is an **A-H report with a 1-5 score** (plan said A-F/0-5). `evaluations.score` stores 1-5; `grade` stores its letter. Quality gate 3.5 stays.
+- Headless pattern exists (`docs/AUTOMATION.md`, `scripts/followup-sweep.sh`): `claude -p` in `dontAsk` mode, explicit tool allowlist, `--add-dir` data root, job-posting text treated as untrusted. The bridge (Wave 2) copies this pattern.
+- **Blocked:** `npm ci` + `doctor.mjs` inside career-ops were denied by the Claude Code auto-mode classifier (running external code). Needs owner approval (see Wave 0 status). End-to-end headless evaluate also needs the owner's CV + `config/profile.yml`.
+
+**Platform check (HTTP, 12 Nov 2026):** Naukri, LinkedIn, Hirist, Cutshort, Wellfound, Uplers, Turing, Arc, Himalayas, RemoteOK, Remotive all 200. Instahyre, foundit, WWR, Glassdoor, Indeed answer 403 and YC 406 to curl: bot walls on the homepage, not dead sites (Indeed/Glassdoor scraped fine via JobSpy). All section 3 platforms are treated as active.
+
+**Wave 0 status:**
+
+| # | State |
+|---|---|
+| 0.1 | ⏳ owner inputs pending |
+| 0.2 | ✅ `uv run python -m jobhunter.api.dump_openapi --check`, `uv run pytest` (6 pass) |
+| 0.3 | ✅ `cd web && npm run build && npm run test` (3 pass on MSW) |
+| 0.4 | ◐ submodule added; career-ops `npm ci` + self-check blocked (owner approval); Playwright chromium present |
+| 0.5 | ✅ `./start.sh doctor` (exit 1 without `claude`), `./start.sh dev` serves API + Vite proxy |
+| 0.6 | ◐ JobSpy ✅ (4/5 sites), platforms ✅, career-ops coverage ✅; headless evaluate pending 0.1 + 0.4 |

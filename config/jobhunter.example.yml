@@ -18,7 +18,7 @@ query_matrix:
     - Identity IAM Engineer
     - Keycloak
   locations: [Chennai, Bengaluru, Remote India]
-  sites: [linkedin, naukri, indeed, glassdoor, google]
+  sites: [linkedin, naukri, indeed, glassdoor]   # google: JobSpy returns 0 rows (spike, 12 Nov)
   hours_old: 72
   results_wanted: 50
 
