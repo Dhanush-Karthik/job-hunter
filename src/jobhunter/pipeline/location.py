@@ -58,7 +58,8 @@ CITIES: dict[str, tuple[str, tuple[str, ...]]] = {
     "Goa": ("GA", ("panaji",)),
 }
 CITY_STATE = {city: st for city, (st, _) in CITIES.items()}
-_ALIAS_TO_CITY = {a: city for city, (_, aliases) in CITIES.items() for a in aliases}
+# Canonical names must match even when aliases only name a related place (Goa -> Panaji).
+_ALIAS_TO_CITY = {a: city for city, (_, aliases) in CITIES.items() for a in (city.lower(), *aliases)}
 _CITY_RE = re.compile(r"\b(" + "|".join(sorted(map(re.escape, _ALIAS_TO_CITY), key=len, reverse=True)) + r")\b")
 
 STATE_NAMES = {
@@ -115,6 +116,11 @@ def canonical_city(name: str) -> str:
     return _ALIAS_TO_CITY[m.group(1)] if m else name.strip().title()
 
 
+def cities_in_text(text: str) -> list[str]:
+    """Every known Indian city mentioned, canonicalized and deduplicated in mention order."""
+    return list(dict.fromkeys(_ALIAS_TO_CITY[m.group(1)] for m in _CITY_RE.finditer(text.lower())))
+
+
 @dataclass
 class LocationInfo:
     raw: str | None
@@ -148,10 +154,7 @@ def parse_location(raw: str | None, targets: set[str] | frozenset[str] = frozens
     info.onsite = bool(_ONSITE_RE.search(text))
     india_word = bool(_INDIA_RE.search(text))
 
-    for m in _CITY_RE.finditer(low):
-        city = _ALIAS_TO_CITY[m.group(1)]
-        if city not in info.cities:
-            info.cities.append(city)
+    info.cities = cities_in_text(text)
     foreign = _foreign_hits(text)
     if info.cities and not india_word and foreign and not any(c in targets for c in info.cities):
         info.cities = []  # "Salem, OR, United States": a US place that happens to share a city name

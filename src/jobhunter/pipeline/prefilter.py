@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 
 from jobhunter.models import WorkMode
-from jobhunter.pipeline.location import CITY_STATE
+from jobhunter.pipeline.location import CITY_STATE, cities_in_text, parse_location
 from jobhunter.pipeline.normalize import Normalized, as_utc, target_cities
 from jobhunter.schemas import Settings
 
@@ -68,6 +68,10 @@ def positive_terms(text: str, terms: list[str]) -> list[str]:
 def _location(n: Normalized, settings: Settings, targets: frozenset[str], tags: list[str], reasons: list[str]) -> None:
     loc = n.loc
     pf = settings.prefilter
+    title_cities = cities_in_text(n.title)
+    if title_cities and not targets.intersection(title_cities) and not parse_location(n.title).remote:
+        reasons.append(f"location: title names {title_cities[0]}")
+        return
     if n.work_mode == WorkMode.remote:
         if not pf.remote_ok and not loc.city:
             reasons.append("location: remote")

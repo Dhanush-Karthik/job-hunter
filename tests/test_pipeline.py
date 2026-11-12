@@ -10,7 +10,7 @@ from jobhunter.intake.types import RawJob
 from jobhunter.models import ApplyChannel, Lead, RoleFamily, Source, WorkMode
 from jobhunter.pipeline import ctc, ingest
 from jobhunter.pipeline.experience import parse_experience
-from jobhunter.pipeline.location import parse_location
+from jobhunter.pipeline.location import CITIES, cities_in_text, parse_location
 from jobhunter.pipeline.normalize import canonical_url, normalize
 from jobhunter.pipeline.prefilter import prefilter
 from jobhunter.pipeline.score import Scorer
@@ -54,6 +54,62 @@ def test_location_city_and_state(text, city, state):
 
 def test_location_multi_city_prefers_target():
     assert parse_location("Pune / Bengaluru / Delhi", TARGETS).city == "Bengaluru"
+
+
+def test_city_mentions_share_location_aliases_and_boundaries():
+    assert cities_in_text("Java - SECUNDERABAD / Bangalore / Bengaluru / Madras") == [
+        "Hyderabad", "Bengaluru", "Chennai",
+    ]
+    assert cities_in_text("Java Developer at PuneTech and Bengalurux") == []
+    for city, (_, aliases) in CITIES.items():
+        assert cities_in_text(f"Java Developer ({city})") == [city]
+        for alias in aliases:
+            assert cities_in_text(f"Java Developer ({alias.upper()})") == [city]
+
+
+@pytest.mark.parametrize("city", [city for city in CITIES if city not in TARGETS])
+def test_title_non_target_city_overrides_board_location(city):
+    result = check(title=f"Java Developer - Angular ({city})", location="Bengaluru")
+    assert not result.passed
+    assert f"location: title names {city}" in result.reasons
+
+
+@pytest.mark.parametrize("city,alias", [(city, alias) for city, (_, aliases) in CITIES.items()
+                                      if city not in TARGETS for alias in aliases if alias != city.lower()])
+def test_title_non_target_city_alias_overrides_board_location(city, alias):
+    result = check(title=f"Java Developer - Angular ({alias})", location="Bengaluru")
+    assert not result.passed
+    assert f"location: title names {city}" in result.reasons
+
+
+@pytest.mark.parametrize("title", [
+    "Java Developer- Angular (Hyderabad)", "Java Developer - Pune", "Java Developer (SECUNDERABAD)",
+])
+def test_title_location_conflict_drops_even_when_board_marks_remote(title):
+    assert not check(title=title, location="Bengaluru", is_remote=True).passed
+
+
+@pytest.mark.parametrize("title", [
+    "Java Developer - Hyderabad / Chennai", "Java Developer - Pune / Bangalore",
+    "Java Developer - Hyderabad (Remote)", "Java Developer - Pune - WFH",
+    "Java Developer - Pune - Work from home", "Java Developer - Hyderabad - Work from anywhere",
+    "Java Developer at PuneTech", "Java Developer",
+])
+def test_title_target_city_or_remote_keeps_recall(title):
+    assert check(title=title, location="Bengaluru").passed
+
+
+def test_title_location_uses_configured_targets():
+    settings = SETTINGS.model_copy(deep=True)
+    settings.prefilter.cities = ["Pune"]
+    n = normalize(raw(title="Java Developer - Pune", location="Pune"), settings)
+    assert prefilter(n, settings, NOW).passed
+
+
+def test_title_remote_does_not_override_foreign_remote_restrictions():
+    result = check(title="Java Developer - Hyderabad - Remote", location="US only", is_remote=True)
+    assert not result.passed
+    assert "location: remote US-only" in result.reasons
 
 
 def test_location_pan_india_and_foreign():
@@ -425,6 +481,111 @@ def test_score_uses_cv_vocabulary():
     iam = {"title": "Software Engineer", "skills": ["Keycloak", "OIDC"], "posted_at": NOW - timedelta(days=5)}
     kafka = {"title": "Software Engineer", "skills": ["Kafka", "Kubernetes"], "posted_at": NOW - timedelta(days=5)}
     assert score(cv_scorer, **iam) > score(cv_scorer, **kafka)
+
+
+def test_keyword_overlap_keeps_resolution_above_nine_hits():
+    scorer = Scorer(SETTINGS, "")
+    nine = " ".join(scorer.vocab[:9])
+    more = " ".join(scorer.vocab)
+    assert 0 < scorer.keyword_overlap("Developer", [], nine) < scorer.keyword_overlap("Developer", [], more) < 1
+    assert scorer.keyword_overlap("Developer", [], more) == scorer.keyword_overlap("Developer", [], more * 20)
+
+
+def test_keyword_repetitions_and_skill_duplicates_do_not_add_score():
+    scorer = Scorer(SETTINGS, "")
+    assert scorer.keyword_overlap("Java Developer", ["Java"], "Java " * 100) == scorer.keyword_overlap(
+        "Java Developer", ["Java", "Java"], "Java",
+    )
+
+
+@pytest.mark.parametrize("title", [
+    "Java Developer", "Spring Boot Developer", "Java Backend Engineer", "Java Springboot Backend Engineer",
+    "IAM Engineer", "Keycloak Developer", "Identity & Access Management Engineer",
+])
+def test_target_title_signals_outweigh_same_terms_in_jd(title):
+    description = f"{title}. Java Spring Boot backend microservices Keycloak IAM. 2-4 years experience."
+    assert score(title=title, description=description) > score(title="Software Engineer", description=description)
+
+
+def test_java_title_does_not_match_javascript():
+    assert score(title="Java Developer", description="Java") > score(title="JavaScript Developer", description="Java")
+
+
+@pytest.mark.parametrize("level", ["Lead", "Senior Associate", "Staff", "Principal", "Architect", "Manager", "Senior", "Sr."])
+def test_seniority_titles_rank_below_same_individual_contributor_role(level):
+    common = {"description": "Java Spring Boot backend. 3 years of experience."}
+    assert score(title=f"{level} Java Backend Engineer", **common) < score(title="Java Backend Engineer", **common)
+
+
+@pytest.mark.parametrize("title", ["Java .NET Developer", "Java Angular Developer", "Java Full Stack Developer"])
+def test_mixed_stack_titles_rank_below_java_role(title):
+    common = {"description": "Java Spring Boot microservices. 2-4 years experience.", "skills": ["Java"]}
+    assert score(title=title, **common) < score(title="Java Developer", **common)
+
+
+def test_full_stack_with_backend_emphasis_avoids_full_stack_penalty():
+    common = {"description": "Java Spring Boot backend. 2-4 years experience."}
+    assert score(title="Java Backend Full Stack Developer", **common) == score(title="Java Backend Developer", **common)
+
+
+def test_iam_adds_small_bonus_when_cv_vocabulary_does_not_include_it():
+    scorer = Scorer(SETTINGS, "Java Spring Boot")
+    common = {"title": "Java Developer"}
+    assert score(scorer, description="Backend services using Keycloak", **common) > score(
+        scorer, description="Backend services", **common,
+    )
+
+
+def test_stated_experience_fit_bonus_uses_owner_range():
+    common = {"title": "Java Backend Developer"}
+    unknown = score(description="Java Spring Boot backend", **common)
+    assert score(description="Java Spring Boot backend. 2-4 years experience.", **common) > unknown
+    assert score(description="Java Spring Boot backend. 3+ years experience.", **common) > unknown
+    assert score(description="Java Spring Boot backend. 5+ years experience.", **common) == unknown
+    assert score(description="Java Spring Boot backend. 0-1 years experience.", **common) == unknown
+    settings = SETTINGS.model_copy(deep=True)
+    settings.prefilter.exp_years = (5, 7)
+    scorer = Scorer(settings, "")
+    assert score(scorer, description="5-7 years experience.", **common) > score(
+        scorer, description="2-4 years experience.", **common,
+    )
+
+
+def test_ctc_bonus_is_small_and_requires_salary_evidence():
+    common = {"title": "Java Backend Developer"}
+    unknown = score(description="Java Spring Boot backend", **common)
+    paid = score(description="Java Spring Boot backend. Salary 12-18 LPA.", **common)
+    assert 0 < paid - unknown <= 0.031
+    assert score(description="Java Spring Boot backend. Salary 5-8 LPA.", **common) == unknown
+    assert score(description="Java Spring Boot backend. We raised $50M and have ₹500 Cr revenue.", **common) == unknown
+
+
+def test_inbound_adds_exact_same_boost_after_weighting():
+    common = {"title": "Java Developer", "source": Source.gmail_alert, "posted_at": NOW - timedelta(days=8)}
+    assert score(is_inbound=True, **common) == pytest.approx(score(is_inbound=False, **common) + .30, abs=.0001)
+
+
+@pytest.mark.parametrize("weight", [-10, 0, 1, 10])
+def test_score_clamps_even_with_extreme_source_weights(weight):
+    settings = SETTINGS.model_copy(deep=True)
+    settings.source_weights["naukri"] = weight
+    scorer = Scorer(settings, "")
+    value = score(scorer, title="Java Spring Boot Backend Engineer", description="2-4 years experience. Salary 12-18 LPA.")
+    assert 0 <= value <= 1
+
+
+def test_ingest_stores_title_location_conflict_and_respects_restore(session):
+    posting = raw("conflict", title="Java Developer - Hyderabad", location="Bengaluru")
+    result = ingest(session, [posting], SETTINGS, now=NOW, cv_text="")
+    row = stored(session)[0]
+    assert result.dropped == 1 and not row.prefilter_pass
+    assert row.prefilter_reasons == ["location: title names Hyderabad"]
+    row.restored = True
+    session.add(row)
+    session.commit()
+    ingest(session, [posting], SETTINGS, now=NOW, cv_text="")
+    assert stored(session)[0].prefilter_pass
+    assert stored(session)[0].prefilter_reasons == ["location: title names Hyderabad"]
 
 
 # ---------- unparseable URLs ----------
