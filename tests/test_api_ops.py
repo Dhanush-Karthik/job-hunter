@@ -7,7 +7,7 @@ import keyring
 from apihelpers import make_lead
 from fastapi.testclient import TestClient
 
-from jobhunter import paths
+from jobhunter import gmail, paths, secrets
 from jobhunter.api.app import create_app
 from jobhunter.models import Profile, Run, RunKind, RunState, SourceHealth, utcnow
 from jobhunter.schemas import Settings
@@ -276,3 +276,69 @@ def test_spa_mount_still_serves(tmp_path, monkeypatch, fakes):
         assert c.get("/leads/42").text == "<html>spa</html>"
         assert c.get("/assets/a.js").text == "1"
         assert c.get("/api/openapi.json").status_code == 200
+
+
+# ---------- gmail-test ----------
+
+
+def stub_login(monkeypatch, result):
+    calls = []
+
+    def check_login(address, app_password):
+        calls.append((address, app_password))
+        if isinstance(result, Exception):
+            raise result
+        return result
+
+    monkeypatch.setattr(gmail, "check_login", check_login)
+    return calls
+
+
+def test_gmail_test_without_secrets_never_calls_gmail(client, fakes, monkeypatch):
+    calls = stub_login(monkeypatch, None)
+    assert client.post("/api/setup/gmail-test").json() == {"ok": False, "detail": "Gmail address and app password not set"}
+    keyring.set_password("jobhunter", "gmail_address", "me@example.com")
+    assert client.post("/api/setup/gmail-test").json() == {"ok": False, "detail": "Gmail app password not set"}
+    keyring.delete_password("jobhunter", "gmail_address")
+    keyring.set_password("jobhunter", "gmail_app_password", "pw")
+    assert client.post("/api/setup/gmail-test").json() == {"ok": False, "detail": "Gmail address not set"}
+    assert calls == []
+
+
+def test_gmail_test_success_passes_keychain_secrets_and_never_echoes_the_password(client, fakes, monkeypatch):
+    keyring.set_password("jobhunter", "gmail_address", "me@example.com")
+    keyring.set_password("jobhunter", "gmail_app_password", "s3cr3t-app-pass")
+    calls = stub_login(monkeypatch, None)
+    r = client.post("/api/setup/gmail-test")
+    assert r.status_code == 200 and r.json()["ok"] is True
+    assert calls == [("me@example.com", "s3cr3t-app-pass")]
+    assert "s3cr3t-app-pass" not in r.text
+
+
+def test_gmail_test_failure_reason_is_returned_as_ok_false(client, fakes, monkeypatch):
+    keyring.set_password("jobhunter", "gmail_address", "me@example.com")
+    keyring.set_password("jobhunter", "gmail_app_password", "s3cr3t-app-pass")
+    stub_login(monkeypatch, "Gmail rejected the app password")
+    r = client.post("/api/setup/gmail-test")
+    assert r.json() == {"ok": False, "detail": "Gmail rejected the app password"}
+    stub_login(monkeypatch, "server said: bad s3cr3t-app-pass")
+    assert "s3cr3t-app-pass" not in client.post("/api/setup/gmail-test").text
+
+
+def test_gmail_test_survives_a_crashing_check_without_leaking(client, fakes, monkeypatch, caplog):
+    keyring.set_password("jobhunter", "gmail_address", "me@example.com")
+    keyring.set_password("jobhunter", "gmail_app_password", "s3cr3t-app-pass")
+    stub_login(monkeypatch, OSError("connection to s3cr3t-app-pass failed"))
+    r = client.post("/api/setup/gmail-test")
+    assert r.status_code == 200 and r.json() == {"ok": False, "detail": "Gmail login check failed (OSError)"}
+    assert "s3cr3t-app-pass" not in r.text + caplog.text
+
+
+def test_gmail_test_keychain_failure_is_503(client, fakes, monkeypatch):
+    from keyring.errors import KeyringError
+
+    def boom(*a):
+        raise KeyringError("locked")
+
+    monkeypatch.setattr(secrets, "get", boom)
+    assert client.post("/api/setup/gmail-test").status_code == 503

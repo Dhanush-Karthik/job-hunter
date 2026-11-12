@@ -10,6 +10,7 @@ from fastapi import Depends
 from sqlmodel import Session
 
 from jobhunter.db import get_session
+from jobhunter.followups import add_business_days
 from jobhunter.pipeline.normalize import as_utc
 
 SessionDep = Annotated[Session, Depends(get_session)]
@@ -35,13 +36,9 @@ def db_dt(dt: datetime) -> datetime:
     return as_utc(dt)
 
 
-def add_weekdays(dt: datetime, days: int) -> datetime:
-    """`dt` plus `days` Monday-Friday days (holidays come in Wave 3)."""
-    while days > 0:
-        dt += timedelta(days=1)
-        if dt.astimezone(LOCAL_TZ).weekday() < 5:
-            days -= 1
-    return dt
+def add_weekdays(dt: datetime, days: int, extra_holidays: list[str] | None = None) -> datetime:
+    """`dt` plus `days` IST business days (Monday-Friday minus holidays); see followups.add_business_days."""
+    return add_business_days(dt, days, extra_holidays)
 
 
 def week_start(now: datetime, weeks_back: int = 0) -> datetime:

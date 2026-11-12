@@ -9,12 +9,11 @@ from fastapi import APIRouter, HTTPException, Response
 from keyring.errors import KeyringError
 from sqlmodel import select
 
-from jobhunter import paths, secrets
+from jobhunter import gmail, paths, secrets
 from jobhunter import settings as app_settings
 from jobhunter.api.deps import SessionDep, as_utc, now_utc
 from jobhunter.jobs import scheduler
 from jobhunter.models import Profile, Source, SourceHealth
-from jobhunter.api._stub import todo
 from jobhunter.schemas import (
     CheckResult,
     CvUpload,
@@ -227,4 +226,15 @@ def put_cv(body: CvUpload) -> SetupStatus:
 @router.post("/setup/gmail-test", response_model=CheckResult, operation_id="testGmail")
 def test_gmail() -> CheckResult:
     """Log in to Gmail IMAP with the Keychain secrets (read-only, no mail fetched); ok=False + reason on failure."""
-    raise todo()
+    address, password = _keychain(secrets.get, "gmail_address"), _keychain(secrets.get, "gmail_app_password")
+    missing = [label for label, value in (("address", address), ("app password", password)) if not value]
+    if missing:
+        return CheckResult(ok=False, detail=f"Gmail {' and '.join(missing)} not set")
+    try:
+        reason = gmail.check_login(address, password)
+    except Exception as exc:  # noqa: BLE001 - any failure is a result for the setup wizard, not a 500
+        log.warning("gmail login check crashed: %s", type(exc).__name__)
+        return CheckResult(ok=False, detail=f"Gmail login check failed ({type(exc).__name__})")
+    if reason is not None:
+        return CheckResult(ok=False, detail=reason.replace(password, "***"))
+    return CheckResult(ok=True, detail=f"Logged in to Gmail as {address} (read-only)")

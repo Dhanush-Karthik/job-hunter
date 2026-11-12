@@ -1,12 +1,13 @@
-"""Run engine (Wave 2 contract, lead-owned signatures; codex_jobs implements the bodies).
+"""Run engine.
 
 A Run row is the unit of background work. `submit` inserts it as queued and hands it to a worker pool:
   - LLM/browser kinds (evaluate, cv, contacts, assist_apply, verify) share one pool of
     settings.claude_concurrency workers,
   - intake kinds (intake_boards, intake_remote, careerops_scan, intake_gmail) share a single worker.
 The worker sets running/started_at, opens data/logs/runs/<id>.log (Run.log_path), calls the matching function
-(intake.boards.fetch_boards + pipeline.ingest, or jobhunter.careerops.*), then writes succeeded/failed/cancelled,
-finished_at, summary, error. Every state change is published to subscribers (SSE).
+(intake.boards.fetch_boards + pipeline.ingest, jobhunter.careerops.*, jobhunter.gmail.run_intake or
+jobhunter.followups.run), then writes succeeded/failed/cancelled, finished_at, summary, error. Every state change
+is published to subscribers (SSE). After a successful intake the new leads go to notify.notify_new_leads.
 """
 
 from __future__ import annotations
@@ -18,14 +19,15 @@ import traceback
 from collections import deque
 from collections.abc import AsyncIterator, Callable
 from concurrent.futures import Executor, ThreadPoolExecutor
+from datetime import datetime
 from typing import Any, TextIO
 
 from sqlmodel import Session, select
 
-from jobhunter import careerops, paths
+from jobhunter import careerops, notify, paths
 from jobhunter.db import get_engine
-from jobhunter.models import Lead, ResumeVariant, Run, RunKind, RunState, utcnow
-from jobhunter.schemas import RunOut
+from jobhunter.models import Lead, ResumeVariant, Run, RunKind, RunState, Source, utcnow
+from jobhunter.schemas import RunOut, Settings
 from jobhunter.settings import get_settings
 
 engine_factory = get_engine
@@ -61,12 +63,39 @@ def _publish(run: Run) -> None:
             _logger.exception("Run event observer failed")
 
 
+def _gmail_leads_since(session: Session, started: datetime) -> list[int]:
+    """Leads a Gmail run created (alerts and inbound); run_intake returns counts, not ids."""
+    return list(session.exec(
+        select(Lead.id).where(Lead.source.in_((Source.gmail_alert, Source.gmail_inbound)), Lead.found_at >= started)
+    ))
+
+
+def _notify_leads(session: Session, settings: Settings, lead_ids: list[int]) -> None:
+    """Desktop alert for hot new leads; a notification problem never fails the run."""
+    try:
+        notify.notify_new_leads(session, settings, lead_ids)
+    except Exception:
+        _logger.exception("lead notification failed")
+
+
 def _dispatch(session: Session, run: Run, log: TextIO, flag: threading.Event) -> str:
     with _lock:
         settings = get_settings(session)
         session.rollback()
+    if run.kind == RunKind.followups:
+        from jobhunter import followups
+
+        return followups.run(session, settings).summary()
     if run.kind == RunKind.intake_gmail:
-        return "Gmail intake arrives in Wave 3"
+        from jobhunter import gmail
+
+        started = utcnow()
+        try:
+            result = gmail.run_intake(session, settings, log=log, should_cancel=flag.is_set)
+        except gmail.GmailError as exc:
+            raise careerops.BridgeError(str(exc)) from exc
+        _notify_leads(session, settings, _gmail_leads_since(session, started))
+        return result.summary()
     if run.kind == RunKind.intake_boards:
         from jobhunter.intake import boards
         from jobhunter.pipeline import ingest
@@ -74,9 +103,13 @@ def _dispatch(session: Session, run: Run, log: TextIO, flag: threading.Event) ->
         raws = boards.fetch_boards(session, settings)
         if flag.is_set():
             raise careerops.Cancelled("cancelled")
-        return ingest(session, raws, settings).summary()
+        ingested = ingest(session, raws, settings)
+        _notify_leads(session, settings, ingested.lead_ids)
+        return ingested.summary()
     if run.kind in (RunKind.careerops_scan, RunKind.intake_remote):
-        return careerops.scan(session, settings, log=log, should_cancel=flag.is_set).summary()
+        scanned = careerops.scan(session, settings, log=log, should_cancel=flag.is_set)
+        _notify_leads(session, settings, scanned.lead_ids)
+        return scanned.summary()
     kwargs = {"run_id": run.id, "log": log, "should_cancel": flag.is_set}
     if run.kind == RunKind.cv:
         careerops.generate_cv(session, run.lead_id, ResumeVariant(run.params["variant"]), **kwargs)

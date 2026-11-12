@@ -96,9 +96,20 @@ def test_today_actions_in_order(client, db, fakes):
                     evidence="invite"))
     db.add(Proposal(type=ProposalType.inbound, state=ProposalState.dismissed))
     due_lead = make_lead(db, company="DueCo")
-    make_app(db, due_lead, AppStatus.applied, next_follow_up_at=now - timedelta(days=1))
-    make_app(db, make_lead(db), AppStatus.applied, next_follow_up_at=now + timedelta(days=2))  # not due
-    make_app(db, make_lead(db), AppStatus.rejected, next_follow_up_at=now - timedelta(days=1))  # closed
+    due_app = make_app(db, due_lead, AppStatus.applied, next_follow_up_at=now - timedelta(days=1))
+    day = timedelta(days=1)
+    # only an unsent, unsnoozed, due follow-up on a still-Applied application is an action
+    db.add(Outreach(kind=OutreachKind.follow_up, application_id=due_app.id, lead_id=due_lead.id, due_at=now - day))
+    not_due = make_app(db, make_lead(db), AppStatus.applied)
+    db.add(Outreach(kind=OutreachKind.follow_up, application_id=not_due.id, due_at=now + 2 * day))
+    sent = make_app(db, make_lead(db), AppStatus.applied)
+    db.add(Outreach(kind=OutreachKind.follow_up, application_id=sent.id, due_at=now - day, sent_at=now))
+    snoozed = make_app(db, make_lead(db), AppStatus.applied)
+    db.add(Outreach(kind=OutreachKind.follow_up, application_id=snoozed.id, due_at=now - day,
+                    snoozed_until=now + day))
+    closed = make_app(db, make_lead(db), AppStatus.rejected)
+    db.add(Outreach(kind=OutreachKind.follow_up, application_id=closed.id, due_at=now - day))
+    make_app(db, make_lead(db), AppStatus.applied, next_follow_up_at=now - day)  # due, but run() has not drafted it
     cv_lead = make_lead(db, company="CvCo", title="Dev")
     make_app(db, cv_lead, AppStatus.shortlisted, cv_pdf_path="x.pdf", resume_variant=ResumeVariant.a)
     make_app(db, make_lead(db), AppStatus.applied, cv_pdf_path="y.pdf")  # applied without approval: no review
@@ -115,7 +126,9 @@ def test_today_actions_in_order(client, db, fakes):
     assert by_kind["inbound"]["title"] == "Recruiter Co — SDE" and by_kind["inbound"]["lead_id"] == inbound_lead.id
     assert by_kind["inbound"]["proposal_id"] is not None and by_kind["inbound"]["subtitle"] == "Hi, role at RC"
     assert "Replier" in by_kind["proposal"]["title"] and by_kind["proposal"]["application_id"] == reply_app.id
-    assert by_kind["follow_up"]["title"] == "Follow up: DueCo" and by_kind["follow_up"]["due_at"] is not None
+    assert [a["title"] for a in body["actions"] if a["kind"] == "follow_up"] == ["Follow up: DueCo"]
+    assert by_kind["follow_up"]["due_at"] is not None and by_kind["follow_up"]["outreach_id"] is not None
+    assert by_kind["follow_up"]["application_id"] == due_app.id
     assert by_kind["cv_review"]["title"] == "Approve CV for CvCo Dev"
     assert by_kind["quick_apply"]["title"].startswith("2 ")
     assert by_kind["referral"]["outreach_id"] is not None and by_kind["referral"]["subtitle"] == "Sam"
@@ -240,3 +253,27 @@ def test_reject_audit(client, db):
     assert set(rows[0]["sample_lead_ids"]) <= {*ids, both.id}
     old = client.get("/api/analytics/rejects", params={"date_to": (utcnow() - timedelta(days=1)).isoformat()})
     assert old.json() == []
+
+
+# ---------- insights route ----------
+
+
+def test_insights_with_little_data_is_one_info_item(client):
+    body = client.get("/api/analytics/insights").json()
+    assert [(i["kind"], i["severity"]) for i in body] == [("pace", "info")]
+    assert "5 more" in body[0]["text"]
+
+
+def test_insights_with_data_and_days_window(client, db):
+    for i in range(6):
+        app = make_app(db, make_lead(db, source=Source.naukri), AppStatus.applied)
+        add_event(db, app, AppStatus.applied, utcnow() - timedelta(days=40))
+        if i < 3:
+            add_event(db, app, AppStatus.screening, utcnow() - timedelta(days=38))
+    assert [i["kind"] for i in client.get("/api/analytics/insights").json()] == ["pace"]  # outside 30 days
+    wide = client.get("/api/analytics/insights", params={"days": 90}).json()
+    kinds = {i["kind"]: i for i in wide}
+    assert "best_source" in kinds and "Naukri: 3 calls from 6 applies (50%)" in kinds["best_source"]["text"]
+    assert set(kinds["best_source"]) == {"kind", "text", "severity", "metric"}
+    assert client.get("/api/analytics/insights", params={"days": 0}).status_code == 200  # clamped, not rejected
+    assert client.get("/api/analytics/insights", params={"days": "x"}).status_code == 422

@@ -10,15 +10,15 @@ from datetime import datetime, timedelta
 from typing import Literal
 
 from fastapi import APIRouter
+from sqlalchemy import or_
 from sqlmodel import Session, select
 
+from jobhunter import analytics
 from jobhunter.api import convert, queries
-from jobhunter.api._stub import todo
 from jobhunter.api.config import ensure_profiles, profile_due
 from jobhunter.api.deps import SessionDep, db_dt, now_utc, week_start
 from jobhunter.jobs import scheduler
 from jobhunter.models import (
-    TERMINAL,
     Application,
     ApplyChannel,
     AppStatus,
@@ -88,14 +88,16 @@ def _actions(session: Session, now: datetime) -> list[ActionItem]:
             ))
 
     due = session.exec(
-        select(Application, Lead).join(Lead, Lead.id == Application.lead_id)
-        .where(Application.next_follow_up_at.is_not(None), Application.next_follow_up_at <= db_dt(now))
-        .where(Application.status.not_in(list(TERMINAL))).order_by(Application.next_follow_up_at)
+        select(Outreach).join(Application, Application.id == Outreach.application_id)
+        .where(Outreach.kind == OutreachKind.follow_up, Outreach.sent_at.is_(None))
+        .where(Outreach.due_at.is_not(None), Outreach.due_at <= db_dt(now))
+        .where(or_(Outreach.snoozed_until.is_(None), Outreach.snoozed_until <= db_dt(now)))
+        .where(Application.status == AppStatus.applied).order_by(Outreach.due_at, Outreach.id)
     ).all()
-    for app, lead in due:
+    for o in convert.outreach_outs(session, list(due)):
         items.append(ActionItem(
-            kind="follow_up", title=f"Follow up: {lead.company}", subtitle=lead.title, lead_id=lead.id,
-            application_id=app.id, due_at=convert.as_utc(app.next_follow_up_at),
+            kind="follow_up", title=f"Follow up: {o.company or 'company'}", subtitle=o.title, lead_id=o.lead_id,
+            application_id=o.application_id, outreach_id=o.id, due_at=o.due_at,
         ))
 
     # only Shortlisted: Applied/Skipped ones keep a PDF that never needs approving
@@ -303,4 +305,4 @@ def rejects(
 @router.get("/analytics/insights", response_model=list[Insight], operation_id="analyticsInsights")
 def insights(session: SessionDep, days: int = 30) -> list[Insight]:
     """Rule-based observations over the last `days` days (jobhunter.analytics.insights)."""
-    raise todo()
+    return analytics.insights(session, days=max(1, min(days, 365)))

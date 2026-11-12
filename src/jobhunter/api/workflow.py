@@ -8,9 +8,18 @@ from fastapi import HTTPException
 from sqlmodel import Session, select
 
 from jobhunter.api.deps import add_weekdays, fits, now_utc
-from jobhunter.models import TRANSITIONS, Actor, Application, AppStatus, Event, Lead
+from jobhunter.models import TRANSITIONS, Actor, Application, AppStatus, Event, Lead, SettingRow
+from jobhunter.schemas import FollowupRules, Settings
+from jobhunter.settings import KEY as SETTINGS_KEY
+from jobhunter.settings import load_defaults
 
 MAIN_LINE = [AppStatus.new, AppStatus.shortlisted, AppStatus.ready, AppStatus.applied]
+
+
+def _followup_rules(session: Session) -> FollowupRules:
+    """Read-only (settings.get_settings may commit the default row, and transition() must not commit)."""
+    row = session.get(SettingRow, SETTINGS_KEY)
+    return (Settings.model_validate(row.value) if row else load_defaults()).followups
 
 
 def unprocessable(field: str, msg: str, where: str = "body") -> HTTPException:
@@ -84,7 +93,8 @@ def transition(
     _move(session, app, to, actor, note, now)
     if to == AppStatus.applied:
         app.applied_at = now
-        app.next_follow_up_at = add_weekdays(now, 5)
+        rules = _followup_rules(session)
+        app.next_follow_up_at = add_weekdays(now, rules.follow_up_business_days, rules.extra_holidays)
     session.add(app)
     return app
 

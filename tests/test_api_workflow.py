@@ -8,7 +8,8 @@ import pytest
 from apihelpers import make_app, make_eval, make_event, make_lead
 from sqlmodel import select
 
-from jobhunter import paths
+from jobhunter import followups, paths
+from jobhunter.api import workflow
 from jobhunter.api.deps import LOCAL_TZ, add_weekdays, week_start
 from jobhunter.models import (
     Actor,
@@ -21,6 +22,7 @@ from jobhunter.models import (
     ProposalState,
     ProposalType,
     ResumeVariant,
+    SettingRow,
     utcnow,
 )
 
@@ -149,8 +151,39 @@ def test_applied_sets_follow_up_five_weekdays_out(client, db):
     body = post_transition(client, app.id, "Applied").json()
     applied, due = (datetime.fromisoformat(body[k]) for k in ("applied_at", "next_follow_up_at"))
     assert due.astimezone(LOCAL_TZ).weekday() < 5
-    assert timedelta(days=5) <= due - applied <= timedelta(days=7)
+    assert timedelta(days=5) <= due - applied <= timedelta(days=12)  # weekends plus any holiday in between
     assert due == add_weekdays(applied, 5)
+    assert followups.is_business_day(due.astimezone(LOCAL_TZ).date())
+
+
+def test_follow_up_uses_the_settings_business_days_and_extra_holidays(client, db, monkeypatch):
+    from jobhunter import settings as app_settings
+
+    frozen = datetime(2026, 11, 12, 5, 0, tzinfo=UTC)  # Thu 10:30 IST
+    monkeypatch.setattr(workflow, "now_utc", lambda: frozen)
+    rules = app_settings.load_defaults().model_copy(deep=True)
+    rules.followups.follow_up_business_days = 2
+    rules.followups.extra_holidays = ["2026-11-16"]
+    app_settings.save_settings(db, rules)
+    app = make_app(db, make_lead(db), AppStatus.ready)
+    body = post_transition(client, app.id, "Applied").json()
+    # Fri 13 counts, the weekend and the custom Mon 16 holiday do not -> Tue 17 Nov
+    assert datetime.fromisoformat(body["next_follow_up_at"]) == datetime(2026, 11, 17, 5, 0, tzinfo=UTC)
+
+
+def test_follow_up_defaults_when_settings_were_never_saved(client, db, monkeypatch):
+    frozen = datetime(2026, 11, 12, 5, 0, tzinfo=UTC)
+    monkeypatch.setattr(workflow, "now_utc", lambda: frozen)
+    app = make_app(db, make_lead(db), AppStatus.ready)
+    body = post_transition(client, app.id, "Applied").json()
+    assert datetime.fromisoformat(body["next_follow_up_at"]) == datetime(2026, 11, 19, 5, 0, tzinfo=UTC)
+    assert db.get(SettingRow, "app") is None  # reading the rules did not write settings
+
+
+def test_add_weekdays_skips_ist_holidays():
+    ist = lambda *a: datetime(*a, tzinfo=LOCAL_TZ)
+    assert add_weekdays(ist(2026, 10, 1, 10), 1) == ist(2026, 10, 5, 10)  # Fri 2 Oct is Gandhi Jayanti
+    assert add_weekdays(ist(2026, 10, 1, 10), 1, ["2026-10-05"]) == ist(2026, 10, 6, 10)
 
 
 def test_add_weekdays_skips_weekends():

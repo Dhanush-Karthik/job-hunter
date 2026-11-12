@@ -1,9 +1,11 @@
-"""APScheduler wiring (Wave 2 contract, lead-owned signatures; codex_jobs implements the bodies).
+"""APScheduler wiring.
 
 Local timezone (Asia/Kolkata on the owner's Mac). Jobs, all via runner.submit:
   - intake_boards every settings.schedules.boards_every_hours inside boards_window [start, end)
   - careerops_scan at careerops_scan_times; when it succeeds -> auto_evaluate()
-  - intake_gmail: Wave 3 (not scheduled yet)
+  - intake_gmail every settings.schedules.gmail_every_minutes; each firing is skipped quietly unless both Gmail
+    secrets are in the Keychain and SourceHealth "gmail_alert" is enabled and not paused
+  - followups hourly 08:00-21:00 local
 Skips a source whose SourceHealth is disabled or paused. coalesce=True, max_instances=1, misfire grace 1 h.
 """
 
@@ -17,9 +19,11 @@ from zoneinfo import ZoneInfo
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
+from apscheduler.triggers.interval import IntervalTrigger
+from keyring.errors import KeyringError
 from sqlmodel import Session, select
 
-from jobhunter import paths
+from jobhunter import gmail, paths, secrets
 from jobhunter.jobs import runner
 from jobhunter.models import (
     Application,
@@ -29,6 +33,7 @@ from jobhunter.models import (
     Run,
     RunKind,
     RunState,
+    Source,
     SourceHealth,
     utcnow,
 )
@@ -53,7 +58,16 @@ def _available(health: SourceHealth | None, at: datetime) -> bool:
     )
 
 
+def _gmail_configured() -> bool:
+    try:
+        return all(secrets.present(name) for name in secrets.NAMES)
+    except KeyringError:
+        return False
+
+
 def _scheduled(kind: RunKind) -> None:
+    if kind == RunKind.intake_gmail and not _gmail_configured():
+        return
     with Session(runner.engine_factory()) as session:
         settings = get_settings(session)
         at = _utc(now())
@@ -61,6 +75,9 @@ def _scheduled(kind: RunKind) -> None:
             if not any(
                 _available(session.get(SourceHealth, site.value), at) for site in settings.query_matrix.sites
             ):
+                return
+        elif kind == RunKind.intake_gmail:
+            if not _available(session.get(SourceHealth, Source.gmail_alert.value), at):
                 return
         elif not _available(session.get(SourceHealth, kind.value), at):
             return
@@ -133,6 +150,20 @@ def reload(settings: Settings) -> None:
             id=f"careerops_scan_{hour:02d}{minute:02d}",
             replace_existing=True,
         )
+    _scheduler.add_job(
+        _scheduled,
+        IntervalTrigger(minutes=settings.schedules.gmail_every_minutes, timezone=TIMEZONE),
+        args=[RunKind.intake_gmail],
+        id="intake_gmail",
+        replace_existing=True,
+    )
+    _scheduler.add_job(
+        _scheduled,
+        CronTrigger(hour="8-21", minute=0, timezone=TIMEZONE),
+        args=[RunKind.followups],
+        id="followups",
+        replace_existing=True,
+    )
 
 
 def is_running() -> bool:
@@ -142,7 +173,7 @@ def is_running() -> bool:
 def services() -> list[ServiceHealth]:
     """For /api/health and the Today page: scheduler (next run times), claude CLI on PATH (or
     JOBHUNTER_CLAUDE_BIN), career-ops checked out + node_modules, playwright chromium, one row per board source
-    from SourceHealth (ok = enabled, not paused, last run ok), gmail (ok=False, detail "Wave 3")."""
+    from SourceHealth (ok = enabled, not paused, last run ok), gmail via gmail.health."""
     at = _utc(now())
     next_runs = []
     for job in _scheduler.get_jobs():
@@ -187,7 +218,10 @@ def services() -> list[ServiceHealth]:
                         health.last_error or f"{health.last_count} fetched; last run {health.last_run_at}"
                     )
             result.append(ServiceHealth(name=site.value, ok=ok, detail=detail))
-    result.append(ServiceHealth(name="gmail", ok=False, detail="Wave 3"))
+        try:
+            result.append(gmail.health(session))
+        except Exception as exc:  # noqa: BLE001 - a broken probe is a red row, not a failed health check
+            result.append(ServiceHealth(name="gmail", ok=False, detail=str(exc) or type(exc).__name__))
     return result
 
 

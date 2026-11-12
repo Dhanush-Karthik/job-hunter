@@ -10,7 +10,7 @@ import pytest
 from apscheduler.schedulers.background import BackgroundScheduler
 from sqlmodel import Session, select
 
-from jobhunter import careerops, paths, pipeline
+from jobhunter import careerops, followups, gmail, notify, paths, pipeline, secrets
 from jobhunter.intake import boards
 from jobhunter.intake.types import IngestResult
 from jobhunter.jobs import runner, scheduler
@@ -26,6 +26,7 @@ from jobhunter.models import (
     Source,
     SourceHealth,
 )
+from jobhunter.schemas import ServiceHealth
 from jobhunter.settings import load_defaults, save_settings
 
 NOW = datetime(2026, 11, 12, 19, tzinfo=UTC)  # Already Nov 13 in India.
@@ -65,6 +66,9 @@ def jobs(session, monkeypatch, tmp_path):
     settings = load_defaults(paths.CONFIG_EXAMPLE)
     save_settings(session, settings)
     monkeypatch.setattr(runner, "engine_factory", lambda: engine)
+    monkeypatch.setenv("JOBHUNTER_NOTIFY", "0")  # never show real desktop notifications from tests
+    monkeypatch.setattr(gmail, "run_intake", lambda *args, **kwargs: gmail.GmailResult())
+    monkeypatch.setattr(gmail, "health", lambda session: ServiceHealth(name="gmail", ok=True, detail="fake"))
     monkeypatch.setattr(runner, "executor_factory", DeferredExecutor)
     monkeypatch.setattr(runner, "_claude_pool", None)
     monkeypatch.setattr(runner, "_intake_pool", None)
@@ -144,7 +148,7 @@ def test_concurrent_submit_is_atomic(jobs, session):
     assert len(runner._claude_pool.calls) == 1
 
 
-def test_states_and_gmail_placeholder(jobs, session):
+def test_states_and_gmail_intake(jobs, session):
     updates = []
     runner.event_hooks.append(updates.append)
     queued = runner.submit(RunKind.intake_gmail)
@@ -153,7 +157,7 @@ def test_states_and_gmail_placeholder(jobs, session):
     done = stored(session, queued.id)
     assert done.state == RunState.succeeded
     assert done.started_at and done.finished_at
-    assert done.summary == "Gmail intake arrives in Wave 3"
+    assert done.summary == gmail.GmailResult().summary()
     assert done.error is None
     assert [event.state for event in updates] == [RunState.queued, RunState.running, RunState.succeeded]
     assert runner.to_out(done).model_dump() == updates[-1].model_dump()
@@ -471,7 +475,7 @@ def test_auto_evaluate_zero_budget(jobs, session):
 def test_reload_replaces_jobs_and_matches_local_hours(jobs):
     scheduler.reload(jobs)
     scheduled = {job.id: job for job in scheduler._scheduler.get_jobs()}
-    assert set(scheduled) == {"intake_boards", "careerops_scan_0800", "careerops_scan_1700"}
+    assert set(scheduled) == {"intake_boards", "careerops_scan_0800", "careerops_scan_1700", "intake_gmail", "followups"}
     boards_job = scheduled["intake_boards"]
     assert str(boards_job.trigger.timezone) == "Asia/Kolkata"
     fire = datetime(2026, 11, 12, 0, tzinfo=scheduler.TIMEZONE)
@@ -492,6 +496,8 @@ def test_reload_replaces_jobs_and_matches_local_hours(jobs):
     assert {job.id for job in scheduler._scheduler.get_jobs()} == {
         "intake_boards",
         "careerops_scan_0915",
+        "intake_gmail",
+        "followups",
     }
 
 
@@ -526,7 +532,7 @@ def test_scheduler_start_is_idempotent_and_recovers(jobs, session, monkeypatch):
     scheduler.start()
     scheduler.start()
     assert scheduler.is_running()
-    assert len(scheduler._scheduler.get_jobs()) == 3
+    assert len(scheduler._scheduler.get_jobs()) == 5
     assert runner.event_hooks.count(scheduler._scan_finished) == 1
     assert session.exec(select(Run)).one().error == "server restarted"
     for job in scheduler._scheduler.get_jobs():
@@ -586,10 +592,191 @@ def test_services_reports_runtime_and_board_health(jobs, session, monkeypatch, t
     assert not result["naukri"].ok and result["naukri"].detail == "disabled"
     assert not result["indeed"].ok and "paused" in result["indeed"].detail
     assert not result["glassdoor"].ok and result["glassdoor"].detail == "429"
-    assert not result["gmail"].ok and result["gmail"].detail == "Wave 3"
+    assert result["gmail"].ok and result["gmail"].detail == "fake"
 
 
 def test_synchronous_executor_can_be_injected(jobs, session, monkeypatch):
     monkeypatch.setattr(runner, "executor_factory", ImmediateExecutor)
     run = runner.submit(RunKind.intake_gmail)
     assert stored(session, run.id).state == RunState.succeeded
+
+
+# ---------- Wave 3: gmail / followups dispatch, notifications, schedule ----------
+
+
+def test_gmail_dispatch_runs_intake_and_notifies_about_its_leads(jobs, session, monkeypatch):
+    seen, notified = {}, []
+
+    def run_intake(worker_session, settings, *, log, should_cancel):
+        assert worker_session is not session and not should_cancel()
+        log.write("reading mail\n")
+        seen["settings"] = settings
+        for ref, source, found in (
+            ("new-alert", Source.gmail_alert, NOW),
+            ("new-inbound", Source.gmail_inbound, NOW + timedelta(seconds=1)),
+            ("other-source", Source.manual, NOW),
+            ("old-alert", Source.gmail_alert, NOW - timedelta(days=1)),
+        ):
+            worker_session.add(Lead(source=source, source_ref=ref, title="Java", company="Acme", found_at=found))
+        worker_session.commit()
+        return gmail.GmailResult(messages=4, cards=2)
+
+    monkeypatch.setattr(gmail, "run_intake", run_intake)
+    monkeypatch.setattr(notify, "notify_new_leads", lambda s, settings, ids: notified.append(sorted(ids)) or len(ids))
+    run = runner.submit(RunKind.intake_gmail)
+    runner._intake_pool.drain()
+    done = stored(session, run.id)
+    assert done.state == RunState.succeeded and done.summary == gmail.GmailResult(messages=4, cards=2).summary()
+    assert "reading mail" in runner.read_log(run.id)[0]
+    ids = {row.source_ref: row.id for row in session.exec(select(Lead))}
+    assert notified == [sorted([ids["new-alert"], ids["new-inbound"]])]
+    assert seen["settings"].schedules.gmail_every_minutes == jobs.schedules.gmail_every_minutes
+
+
+def test_gmail_error_fails_the_run_with_its_message(jobs, session, monkeypatch):
+    def run_intake(*args, **kwargs):
+        raise gmail.GmailError("Gmail app password not set")
+
+    monkeypatch.setattr(gmail, "run_intake", run_intake)
+    run = runner.submit(RunKind.intake_gmail)
+    runner._intake_pool.drain()
+    done = stored(session, run.id)
+    assert done.state == RunState.failed and done.error == "Gmail app password not set"
+
+
+def test_followups_dispatch(jobs, session, monkeypatch):
+    calls = []
+
+    def fake_run(worker_session, settings, **kwargs):
+        assert worker_session is not session
+        calls.append(settings)
+        return followups.FollowupResult(follow_ups_created=2, ghosted_proposals=1, notifications=3)
+
+    monkeypatch.setattr(followups, "run", fake_run)
+    run = runner.submit(RunKind.followups)
+    runner._intake_pool.drain()
+    done = stored(session, run.id)
+    assert done.state == RunState.succeeded
+    assert done.summary == "2 follow-ups due, 1 ghosted proposals, 3 notifications"
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("kind", [RunKind.intake_boards, RunKind.careerops_scan, RunKind.intake_remote])
+def test_successful_intake_notifies_with_new_lead_ids(jobs, session, monkeypatch, kind):
+    notified = []
+    monkeypatch.setattr(notify, "notify_new_leads", lambda s, settings, ids: notified.append(list(ids)) or 0)
+    result = IngestResult(fetched=2, new=2, lead_ids=[7, 8])
+    monkeypatch.setattr(boards, "fetch_boards", lambda *args: [])
+    monkeypatch.setattr(pipeline, "ingest", lambda *args, **kwargs: result)
+    monkeypatch.setattr(careerops, "scan", lambda *args, **kwargs: result)
+    run = runner.submit(kind)
+    runner._intake_pool.drain()
+    assert stored(session, run.id).state == RunState.succeeded
+    assert notified == [[7, 8]]
+
+
+def test_failed_intake_does_not_notify_and_notify_errors_do_not_fail_the_run(jobs, session, monkeypatch):
+    notified = []
+
+    def boom(*args, **kwargs):
+        notified.append(1)
+        raise RuntimeError("osascript exploded")
+
+    monkeypatch.setattr(notify, "notify_new_leads", boom)
+    monkeypatch.setattr(careerops, "scan", lambda *args, **kwargs: (_ for _ in ()).throw(careerops.BridgeError("x")))
+    failed = runner.submit(RunKind.careerops_scan)
+    runner._intake_pool.drain()
+    assert stored(session, failed.id).state == RunState.failed and not notified
+    monkeypatch.setattr(careerops, "scan", lambda *args, **kwargs: IngestResult(lead_ids=[1]))
+    ok = runner.submit(RunKind.careerops_scan)
+    runner._intake_pool.drain()
+    assert stored(session, ok.id).state == RunState.succeeded and notified == [1]
+
+
+def keychain(monkeypatch, present):
+    monkeypatch.setattr(secrets, "present", lambda name: name in present)
+
+
+def test_scheduler_registers_gmail_and_followups_jobs(jobs):
+    scheduler.reload(jobs)
+    scheduled = {job.id: job for job in scheduler._scheduler.get_jobs()}
+    gmail_job = scheduled["intake_gmail"]
+    assert gmail_job.args == (RunKind.intake_gmail,)
+    assert gmail_job.trigger.interval == timedelta(minutes=jobs.schedules.gmail_every_minutes)
+    follow_job = scheduled["followups"]
+    assert follow_job.args == (RunKind.followups,)
+    fire, hours = datetime(2026, 11, 12, 0, tzinfo=scheduler.TIMEZONE), []
+    while True:
+        fire = follow_job.trigger.get_next_fire_time(None, fire)
+        if fire.day != 12:
+            break
+        hours.append((fire.hour, fire.minute))
+        fire += timedelta(seconds=1)
+    assert hours == [(h, 0) for h in range(8, 22)]
+    jobs.schedules.gmail_every_minutes = 45
+    scheduler.reload(jobs)
+    assert scheduler._scheduler.get_job("intake_gmail").trigger.interval == timedelta(minutes=45)
+
+
+def test_gmail_job_needs_both_secrets(jobs, monkeypatch):
+    calls = []
+    monkeypatch.setattr(runner, "submit", lambda kind, **kwargs: calls.append(kind))
+    for present in (set(), {"gmail_address"}, {"gmail_app_password"}):
+        keychain(monkeypatch, present)
+        scheduler._scheduled(RunKind.intake_gmail)
+    assert not calls
+    keychain(monkeypatch, {"gmail_address", "gmail_app_password"})
+    scheduler._scheduled(RunKind.intake_gmail)
+    assert calls == [RunKind.intake_gmail]
+
+
+def test_gmail_job_survives_an_unavailable_keychain(jobs, monkeypatch):
+    from keyring.errors import KeyringError
+
+    def locked(name):
+        raise KeyringError("locked")
+
+    monkeypatch.setattr(secrets, "present", locked)
+    calls = []
+    monkeypatch.setattr(runner, "submit", lambda kind, **kwargs: calls.append(kind))
+    scheduler._scheduled(RunKind.intake_gmail)
+    assert not calls
+
+
+@pytest.mark.parametrize("blocked", ["disabled", "paused"])
+def test_gmail_job_skips_when_gmail_alert_source_unavailable(jobs, session, monkeypatch, blocked):
+    keychain(monkeypatch, {"gmail_address", "gmail_app_password"})
+    session.add(SourceHealth(
+        source="gmail_alert", enabled=blocked != "disabled",
+        paused_until=NOW + timedelta(hours=1) if blocked == "paused" else None))
+    session.commit()
+    calls = []
+    monkeypatch.setattr(runner, "submit", lambda kind, **kwargs: calls.append(kind))
+    scheduler._scheduled(RunKind.intake_gmail)
+    assert not calls
+    row = session.get(SourceHealth, "gmail_alert")
+    row.enabled, row.paused_until = True, NOW - timedelta(seconds=1)
+    session.add(row)
+    session.commit()
+    scheduler._scheduled(RunKind.intake_gmail)
+    assert calls == [RunKind.intake_gmail]
+
+
+def test_followups_job_always_submits(jobs, monkeypatch):
+    calls = []
+    monkeypatch.setattr(runner, "submit", lambda kind, **kwargs: calls.append(kind))
+    scheduler._scheduled(RunKind.followups)
+    assert calls == [RunKind.followups]
+
+
+def test_services_gmail_row_comes_from_gmail_health_and_probe_errors_become_red(jobs, monkeypatch):
+    monkeypatch.setattr(gmail, "health", lambda s: ServiceHealth(name="gmail", ok=False, detail="Gmail app password not set"))
+    row = {s.name: s for s in scheduler.services()}["gmail"]
+    assert not row.ok and row.detail == "Gmail app password not set"
+
+    def broken(s):
+        raise RuntimeError("imap down")
+
+    monkeypatch.setattr(gmail, "health", broken)
+    row = {s.name: s for s in scheduler.services()}["gmail"]
+    assert not row.ok and row.detail == "imap down"
