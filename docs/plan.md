@@ -593,3 +593,16 @@ After Wave 2 the lead runs real intake + one real evaluate, then writes `docs/se
 | tester | `tests/integration/**` (fetch → pipeline → DB, idempotency, site-failure isolation, golden, API smoke) 9 tests; Playwright smoke on mocks 8 tests |
 
 Totals: `uv run pytest` 157 passed, vitest 28, Playwright 8. Golden seed labels are builder-made; owner labels in `data/golden/*.jsonl` still wanted.
+
+**Wave 2 status (12 Nov 2026): ✅ built, one tuning task open**
+
+| Task | Result |
+|---|---|
+| cops | career-ops bridge: scan, evaluate, verify, CV + fact-check, assist apply (non-GET requests blocked + submit events cancelled while filling), contacts; 41 tests. **Real evaluate smoke: Wayfair SE II Java Backend → 3.8/5, 196 s, $1.26 API-equivalent** |
+| jobs | run engine, scheduler, auto-evaluate, `start.sh up/stop/restart/status/logs/foreground`; 33 tests; 2nd `up` 0.6 s, no orphans |
+| api | all routes per contract, Keychain secrets, schemathesis; fixed malformed-URL crash in pipeline |
+| web | Job detail, Tracker, Replies, Settings; 72 vitest |
+| tester | real-API flow 14 integration tests; Playwright real-server 2/2, mock 8/8 |
+
+Totals: `uv run pytest` 335 passed. Real board fetch: 358 fetched, 336 new, 120 duplicates, 126 dropped.
+Open: pipeline tuning (score resolution at the top, city-in-title drop) given to agent `jobs`, uncommitted until the lead verifies.
