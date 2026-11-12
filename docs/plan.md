@@ -568,3 +568,14 @@ After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start 
 | 0.4 | ✅ `npm install --no-package-lock` (career-ops ships no lockfile; submodule tree stays clean), `doctor.mjs` with `CAREER_OPS_DATA_DIR=data/careerops`: 0 errors, only `portals.yml` missing (Wave 1 `build_portals.py`) |
 | 0.5 | ✅ `./start.sh doctor` (exit 1 without `claude`), `./start.sh dev` serves API + Vite proxy |
 | 0.6 | ✅ JobSpy (4/5 sites), platforms, career-ops coverage, **headless evaluate end to end** (below) |
+
+**Wave 1 status (12 Nov 2026): ✅ done**
+
+| Task | Result |
+|---|---|
+| codex_builder | `intake/boards.py` (JobSpy, daily matrix cursor, per-site health), `config/seed_companies.yml`, `scripts/build_portals.py` → `data/careerops/portals.yml` (173 companies, 4 boards; career-ops doctor all green); 55 tests |
+| builder | `pipeline/**` (normalize, CTC/exp/location parse, dedupe, prefilter, quick score, store); golden seed 87 postings: prefilter recall on apply 1.000, dedupe precision 1.000; 87 tests |
+| builder2 | app shell, Today, Leads (+ Quick apply tab) on MSW mocks; table fits at ≥1280 px, cards on mobile, lazy routes; 28 vitest |
+| tester | `tests/integration/**` (fetch → pipeline → DB, idempotency, site-failure isolation, golden, API smoke) 9 tests; Playwright smoke on mocks 8 tests |
+
+Totals: `uv run pytest` 157 passed, vitest 28, Playwright 8. Golden seed labels are builder-made; owner labels in `data/golden/*.jsonl` still wanted.
