@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **v3, Wave 0 in progress** (0.2, 0.3, 0.5 done; 0.4/0.6 partly blocked, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3.1, Wave 2 in progress** (Waves 0-1 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -494,15 +494,29 @@ Roles from `agents.conf` (unchanged). At most 3 builders + 1 tester at a time. E
 | builder2 | App shell (nav, light/dark), **Today**, **Leads** + Quick-apply view on MSW | `web/src/app/**`, `pages/today/**`, `pages/leads/**`, `web/src/components/**` | `cd web && npm run build && npm run test` |
 | tester | fixtures → pipeline → DB integration; Playwright smoke on mocks | `tests/integration/**`, `web/e2e/**` | `uv run pytest tests/integration && npx playwright test` |
 
-### Wave 2: evaluation + API + tracker → **first usable dashboard**
-| Agent | Task | Files | Acceptance |
-|---|---|---|---|
-| codex_builder | career-ops bridge: headless runner (cap 2, run logs), importer (scan, reports, scores, live flag, PDFs), form-fill assist launcher, contact finder + drafts | `careerops/**`, `tests/test_careerops.py` | `uv run pytest tests/test_careerops.py` (subprocess mocked) |
-| builder | Implement the API per contract (leads, applications + events + transitions, evaluations, runs + SSE, settings, secrets → Keychain, health); APScheduler jobs wiring W1 fetchers | `api/**`, `jobs/**`, `tests/test_api.py` | `uv run pytest tests/test_api.py` + schemathesis vs contract |
-| builder2 | **Job detail** (report, PDF preview, Assist apply, Copy drafts, Mark applied), **Tracker** (kanban + table + CSV), **Replies & Inbound** | `pages/job/**`, `pages/tracker/**`, `pages/replies/**` | `cd web && npm run build && npm run test` |
-| tester | real API e2e: lead → evaluate → CV → applied → timeline | `tests/integration/**`, `web/e2e/**` | `npx playwright test` |
+### Wave 2: evaluation + API + tracker → **first usable dashboard with real data**
 
-After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start using the dashboard daily** while Wave 3 builds.
+Revised 12 Nov (v3.1): 4 builders in parallel (fresh agents), contract-first. The lead wrote the interface stubs
+`src/jobhunter/careerops/__init__.py`, `src/jobhunter/jobs/runner.py`, `src/jobhunter/jobs/scheduler.py`
+(signatures + docstrings are the contract; owners implement bodies, never change signatures). `./start.sh up`
+moves from the lead to `codex_jobs` (owner asked the lead to supervise only).
+
+| Agent (role) | Task | Files | Acceptance |
+|---|---|---|---|
+| `cops` (codex_builder) | career-ops bridge: scan import, evaluate (claude -p read-only, Machine Summary → Evaluation), verify (liveness), CV + fact-check → PDF, assist-apply (headed, never submits), contacts + referral drafts, report_md | `careerops/**`, `tests/test_careerops.py`, `tests/fixtures/careerops/**` | `uv run pytest tests/test_careerops.py` (subprocess faked via `JOBHUNTER_CLAUDE_BIN`/`JOBHUNTER_NODE_BIN`) |
+| `jobs` (codex_builder) | run engine (pools, logs, cancel, SSE events, boot recovery), APScheduler (boards window, scan times, auto-evaluate top N), services health; `start.sh` up/stop/restart/status/logs/foreground | `jobs/**` (bodies only), `start.sh`, `tests/test_jobs.py` | `uv run pytest tests/test_jobs.py && ./start.sh up && ./start.sh status && ./start.sh stop` |
+| `api` (builder) | every route in `api/**` per contract (leads, applications + transitions, proposals/outreach CRUD, runs + SSE, today, basic analytics, sources, settings, secrets → Keychain, profiles, setup, health), lifespan starts the scheduler | `api/**` (not `dump_openapi.py`, `_stub.py`), `src/jobhunter/secrets.py`, `tests/test_api.py` | `uv run pytest tests/test_api.py && uv run python -m jobhunter.api.dump_openapi --check` |
+| `web` (builder2) | **Job detail**, **Tracker** (kanban + table + CSV), **Replies & Inbound**, minimal **Settings** (N, concurrency, query matrix, targets, source toggles, run intake now) | `web/src/pages/{job,tracker,replies,settings}/**`, `web/src/app/**`, `web/src/components/**`, `web/package.json` | `cd web && npm run build && npm run test` |
+| `tester` (codex, after the 4 land) | real-server e2e with fake claude: lead → shortlist → evaluate → CV → approve → applied → timeline; Playwright on the real API | `tests/integration/**`, `web/e2e/**`, `tests/fakes/**` | `uv run pytest tests/integration && cd web && npx playwright test` |
+
+Business rules fixed for Wave 2 (API):
+- A lead without an application has status New. Shortlist / Skip create the Application (Event actor=owner).
+- Transition to Applied from New/Shortlisted/Ready walks the main line (New→Shortlisted→Ready→Applied), one Event per step (auto steps actor=system, note "quick apply"); sets `applied_at`, `next_follow_up_at` = +5 weekdays (holidays in Wave 3).
+- `cv_approved=true` on a Shortlisted application moves it to Ready (Event).
+- Rejected requires `rejected_at_stage`; illegal transitions → 409.
+- Manual lead → `pipeline.ingest` with Source.manual and `restored=True` (owner wants it, never dropped).
+
+After Wave 2 the lead runs real intake + one real evaluate, then writes `docs/setup.md` (owner setup to run at full potential, incl. `.eml` export guide).
 
 ### Wave 3: Gmail + feedback loop + insight
 | Agent | Task | Files | Acceptance |
