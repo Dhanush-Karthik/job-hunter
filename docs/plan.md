@@ -549,7 +549,12 @@ After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start 
 - Already has providers for **Himalayas, RemoteOK, Remotive, WeWorkRemotely**, plus Indian ATSs **Darwinbox, Keka, TurboHire, Zoho Recruit**, and Workday/Greenhouse/Lever/Ashby/SuccessFactors/SmartRecruiters. → `intake/remote_boards.py` dropped from Wave 1.
 - Evaluation is an **A-H report with a 1-5 score** (plan said A-F/0-5). `evaluations.score` stores 1-5; `grade` stores its letter. Quality gate 3.5 stays.
 - Headless pattern exists (`docs/AUTOMATION.md`, `scripts/followup-sweep.sh`): `claude -p` in `dontAsk` mode, explicit tool allowlist, `--add-dir` data root, job-posting text treated as untrusted. The bridge (Wave 2) copies this pattern.
-- **Blocked:** `npm ci` + `doctor.mjs` inside career-ops were denied by the Claude Code auto-mode classifier (running external code). Needs owner approval (see Wave 0 status). End-to-end headless evaluate also needs the owner's CV + `config/profile.yml`.
+- Install needed an owner-approved allow rule (`.claude/settings.local.json`) because the auto-mode classifier blocks running external code by default.
+- **Bridge design (from career-ops' own web runner, `web/src/lib/run-prompts.mjs` + `claude-invocation.mjs`):** evaluate runs with a *read-only* scope (`Read,WebFetch,WebSearch,Glob,Grep`; `Write,Edit,MultiEdit,NotebookEdit,Bash,Task` denied; `--strict-mcp-config`), cwd = data root, `--add-dir vendor/career-ops`, JD passed pre-fetched (`prefetchedJd`), report returned inline in a `<<report-md>>` envelope; the harness persists it. Our bridge imports `buildPrompt` + `claudeCliArgs` from career-ops instead of hand-writing prompts.
+
+**Headless evaluate, end to end (12 Nov 2026):** real LinkedIn posting (Netcomm IT Solutions, "Backend Developer (Java + Spring Boot)", Chennai) fetched by JobSpy with description → career-ops `buildPrompt({kind:"evaluate", prefetchedJd})` + `claudeCliArgs` → `claude -p` (cwd `data/careerops`, `--add-dir vendor/career-ops`). Result: **success, 216 s, 20 turns, 3.7/5, archetype P1, legitimacy "Proceed with Caution"**; it read only cv.md/profile/_profile + mode files and ran 3 web searches; no writes. Output = `<<report-md>> … <</report-md>>` with sections A-G, verdict, score evidence, cover-letter draft, archived JD and a YAML **Machine Summary** (`score`, `legitimacy_tier`, `archetype`, ...) → the importer parses that block. Copy kept in `data/spike/`.
+
+**Cost warning:** one full evaluate ≈ **$1.32 API-equivalent** (88 K cache-write, 557 K cache-read, 22 K output tokens) and ~3.5 min. Top-10/day ≈ 13 such runs/day on the owner's Claude subscription quota. Mitigations for Wave 2 bridge: keep `claude_concurrency=2`; evaluate only leads above a quick-score floor; try career-ops' focused scope (`evaluation_scope: focused`, `evaluation-options.mjs`) or its two-pass triage (`modes/_brief.md`) for a cheaper first pass; owner can lower `auto_evaluate_top_n` in Settings.
 
 **Platform check (HTTP, 12 Nov 2026):** Naukri, LinkedIn, Hirist, Cutshort, Wellfound, Uplers, Turing, Arc, Himalayas, RemoteOK, Remotive all 200. Instahyre, foundit, WWR, Glassdoor, Indeed answer 403 and YC 406 to curl: bot walls on the homepage, not dead sites (Indeed/Glassdoor scraped fine via JobSpy). All section 3 platforms are treated as active.
 
@@ -557,9 +562,9 @@ After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start 
 
 | # | State |
 |---|---|
-| 0.1 | ◐ D6 decided (reminder-only); Gmail app password: owner enters in Setup page (Wave 3); CV + profile, alert accounts, `.eml` exports, golden set pending |
+| 0.1 | ◐ D6 decided (reminder-only); CV received → `data/careerops/cv.md` (master), `data/cv/cv_a.md` (variant A, same facts reordered), career-ops `profile.yml` + `modes/_profile.md`. Pending from owner: verified AI workflow for variant B, notice period, current/expected CTC, alert accounts + `.eml` exports, golden labels. Gmail app password: owner enters in Setup page (Wave 3) |
 | 0.2 | ✅ `uv run python -m jobhunter.api.dump_openapi --check`, `uv run pytest` (6 pass) |
 | 0.3 | ✅ `cd web && npm run build && npm run test` (3 pass on MSW) |
-| 0.4 | ◐ submodule added; career-ops `npm ci` + self-check blocked (owner approval); Playwright chromium present |
+| 0.4 | ✅ `npm install --no-package-lock` (career-ops ships no lockfile; submodule tree stays clean), `doctor.mjs` with `CAREER_OPS_DATA_DIR=data/careerops`: 0 errors, only `portals.yml` missing (Wave 1 `build_portals.py`) |
 | 0.5 | ✅ `./start.sh doctor` (exit 1 without `claude`), `./start.sh dev` serves API + Vite proxy |
-| 0.6 | ◐ JobSpy ✅ (4/5 sites), platforms ✅, career-ops coverage ✅; headless evaluate pending 0.1 + 0.4 |
+| 0.6 | ✅ JobSpy (4/5 sites), platforms, career-ops coverage, **headless evaluate end to end** (below) |
