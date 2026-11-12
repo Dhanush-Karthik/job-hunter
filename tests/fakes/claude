@@ -9,6 +9,12 @@ from pathlib import Path
 
 prompt = sys.argv[sys.argv.index("-p") + 1]
 scenario = os.environ.get("JOBHUNTER_FAKE_SCENARIO", "happy")
+if scenario == "usage_limit":
+    print(json.dumps({"type": "rate_limit_event", "rate_limit_info": {
+        "status": "rejected", "resetsAt": 1794499200,
+    }}))
+    print(json.dumps({"type": "result", "is_error": True, "result": ""}))
+    raise SystemExit(1)
 if scenario == "fail":
     print("Offline Claude: session unavailable", file=sys.stderr)
     raise SystemExit(7)

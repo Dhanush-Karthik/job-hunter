@@ -116,7 +116,8 @@ def test_default_matrix_finishes_daily_coverage(session, settings):
 
     for _ in range(6):
         fetch_boards(session, settings, scrape=scrape, sleep=lambda _: None)
-    assert len(seen) == len(settings.query_matrix.sites) * 27
+    qm = settings.query_matrix
+    assert len(seen) == len(qm.sites) * len(qm.titles) * len(qm.locations)
 
 
 def test_caps_apply_per_site_and_delays_between_all_calls(session, settings):
