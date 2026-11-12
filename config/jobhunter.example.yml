@@ -1,0 +1,59 @@
+# job-hunter defaults. ./start.sh copies this to data/config.yml on first run.
+# Values here seed the settings table once; afterwards edit them in the dashboard (Settings page).
+
+auto_evaluate_top_n: 10          # D2
+claude_concurrency: 2            # protects the Claude Pro quota
+notifications: true              # D4, macOS osascript
+naukri_profile_bot: false        # D6: reminder-only unless the owner opts in
+
+query_matrix:
+  titles:
+    - Java Developer
+    - Backend Engineer
+    - Software Engineer Java
+    - SDE 2
+    - Spring Boot Developer
+    - Microservices Engineer
+    - Platform Engineer
+    - Identity IAM Engineer
+    - Keycloak
+  locations: [Chennai, Bengaluru, Remote India]
+  sites: [linkedin, naukri, indeed, glassdoor, google]
+  hours_old: 72
+  results_wanted: 50
+
+prefilter:                       # plan section 4, recall-first
+  cities: [Chennai, Bengaluru, Bangalore]
+  remote_ok: true
+  exp_years: [2, 4]
+  exp_drop_min_at_least: 6
+  ctc_min_lpa: 10                # D3: drop only when stated max < this
+  usd_inr: 85.0
+  max_age_days_pass: 14
+  max_age_days_drop: 30
+  stack_positive: [java, spring, spring boot, quarkus, microservices, backend, platform, kafka,
+                   iam, keycloak, oauth, oidc, identity, rest api, jvm, kotlin]
+  stack_negative: [frontend only, react developer, angular developer, ios, android, flutter,
+                   php, wordpress, sales, business development, qa only, manual testing,
+                   data entry, sap abap]
+
+schedules:
+  boards_every_hours: 3
+  boards_window: [7, 23]
+  careerops_scan_times: ["08:00", "17:00"]
+  remote_boards_times: ["08:30", "17:30"]
+  gmail_every_minutes: 30
+
+targets:
+  applied_per_week: 60
+  referrals_per_week: 15
+  min_eval_score: 3.5
+
+source_weights:                  # quick-score multiplier per source
+  gmail_inbound: 1.5
+  careerops_scan: 1.15
+  linkedin: 1.0
+  naukri: 1.0
+  google: 0.95
+  indeed: 0.9
+  glassdoor: 0.9
