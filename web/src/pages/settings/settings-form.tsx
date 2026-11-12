@@ -4,28 +4,18 @@ import { SOURCE_LABEL } from '@/components/lead-format'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { ChipInput } from './chip-input'
+import { NumberField } from './fields'
+import { FollowupsCard } from './followups-card'
+import { PrefilterCard } from './prefilter-card'
+import { SchedulesCard } from './schedules-card'
 import { useSaveSettings } from './use-settings'
+import { followupsValid, inRange, prefilterValid, schedulesValid } from './validate'
 
 const BOARD_SITES: Source[] = ['linkedin', 'naukri', 'indeed', 'glassdoor', 'google']
 
-function NumberField({ label, value, min, max, step, onChange }: { label: string; value: number; min: number; max: number; step?: number; onChange: (n: number) => void }) {
-  const id = `num-${label.toLowerCase().replace(/\W+/g, '-')}`
-  const bad = !Number.isFinite(value) || value < min || value > max
-  return (
-    <div className="grid gap-1.5">
-      <Label htmlFor={id}>{label}</Label>
-      <Input id={id} type="number" min={min} max={max} step={step} value={Number.isFinite(value) ? value : ''} aria-invalid={bad} onChange={(e) => onChange(e.target.value === '' ? NaN : Number(e.target.value))} />
-      {bad && <p className="text-xs text-destructive">Between {min} and {max}.</p>}
-    </div>
-  )
-}
-
-const inRange = (n: number, min: number, max: number) => Number.isFinite(n) && n >= min && n <= max
-
-/** Editable subset of Settings (N, concurrency, targets, query matrix). The rest of the object is sent back untouched. */
+/** Editable Settings (N, concurrency, targets, query matrix, prefilter, schedules, follow-ups). The rest of the object is sent back untouched. */
 export function SettingsForm({ initial }: { initial: Settings }) {
   const [s, setS] = useState(initial)
   const save = useSaveSettings()
@@ -40,9 +30,11 @@ export function SettingsForm({ initial }: { initial: Settings }) {
     inRange(s.targets.min_eval_score, 0, 5) &&
     qm.titles.length > 0 &&
     qm.locations.length > 0 &&
-    qm.sites.length > 0
+    qm.sites.length > 0 &&
+    prefilterValid(s.prefilter) &&
+    schedulesValid(s.schedules) &&
+    followupsValid(s.followups)
   const dirty = JSON.stringify(s) !== JSON.stringify(initial)
-  const sch = s.schedules
 
   return (
     <form
@@ -103,24 +95,9 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Schedules</CardTitle>
-          <CardDescription>Read-only for now; editing arrives in Wave 3.</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-[auto_1fr]">
-            <dt className="text-muted-foreground">Boards</dt>
-            <dd>every {sch.boards_every_hours} h, between {sch.boards_window[0]}:00 and {sch.boards_window[1]}:00</dd>
-            <dt className="text-muted-foreground">Career-page scan</dt>
-            <dd>{sch.careerops_scan_times.join(', ')}</dd>
-            <dt className="text-muted-foreground">Remote boards</dt>
-            <dd>{sch.remote_boards_times.join(', ')}</dd>
-            <dt className="text-muted-foreground">Gmail</dt>
-            <dd>every {sch.gmail_every_minutes} min</dd>
-          </dl>
-        </CardContent>
-      </Card>
+      <PrefilterCard value={s.prefilter} onChange={(prefilter) => patch({ prefilter })} />
+      <SchedulesCard value={s.schedules} onChange={(schedules) => patch({ schedules })} />
+      <FollowupsCard value={s.followups} onChange={(followups) => patch({ followups })} />
 
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={!valid || !dirty || save.isPending}>

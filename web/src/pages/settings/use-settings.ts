@@ -42,3 +42,99 @@ export function usePatchProfile() {
     onSuccess: () => Promise.all([qc.invalidateQueries({ queryKey: ['profiles'] }), qc.invalidateQueries({ queryKey: ['today'] })]),
   })
 }
+
+/** For 204 responses, which have no body for unwrap to return. */
+function assertOk(r: { error?: unknown; response: Response }) {
+  if (r.error !== undefined) unwrap({ error: r.error, response: r.response })
+}
+
+// ---- setup wizard
+
+export const useSetup = () => useQuery({ queryKey: ['setup'], queryFn: async () => unwrap(await api.GET('/api/setup')) })
+
+/** Which secrets exist. The values are write-only: the API never returns them. */
+export const useSecrets = () => useQuery({ queryKey: ['secrets'], queryFn: async () => unwrap(await api.GET('/api/secrets')) })
+
+export function useSaveGmailSecrets() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (v: { gmail_address?: string; gmail_app_password?: string }) => {
+      for (const [name, value] of Object.entries(v)) {
+        if (value) assertOk(await api.PUT('/api/secrets/{name}', { params: { path: { name } }, body: { value } }))
+      }
+    },
+    onSuccess: () => {
+      toast.success('Saved to the macOS Keychain')
+      return Promise.all([qc.invalidateQueries({ queryKey: ['secrets'] }), qc.invalidateQueries({ queryKey: ['setup'] }), qc.invalidateQueries({ queryKey: ['today'] })])
+    },
+  })
+}
+
+export const useTestGmail = () => useMutation({ mutationFn: async () => unwrap(await api.POST('/api/setup/gmail-test')) })
+
+export function useUploadCv() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async ({ variant, markdown }: { variant: 'A' | 'B'; markdown: string }) => unwrap(await api.PUT('/api/setup/cv', { body: { variant, markdown } })),
+    onSuccess: (_, v) => {
+      toast.success(`CV variant ${v.variant} saved`)
+      return qc.invalidateQueries({ queryKey: ['setup'] })
+    },
+  })
+}
+
+// ---- companies
+
+export const useCompanies = () => useQuery({ queryKey: ['companies'], queryFn: async () => unwrap(await api.GET('/api/companies')) })
+
+export function useCompanyActions() {
+  const qc = useQueryClient()
+  const refresh = () => qc.invalidateQueries({ queryKey: ['companies'] })
+  const add = useMutation({
+    mutationFn: async (body: { name: string; careers_url: string }) => unwrap(await api.POST('/api/companies', { body })),
+    onSuccess: (c) => {
+      toast.success(`${c.name} added`)
+      return refresh()
+    },
+  })
+  const toggle = useMutation({
+    mutationFn: async ({ name, enabled }: { name: string; enabled: boolean }) =>
+      unwrap(await api.PATCH('/api/companies/{name}', { params: { path: { name } }, body: { enabled } })),
+    onSuccess: (c) => {
+      toast.success(`${c.name} ${c.enabled ? 'enabled' : 'disabled'}`)
+      return refresh()
+    },
+  })
+  const remove = useMutation({
+    mutationFn: async (name: string) => {
+      assertOk(await api.DELETE('/api/companies/{name}', { params: { path: { name } } }))
+    },
+    onSuccess: (_, name) => {
+      toast.success(`${name} removed`)
+      return refresh()
+    },
+  })
+  return { add, toggle, remove, busy: add.isPending || toggle.isPending || remove.isPending }
+}
+
+// ---- run logs
+
+export const useRuns = () => useQuery({ queryKey: ['runs'], queryFn: async () => unwrap(await api.GET('/api/runs')), refetchInterval: 15_000 })
+
+export const useRunLog = (id: number | null) =>
+  useQuery({
+    queryKey: ['runs', id, 'log'],
+    enabled: id != null,
+    queryFn: async () => unwrap(await api.GET('/api/runs/{run_id}/log', { params: { path: { run_id: id! } } })),
+  })
+
+export function useCancelRun() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: async (run_id: number) => unwrap(await api.POST('/api/runs/{run_id}/cancel', { params: { path: { run_id } } })),
+    onSuccess: () => {
+      toast.success('Run cancelled')
+      return qc.invalidateQueries({ queryKey: ['runs'] })
+    },
+  })
+}

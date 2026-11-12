@@ -1,6 +1,5 @@
 import { lazy } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
-import { Placeholder } from '@/pages/placeholder/placeholder'
 import { AppLayout } from './layout'
 
 // One chunk per page; AppLayout wraps the outlet in Suspense with the PageLoading fallback.
@@ -10,6 +9,8 @@ const JobDetailPage = lazy(() => import('@/pages/job/job-page').then((m) => ({ d
 const TrackerPage = lazy(() => import('@/pages/tracker/tracker-page').then((m) => ({ default: m.TrackerPage })))
 const RepliesPage = lazy(() => import('@/pages/replies/replies-page').then((m) => ({ default: m.RepliesPage })))
 const SettingsPage = lazy(() => import('@/pages/settings/settings-page').then((m) => ({ default: m.SettingsPage })))
+const OutreachPage = lazy(() => import('@/pages/outreach/outreach-page').then((m) => ({ default: m.OutreachPage })))
+const AnalyticsPage = lazy(() => import('@/pages/analytics/analytics-page').then((m) => ({ default: m.AnalyticsPage })))
 const QuickApplyPage = lazy(() => import('@/pages/leads/quick-apply-page').then((m) => ({ default: m.QuickApplyPage })))
 
 function NotFound() {
@@ -33,8 +34,8 @@ export function AppRoutes() {
         <Route path="jobs/:id" element={<JobDetailPage />} />
         <Route path="tracker" element={<TrackerPage />} />
         <Route path="replies" element={<RepliesPage />} />
-        <Route path="outreach" element={<Placeholder title="Outreach & Follow-ups" wave={3} />} />
-        <Route path="analytics" element={<Placeholder title="Analytics" wave={3} />} />
+        <Route path="outreach" element={<OutreachPage />} />
+        <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />
       </Route>

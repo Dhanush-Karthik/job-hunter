@@ -245,7 +245,10 @@ export const handlers = [
     const u = new URL(request.url).searchParams
     let items = db.outreach
     if (u.get('kind')) items = items.filter((o) => o.kind === u.get('kind'))
-    if (u.get('due_only') === 'true') items = items.filter((o) => !o.sent_at && o.due_at && o.due_at <= new Date().toISOString())
+    if (u.get('due_only') === 'true') {
+      const now = new Date().toISOString()
+      items = items.filter((o) => !o.sent_at && o.due_at && o.due_at <= now && (!o.snoozed_until || o.snoozed_until <= now))
+    }
     if (u.get('sent') === 'true') items = items.filter((o) => o.sent_at)
     if (u.get('sent') === 'false') items = items.filter((o) => !o.sent_at)
     return HttpResponse.json(items)

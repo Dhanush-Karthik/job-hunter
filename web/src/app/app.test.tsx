@@ -75,14 +75,15 @@ describe('app shell', () => {
     expect(await screen.findByLabelText('Claude concurrency')).toBeInTheDocument()
   })
 
-  it('keeps Outreach and Analytics as Wave 3 placeholders', async () => {
+  it('routes the Wave 3 pages (outreach, analytics) with no placeholders left', async () => {
     setup('/outreach')
     expect(await screen.findByRole('heading', { name: 'Outreach & Follow-ups' })).toBeInTheDocument()
-    expect(screen.getByText(/Coming in Wave 3/)).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: 'Due follow-ups' })).toBeInTheDocument()
     cleanup()
     setup('/analytics')
     expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
-    expect(screen.getByText(/Coming in Wave 3/)).toBeInTheDocument()
+    expect(await screen.findByLabelText('Date range')).toBeInTheDocument()
+    expect(screen.queryByText(/Coming in Wave/)).not.toBeInTheDocument()
   })
 
   it('persists the theme choice in localStorage', async () => {
