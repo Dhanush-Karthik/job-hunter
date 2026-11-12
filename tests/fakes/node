@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""Use real Node helpers except PDF rendering, which otherwise launches Playwright."""
+
+import json
+import os
+import sys
+from pathlib import Path
+
+if not sys.argv[1].endswith("/render.mjs"):
+    os.execvp("node", ["node", *sys.argv[1:]])
+payload = json.load(sys.stdin)
+# A valid single-page PDF allows the real browser PDF preview to load, too.
+objects = [
+    b"<< /Type /Catalog /Pages 2 0 R >>",
+    b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>",
+    b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 4 0 R >>",
+    b"<< /Length 0 >>\nstream\n\nendstream",
+]
+pdf = b"%PDF-1.4\n"
+offsets = [0]
+for index, obj in enumerate(objects, 1):
+    offsets.append(len(pdf))
+    pdf += f"{index} 0 obj\n".encode() + obj + b"\nendobj\n"
+xref = len(pdf)
+pdf += b"xref\n0 5\n0000000000 65535 f \n"
+pdf += b"".join(f"{offset:010} 00000 n \n".encode() for offset in offsets[1:])
+pdf += f"trailer\n<< /Size 5 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n".encode()
+Path(payload["output"]).write_bytes(pdf)
+print(json.dumps({"outputPath": payload["output"], "pageCount": 1}))
