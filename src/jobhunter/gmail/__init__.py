@@ -58,7 +58,9 @@ class GmailResult:
 
 def check_login(address: str, app_password: str) -> str | None:
     """Log in and EXAMINE INBOX, then log out. None on success, otherwise an owner-readable reason."""
-    raise NotImplementedError
+    from jobhunter.gmail.service import check_login as implementation
+
+    return implementation(address, app_password)
 
 
 def run_intake(
@@ -69,10 +71,14 @@ def run_intake(
     should_cancel: Callable[[], bool] = lambda: False,
 ) -> GmailResult:
     """One Gmail intake run (module docstring). Raises GmailError when secrets are missing or login fails."""
-    raise NotImplementedError
+    from jobhunter.gmail.service import run_intake as implementation
+
+    return implementation(session, settings, log=log, should_cancel=should_cancel)
 
 
 def health(session: Session) -> ServiceHealth:
     """ServiceHealth(name="gmail"): ok when secrets are present and the last run succeeded; detail = last run time
     and counts, or the last error, or "Gmail app password not set"."""
-    raise NotImplementedError
+    from jobhunter.gmail.service import health as implementation
+
+    return implementation(session)

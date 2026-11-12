@@ -1,0 +1,12 @@
+From: Test Recruiter <recruiting@acme.example>
+To: Test Owner <owner@example.com>
+Subject: Coding test link
+Message-ID: <synthetic-assessment-3@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+X-Jobhunter-Expected-Template: assessment
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Here is your coding test link for the Java Developer role at Acme.

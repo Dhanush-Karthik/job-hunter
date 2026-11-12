@@ -1,0 +1,16 @@
+From: Test Recruiter <recruiting@uplers.com>
+To: Test Owner <owner@example.com>
+Subject: New jobs for you: Java Backend Developer
+Message-ID: <synthetic-uplers-alert-1@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+<!DOCTYPE html><html><body><p>Hi Test Owner, here are new jobs matching your profile.</p>
+<table><tr><td><h2 class="job-title"><a href="https://www.uplers.com/jobs/java-backend-engineer-12345-1">Java Backend Developer</a></h2>
+<div class="company-name">Acme Systems</div><div class="location">Chennai</div>
+<p>2-4 years | ₹12-18 LPA | Easy Apply</p><p>Posted: 2026-11-11</p>
+<a href="https://careers.example.com/apply/backend-1">Apply now</a></td></tr></table>
+<p>Manage your job alerts</p></body></html>

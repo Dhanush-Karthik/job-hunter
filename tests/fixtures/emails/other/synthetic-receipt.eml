@@ -1,0 +1,11 @@
+From: Test Recruiter <recruiting@billing.example.com>
+To: Test Owner <owner@example.com>
+Subject: Subscription receipt
+Message-ID: <synthetic-other-receipt@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Thanks for your payment. Your subscription is now active.

@@ -1,0 +1,11 @@
+From: Test Recruiter <recruiting@offers.example.com>
+To: Test Owner <owner@example.com>
+Subject: Save on a training course
+Message-ID: <synthetic-other-promo@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Learn Java and get ready for interviews. Offer ends soon.

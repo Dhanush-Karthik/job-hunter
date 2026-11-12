@@ -1,0 +1,11 @@
+From: Test Recruiter <recruiting@digest.example.com>
+To: Test Owner <owner@example.com>
+Subject: Weekly job-alert digest
+Message-ID: <synthetic-other-digest@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Here are new roles: Java Developer at Acme. View our job board.

@@ -1,0 +1,16 @@
+From: Test Recruiter <recruiting@naukri.com>
+To: Test Owner <owner@example.com>
+Subject: New jobs for you: Software Engineer II
+Message-ID: <synthetic-naukri-alert-2@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+<!DOCTYPE html><html><body><p>Hi Test Owner, here are new jobs matching your profile.</p>
+<table><tr><td><h2 class="job-title"><a href="https://www.naukri.com/job-listings/java-developer-acme-chennai-12345-2">Software Engineer II</a></h2>
+<div class="company-name">Example Labs</div><div class="location">Chennai</div>
+<p>2-4 years | ₹12-18 LPA | Easy Apply</p><p>Posted: 2026-11-11</p>
+<a href="https://careers.example.com/apply/backend-2">Apply now</a></td></tr></table>
+<p>Manage your job alerts</p></body></html>

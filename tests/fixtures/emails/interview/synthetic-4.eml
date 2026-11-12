@@ -1,0 +1,12 @@
+From: Test Recruiter <recruiting@acme.example>
+To: Test Owner <owner@example.com>
+Subject: Interview - Round 1
+Message-ID: <synthetic-interview-4@example.com>
+Date: Thu, 12 Nov 2026 10:00:00 +0000
+X-Jobhunter-Synthetic: yes
+X-Jobhunter-Expected-Template: interview
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+Join your Java Developer interview - round 1 with Acme.

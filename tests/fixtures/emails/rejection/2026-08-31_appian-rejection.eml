@@ -1,0 +1,30 @@
+From: Test Recruiter <recruiting@us.greenhouse-mail.io>
+To: Test Owner <owner@example.com>
+Subject: Information about your application to Appian
+Message-ID: <real-sample-16@example.com>
+Date: Mon, 31 Aug 2026 05:45:34 +0000
+X-Jobhunter-Sanitized: yes
+MIME-Version: 1.0
+Content-Type: multipart/alternative;
+ boundary="===============3224159276587026032=="
+
+--===============3224159276587026032==
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+
+Hi Test Owner,
+
+Thank you for your interest in the Software Engineer II role at Appian! The hiring team has reviewed your resume and unfortunately your application wasn't selected for the next round of interviews. We received multiple applications from impressive candidates (yours included!), however, we found a few that are a closer match to our target profile.
+
+We will keep your information on file and will gladly reach out if another role opens for which we can consider you.
+
+The Appian Recruiting Team
+
+--===============3224159276587026032==
+Content-Type: text/html; charset="utf-8"
+Content-Transfer-Encoding: 8bit
+MIME-Version: 1.0
+
+<p>Hi Test Owner,<br><br>Thank you for your interest in the Software Engineer II role at Appian! The hiring team has reviewed your resume and unfortunately your application wasn't selected for the next round of interviews. We received multiple applications from impressive candidates (yours included!), however, we found a few that are a closer match to our target profile. <br><br>We will keep your information on file and will gladly reach out if another role opens for which we can consider you.<br><br>The Appian Recruiting Team</p>
+
+--===============3224159276587026032==--
