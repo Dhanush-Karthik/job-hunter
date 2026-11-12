@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # job-hunter: the only command the owner runs (plan section 10).
-# Wave 0 skeleton: `doctor` and `dev` work; `up/stop/status/logs/autostart` land in Waves 2 and 4.
+# One server owns the API, dashboard, scheduler and background workers.
 set -uo pipefail
 cd "$(dirname "$0")"
 ROOT=$PWD
@@ -67,13 +67,146 @@ dev() {
   wait
 }
 
+PIDFILE="$ROOT/data/run/server.pid"
+SERVER_LOG="$ROOT/data/logs/server.log"
+URL="http://127.0.0.1:$PORT"
+
+read_pid() {
+  [ -f "$PIDFILE" ] || return 1
+  server_pid=$(cat "$PIDFILE")
+  case "$server_pid" in '' | *[!0-9]*) return 1 ;; esac
+  [ "$server_pid" -gt 1 ]
+}
+
+running() {
+  read_pid && kill -0 "$server_pid" 2>/dev/null || return 1
+  # A stale pidfile must never stop an unrelated process after PID reuse.
+  ps -p "$server_pid" -o command= | grep -q 'jobhunter.api.app:app'
+}
+
+prepare() {
+  doctor >/dev/null || { doctor; return 1; }
+  mkdir -p data/logs/runs data/run data/careerops data/cv || return 1
+  [ -f data/config.yml ] || cp config/jobhunter.example.yml data/config.yml || return 1
+
+  local stamp
+  stamp=$(shasum -a 256 uv.lock) || return 1
+  if [ ! -d .venv ] || [ ! -f data/run/uv.sha256 ] || [ "$(cat data/run/uv.sha256)" != "$stamp" ]; then
+    uv sync || return 1
+    printf '%s\n' "$stamp" > data/run/uv.sha256
+  fi
+  stamp=$(shasum -a 256 web/package-lock.json) || return 1
+  if [ ! -d web/node_modules ] || [ ! -f data/run/web.sha256 ] || [ "$(cat data/run/web.sha256)" != "$stamp" ]; then
+    (cd web && npm ci) || return 1
+    printf '%s\n' "$stamp" > data/run/web.sha256
+  fi
+  if [ ! -d vendor/career-ops/node_modules ]; then
+    (cd vendor/career-ops && npm install --no-package-lock) || return 1
+  fi
+  if ! ls "$HOME/Library/Caches/ms-playwright" 2>/dev/null | grep -q '^chromium'; then
+    (cd web && npx playwright install chromium) || return 1
+  fi
+  uv run python -c 'from jobhunter.db import migrate; migrate()' || return 1
+  if [ ! -f web/dist/index.html ] || [ web/index.html -nt web/dist/index.html ] \
+      || [ web/package.json -nt web/dist/index.html ] \
+      || [ -n "$(find web/src -type f -newer web/dist/index.html -print -quit 2>/dev/null)" ]; then
+    (cd web && npm run build) || return 1
+  fi
+}
+
+stop() {
+  local stopped_pid deadline
+  if ! running; then
+    # uv may have exited while its uvicorn child is still in the managed group.
+    if ! read_pid || ! ps -axo pgid=,command= | awk -v group="$server_pid" \
+        '$1 == group && /jobhunter.api.app:app/ { found=1 } END { exit !found }'; then
+      [ ! -f "$PIDFILE" ] || rm -f "$PIDFILE"
+      echo "job-hunter is not running"
+      return 0
+    fi
+  fi
+  stopped_pid=$server_pid
+  # The background wrapper makes the server a session/process-group leader.
+  kill -TERM -- "-$stopped_pid" 2>/dev/null || kill -TERM "$stopped_pid" 2>/dev/null || true
+  deadline=$((SECONDS + 10))
+  while kill -0 -- "-$stopped_pid" 2>/dev/null && [ "$SECONDS" -lt "$deadline" ]; do sleep 0.2; done
+  if kill -0 -- "-$stopped_pid" 2>/dev/null; then
+    kill -KILL -- "-$stopped_pid" 2>/dev/null || true
+  fi
+  if kill -0 "$stopped_pid" 2>/dev/null; then kill -KILL "$stopped_pid" 2>/dev/null || true; fi
+  rm -f "$PIDFILE"
+  echo "job-hunter stopped (pid $stopped_pid)"
+}
+
+up() {
+  local deadline ready=0
+  prepare || return 1
+  if running; then
+    echo "job-hunter is already running (pid $server_pid): $URL"
+    return 0
+  fi
+  if ! .venv/bin/python -c 'import socket, sys; s=socket.socket(); s.bind(("127.0.0.1", int(sys.argv[1]))); s.close()' \
+      "$PORT" 2>/dev/null; then
+    echo "Port $PORT is already in use without a managed pidfile; stop that server or set JOBHUNTER_PORT." >&2
+    return 1
+  fi
+  # exec preserves the pid while setsid gives stop a group containing uvicorn and its children.
+  nohup .venv/bin/python -c 'import os, sys; os.setsid(); os.execvp("uv", ["uv", "run", "uvicorn", "jobhunter.api.app:app", "--host", "127.0.0.1", "--port", sys.argv[1]])' \
+    "$PORT" >> "$SERVER_LOG" 2>&1 < /dev/null &
+  server_pid=$!
+  printf '%s\n' "$server_pid" > "$PIDFILE"
+  deadline=$((SECONDS + 30))
+  while [ "$SECONDS" -lt "$deadline" ]; do
+    if curl --noproxy '*' -fsS --max-time 1 "$URL/api/health" >/dev/null 2>&1; then ready=1; break; fi
+    kill -0 "$server_pid" 2>/dev/null || break
+    sleep 0.2
+  done
+  if [ "$ready" -ne 1 ]; then
+    echo "job-hunter did not become healthy within 30 seconds; see $SERVER_LOG" >&2
+    tail -n 30 "$SERVER_LOG" >&2
+    stop
+    return 1
+  fi
+  echo "job-hunter started (pid $server_pid): $URL"
+  if [ "${JOBHUNTER_NO_OPEN:-0}" != 1 ]; then open "$URL"; fi
+}
+
+status() {
+  if ! running; then echo "job-hunter is not running"; return 1; fi
+  echo "job-hunter running · pid $server_pid · uptime $(ps -p "$server_pid" -o etime= | xargs) · $URL"
+  if have jq; then
+    curl --noproxy '*' -fsS --max-time 3 "$URL/api/health" | jq '{ok, db, scheduler, services}'
+  else
+    curl --noproxy '*' -fsS --max-time 3 "$URL/api/health" | .venv/bin/python -m json.tool
+  fi
+}
+
+logs() {
+  if [ ! -f "$SERVER_LOG" ]; then echo "No server log yet: $SERVER_LOG"; return 0; fi
+  case "${1:-}" in
+    '') tail -n 100 "$SERVER_LOG" ;;
+    -f) tail -n 100 -f "$SERVER_LOG" ;;
+    *) echo 'usage: ./start.sh logs [-f]' >&2; return 2 ;;
+  esac
+}
+
+foreground() {
+  prepare || return 1
+  if running; then echo "job-hunter is already running (pid $server_pid)" >&2; return 1; fi
+  exec uv run uvicorn jobhunter.api.app:app --host 127.0.0.1 --port "$PORT"
+}
+
 usage() {
   cat <<EOF
 usage: ./start.sh [command]
   doctor            check prerequisites, print exact fixes (exit 1 on a blocking problem)
   dev               api (reload) + vite dev server in the foreground, for agents
-  up | stop | restart | status | logs [-f] | autostart on|off | foreground
-                    not yet: arrive in Wave 2 (up) and Wave 4 (the rest)
+  up                install changed dependencies, migrate, build and start (default)
+  stop | restart    stop the server and its children, or restart it
+  status            show pid, uptime and service health
+  logs [-f]         tail the server log, optionally following it
+  foreground        prepare and run the server in the foreground
+  autostart on|off   not yet: arrives in Wave 4
 EOF
 }
 
@@ -81,7 +214,12 @@ case "${1:-up}" in
   doctor) doctor ;;
   dev) dev ;;
   -h | --help | help) usage ;;
-  up | stop | restart | status | logs | autostart | foreground)
-    echo "'$1' is not implemented yet (Wave 2/4). For now: ./start.sh dev" >&2; exit 2 ;;
+  up) up ;;
+  stop) stop ;;
+  restart) stop && up ;;
+  status) status ;;
+  logs) logs "${2:-}" ;;
+  foreground) foreground ;;
+  autostart) echo "'autostart' is not implemented yet (Wave 4)." >&2; exit 2 ;;
   *) usage; exit 2 ;;
 esac
