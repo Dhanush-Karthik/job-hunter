@@ -1,0 +1,35 @@
+Sanitized excerpt of the recorded Wave 0 evaluation; candidate facts and drafts removed.
+
+<<report-md>>
+# Evaluation: Example Software Ltd. — Backend Developer (Java + Spring Boot)
+
+**Date:** 2026-11-12
+**URL:** https://jobs.example.test/roles/java-42
+**Via:** —
+**Archetype:** Java Backend Engineer / SDE I-II (P1)
+**Score:** 3.7/5
+**Decision:** Consider
+**Legitimacy:** Proceed with Caution
+**Work Auth:** ➖ Not needed
+**Verification:** unconfirmed (batch mode)
+**PDF:** not generated — run /career-ops pdf example-software-ltd to create on demand
+
+## B) Match with CV
+
+Java backend requirements match the candidate profile.
+
+## Machine Summary
+
+```yaml
+company: "Example Software Ltd."
+role: "Backend Developer (Java + Spring Boot)"
+job_facts_cache: null
+score: 3.7
+legitimacy_tier: "Proceed with Caution"
+archetype: "Java Backend Engineer / SDE I-II"
+final_decision: "Consider"
+hard_stops: []
+```
+<</report-md>>
+
+VERDICT: 3.7/5 — Relevant Java backend opening, compensation needs confirmation

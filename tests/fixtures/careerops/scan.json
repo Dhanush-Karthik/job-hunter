@@ -1,0 +1,10 @@
+{
+  "postings": [
+    {"id": "java-42", "url": "https://jobs.example.test/java-42", "title": "Java Backend Engineer", "company": "Example Software", "location": "Chennai, India", "description": "Java Spring Boot microservices, 2-4 years", "provider": "greenhouse", "postedAt": 1794412800000},
+    {"id": "java-43", "url": "https://himalayas.app/jobs/java-43", "title": "Java Platform Engineer", "company": "Example Remote", "location": "Remote (worldwide)", "description": "Java backend APIs", "provider": "himalayas", "remote": true},
+    {"url": "https://remoteok.com/remote-jobs/java-44", "title": "Spring Boot Developer", "company": "Example Cloud", "location": "Remote India", "provider": "remoteok", "remote": true},
+    {"url": "https://remotive.com/remote-jobs/java-45", "title": "Java Engineer", "company": "Example Async", "location": "Remote", "provider": "remotive", "remote": true},
+    {"url": "https://weworkremotely.com/remote-jobs/java-46", "title": "Backend Java Engineer", "company": "Example Distributed", "location": "Worldwide", "provider": "weworkremotely", "remote": true}
+  ],
+  "errors": []
+}
