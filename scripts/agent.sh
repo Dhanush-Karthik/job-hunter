@@ -20,8 +20,14 @@ place_pane() {
     0) target=$lead; dir=right; ratio=(--ratio 0.67) ;;
     1|2) dir=down  # split the tallest helper
        target=$(jq -r --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|max_by(.rect.height).pane_id' <<<"$layout") ;;
-    3) dir=right   # bottom helper gets a side-by-side neighbour
-       target=$(jq -r --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|max_by(.rect.y).pane_id' <<<"$layout") ;;
+    3) target=$(jq -r --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|max_by(.rect.y).pane_id' <<<"$layout")
+       # bottom helper gets a side-by-side neighbour only if both halves keep >= 60 columns
+       if [ "$(jq --arg t "$target" '.result.layout.panes[]|select(.pane_id==$t).rect.width' <<<"$layout")" -ge 120 ]; then
+         dir=right
+       else
+         dir=down
+         target=$(jq -r --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|max_by(.rect.height).pane_id' <<<"$layout")
+       fi ;;
     *) echo "4 helpers already in this tab; kill one first" >&2; return 1 ;;
   esac
   herdr pane split "$target" --direction "$dir" ${ratio[@]+"${ratio[@]}"} --cwd "$DIR" --no-focus | jq -r .result.pane.pane_id
