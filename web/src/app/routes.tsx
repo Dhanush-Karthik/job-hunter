@@ -1,9 +1,12 @@
+import { lazy } from 'react'
 import { Link, Route, Routes } from 'react-router-dom'
-import { LeadsPage } from '@/pages/leads/leads-page'
-import { QuickApplyPage } from '@/pages/leads/quick-apply-page'
 import { JobDetailPlaceholder, Placeholder } from '@/pages/placeholder/placeholder'
-import { TodayPage } from '@/pages/today/today-page'
 import { AppLayout } from './layout'
+
+// One chunk per page; AppLayout wraps the outlet in Suspense with the PageLoading fallback.
+const TodayPage = lazy(() => import('@/pages/today/today-page').then((m) => ({ default: m.TodayPage })))
+const LeadsPage = lazy(() => import('@/pages/leads/leads-page').then((m) => ({ default: m.LeadsPage })))
+const QuickApplyPage = lazy(() => import('@/pages/leads/quick-apply-page').then((m) => ({ default: m.QuickApplyPage })))
 
 function NotFound() {
   return (

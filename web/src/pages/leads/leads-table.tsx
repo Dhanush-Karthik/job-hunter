@@ -16,14 +16,24 @@ export type { RowActions }
 const features = tableFeatures({ rowSelectionFeature })
 const col = createColumnHelper<typeof features, LeadSummary>()
 
-/** Responsive visibility per column id. Below md the cards in lead-cards.tsx replace the table. */
-const HIDE: Record<string, string> = {
-  channel: 'hidden xl:table-cell',
-  exp: 'hidden lg:table-cell',
-  ctc: 'hidden lg:table-cell',
-  source: 'hidden lg:table-cell',
-  tags: 'hidden xl:table-cell',
+/**
+ * Fixed layout: every column but the title has a set width so the whole row (actions included) fits from 1280 px
+ * without scrolling; company and title truncate (full text in the tooltip). Below md the cards in lead-cards.tsx replace
+ * the table; between md and xl the table scrolls. Prefilter tags/reasons only get a column from 2xl.
+ */
+const WIDTH: Record<string, string> = {
+  select: 'w-10',
+  score: 'w-24',
+  badges: 'w-28',
+  company: 'w-40',
+  exp: 'w-20',
+  ctc: 'w-28',
+  tags: 'w-56',
+  status: 'w-24',
+  actions: 'w-28',
 }
+const HIDE: Record<string, string> = { tags: 'hidden 2xl:table-cell' }
+const colClass = (id: string) => cn(WIDTH[id], HIDE[id])
 
 const stop = (e: React.SyntheticEvent) => e.stopPropagation()
 
@@ -58,41 +68,47 @@ function buildColumns(a: RowActions) {
         <div className="flex flex-col items-start gap-1">
           {row.original.is_fresh && <FreshBadge />}
           {row.original.is_inbound && <InboundBadge />}
+          <Badge variant="outline">{CHANNEL_LABEL[row.original.apply_channel]}</Badge>
         </div>
       ),
     }),
     col.display({
-      id: 'channel',
-      header: 'Channel',
-      cell: ({ row }) => <Badge variant="outline">{CHANNEL_LABEL[row.original.apply_channel]}</Badge>,
-    }),
-    col.display({
       id: 'company',
       header: 'Company',
-      cell: ({ row }) => <span className="font-medium">{row.original.company}</span>,
+      cell: ({ row }) => (
+        <div className="min-w-0">
+          <div className="truncate font-medium" title={row.original.company}>
+            {row.original.company}
+          </div>
+          <div className="truncate text-xs text-muted-foreground">{SOURCE_LABEL[row.original.source]}</div>
+        </div>
+      ),
     }),
     col.display({
       id: 'title',
       header: 'Title',
       cell: ({ row }) => {
         const l = row.original
+        const place = formatPlace(l)
         return (
-          <div className="min-w-40 max-w-80">
-            <Link to={`/jobs/${l.id}`} onClick={stop} className="font-medium hover:underline">
-              {l.title}
-            </Link>
-            {l.duplicates > 0 && <span className="ml-1.5 text-xs text-muted-foreground">+{l.duplicates} dup</span>}
+          <div className="min-w-0">
+            <div className="flex items-baseline gap-1.5">
+              <Link to={`/jobs/${l.id}`} onClick={stop} className="truncate font-medium hover:underline" title={l.title}>
+                {l.title}
+              </Link>
+              {l.duplicates > 0 && <span className="shrink-0 text-xs text-muted-foreground">+{l.duplicates} dup</span>}
+            </div>
+            <div className="truncate text-xs text-muted-foreground" title={place}>
+              {place}
+            </div>
             {isRejected(l) && l.prefilter_reasons.length > 0 && (
-              <div className="mt-0.5 text-xs text-destructive/80 xl:hidden">{l.prefilter_reasons.join('; ')}</div>
+              <div className="truncate text-xs text-destructive/80 2xl:hidden" title={l.prefilter_reasons.join('; ')}>
+                {l.prefilter_reasons.join('; ')}
+              </div>
             )}
           </div>
         )
       },
-    }),
-    col.display({
-      id: 'place',
-      header: 'City / mode',
-      cell: ({ row }) => <span className="whitespace-nowrap">{formatPlace(row.original)}</span>,
     }),
     col.display({
       id: 'exp',
@@ -106,11 +122,6 @@ function buildColumns(a: RowActions) {
         const ctc = formatCtc(row.original)
         return ctc ? <span className="whitespace-nowrap">{ctc}</span> : <Badge variant="outline">CTC unknown</Badge>
       },
-    }),
-    col.display({
-      id: 'source',
-      header: 'Source',
-      cell: ({ row }) => <span className="whitespace-nowrap">{SOURCE_LABEL[row.original.source]}</span>,
     }),
     col.display({
       id: 'tags',
@@ -183,12 +194,12 @@ export function LeadsTable({
   }
 
   return (
-    <Table>
+    <Table className="min-w-[60rem] table-fixed">
       <TableHeader>
         {table.getHeaderGroups().map((g) => (
           <TableRow key={g.id}>
             {g.headers.map((h) => (
-              <TableHead key={h.id} className={cn(HIDE[h.column.id], h.column.id === 'select' && 'w-8')}>
+              <TableHead key={h.id} className={colClass(h.column.id)}>
                 {h.isPlaceholder ? null : flexRender(h.column.columnDef.header, h.getContext())}
               </TableHead>
             ))}
@@ -207,7 +218,7 @@ export function LeadsTable({
             {row.getAllCells().map((cell) => (
               <TableCell
                 key={cell.id}
-                className={cn(HIDE[cell.column.id])}
+                className={colClass(cell.column.id)}
                 onClick={cell.column.id === 'select' || cell.column.id === 'actions' ? stop : undefined}
               >
                 {flexRender(cell.column.columnDef.cell, cell.getContext())}

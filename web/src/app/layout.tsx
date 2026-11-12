@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import { Menu, Rocket } from 'lucide-react'
 import { Outlet } from 'react-router-dom'
+import { PageLoading } from '@/components/query-states'
 import { Button } from '@/components/ui/button'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet'
 import { SidebarNav } from './nav'
@@ -52,7 +53,9 @@ export function AppLayout() {
           <Brand />
         </header>
         <main className="mx-auto w-full max-w-7xl flex-1 px-4 py-6 md:px-8">
-          <Outlet />
+          <Suspense fallback={<PageLoading />}>
+            <Outlet />
+          </Suspense>
         </main>
       </div>
     </div>
