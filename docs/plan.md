@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **v3.3, Wave 4 in progress** (Waves 0-3 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3.3, Wave 4: 4.1-4.3 done, 4.4 (owner day) next** (Waves 0-3 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -641,3 +641,16 @@ Pipeline tuning (score spread at the top, city-in-title drop) landed in 1a7fd32.
 Totals: `uv run pytest` 650 passed, vitest 98, Playwright 14 + 3 real.
 **Real mailbox run (390 mails):** first pass gave 7 inbound + 4 needs-eyes, only 1 right (Indeed digests, newsletters, promos). After the fix: 534 job cards from 36 alerts (LinkedIn 150, Indeed 374, Cutshort 10), 1 inbound (a LinkedIn InMail, correct), 1 needs-eyes (a rejection from a company with no application, correct), re-run adds nothing, no Application/Event writes.
 Open: no real alerts yet from Naukri, Hirist, foundit, Uplers, Instahyre in the last 60 days (those parsers rely on synthetic fixtures); the owner's Indeed alerts are fresher/intern searches (307 of 374 cards dropped as fresher/intern).
+
+**Wave 4 status (12 Nov 2026): ◐ 4.1-4.3 done, 4.4 with the owner**
+
+| Task | Result |
+|---|---|
+| scan | node deadline + per-entry timeout, concurrency 8, partial results, India/remote pre-filter; claude runs `--safe-mode --setting-sources "" --strict-mcp-config` (verified: no user hooks, OAuth ok); usage-limit → "Claude usage limit reached; resets at HH:MM IST". 63 tests |
+| portals | ATS resolver (careers-page links + slug probes with identity checks; generic slugs rejected), seed 350 companies → **180 API-resolvable** (Greenhouse 78, Workday 46, Ashby 22, Lever 12, SmartRecruiters 11, Darwinbox 3, Keka 3, TurboHire 2, others 3), 170 websearch. Lead audit caught Lowe's→"Slice Talent Community" and TCS→"Thornbury Community Services"; after the fix all 78 Greenhouse board names match. 87 tests |
+| ops | `jobhunter db migrate / health / run <kind> [--wait] / doctor-json`; `./start.sh autostart on\|off\|status` (launchd, KeepAlive; stop/up go through launchctl while on). 2nd `up` 0.5 s, no orphans, doctor exit 1 without claude. 24 tests. `run followups` / `intake_remote` exit 2 (no API trigger) |
+| lead | titles + "Java Backend Developer", "Senior Java Developer" (Naukri yields best: 106 good of 258; Glassdoor 3 of 252, kept for now). Killed two stale Wave 3 test servers (ports 8788, 2004) that ran extra schedulers on the real DB |
+| tester | `test_wave4.py` (partial scan, usage limit, CLI); `uv run pytest` 742 passed, golden recall 1.000 / dedupe precision 1.000, vitest 98, Playwright mock 14 + real 3 |
+
+**Real scan (run 12, via `jobhunter run careerops_scan --wait`): succeeded in 5 min 45 s** (was a 600 s timeout every run): 7,481 fetched, 7,469 new, 750 pass prefilter (Bengaluru 530, Chennai 29, remote/India ~50), remote boards 78 pass.
+Open: career-page leads score low (avg quick score 0.11 vs Naukri 0.50; only 44% carry a description, and generic non-Java titles like support/GenAI pass recall-first) → tune quick score / title negatives after the owner's first day. "Remote - <non-India city>" still passes the location rule. Owner decides on `./start.sh autostart on`.
