@@ -4,7 +4,7 @@ Status: **v3, Wave 0 in progress** (0.2, 0.3, 0.5 done; 0.4/0.6 partly blocked, 
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
-Changes from v2: decisions D1-D5 recorded; sources widened from "email alerts" to **every reachable channel** (job boards, Google Jobs, ~300 career pages, remote boards, inbound recruiter platforms, referrals); interview-call levers added (freshness, quick-apply batching, form-fill assist, referrals, inbound capture); single `./start.sh`; Excel dropped (CSV export only); waves re-ordered so the dashboard is usable after Wave 2.
+Changes from v2: decisions D1-D6 recorded; sources widened from "email alerts" to **every reachable channel** (job boards, Google Jobs, ~300 career pages, remote boards, inbound recruiter platforms, referrals); interview-call levers added (freshness, quick-apply batching, form-fill assist, referrals, inbound capture); single `./start.sh`; Excel dropped (CSV export only); waves re-ordered so the dashboard is usable after Wave 2.
 
 ---
 
@@ -39,7 +39,7 @@ Changes from v2: decisions D1-D5 recorded; sources widened from "email alerts" t
 | D3 | Locations / CTC | **Chennai, Bengaluru, Remote** (India-remote + global-remote open to India). **CTC > 10 LPA**: drop only when the stated max is below 10 LPA; unknown CTC passes (most Indian posts hide it) |
 | D4 | Desktop notifications | **Yes**: macOS notifications via `osascript` (no extra dependency) |
 | D5 | Companion xlsx | **Ignored**; tracker export is CSV |
-| D6 | **New**: Naukri profile auto-refresh (a logged-in bot edits your profile daily so it ranks higher in recruiter search) | **Recommend reminder-only** (dashboard button opens the edit page, ~2 min). The bot is opt-in later: it risks Naukri account restrictions. *Owner to confirm* |
+| D6 | **New**: Naukri profile auto-refresh (a logged-in bot edits your profile daily so it ranks higher in recruiter search) | **Decided 12 Nov: reminder-only.** Dashboard button opens the edit page (~2 min); `naukri_profile_bot` stays false. No logged-in bot |
 
 ## 2. Interview-call levers (why the design looks like this)
 
@@ -557,7 +557,7 @@ After Wave 2 the lead wires `./start.sh up` minimally, so the owner can **start 
 
 | # | State |
 |---|---|
-| 0.1 | ⏳ owner inputs pending |
+| 0.1 | ◐ D6 decided (reminder-only); Gmail app password: owner enters in Setup page (Wave 3); CV + profile, alert accounts, `.eml` exports, golden set pending |
 | 0.2 | ✅ `uv run python -m jobhunter.api.dump_openapi --check`, `uv run pytest` (6 pass) |
 | 0.3 | ✅ `cd web && npm run build && npm run test` (3 pass on MSW) |
 | 0.4 | ◐ submodule added; career-ops `npm ci` + self-check blocked (owner approval); Playwright chromium present |
