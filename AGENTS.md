@@ -2,6 +2,9 @@
 
 Project: job-hunter — an application that hunts jobs cleverly (sourcing, matching, tailoring, outreach, tracking) so the owner lands a job as early as possible.
 
+## Quick start
+`scripts/up.sh` (inside any herdr pane) creates/reuses the workspace and starts the lead. `scripts/up.sh --down` closes it.
+
 ## Model
 - One persistent **lead** (Opus, high effort) plans and delegates. Sub-agents are spawned **only when needed**, used, then killed.
 - No reviewer agent. The lead verifies by running code and tests.
