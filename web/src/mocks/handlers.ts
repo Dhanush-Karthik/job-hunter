@@ -3,7 +3,9 @@ import { http, HttpResponse } from 'msw'
 import { TRANSITIONS, type AppStatus, type ApplicationOut, type LeadSummary, type RunOut } from '@/api/client'
 import {
   ago,
+  INSIGHTS,
   makeApplication,
+  makeCompanies,
   makeDetail,
   makeEvents,
   makeLeads,
@@ -28,6 +30,7 @@ function fresh() {
     runs: makeRuns(),
     sources: makeSources(),
     profiles: makeProfiles(),
+    companies: makeCompanies(),
     settings: structuredClone(SETTINGS),
     secrets: { gmail_address: false, gmail_app_password: false } as Record<string, boolean>,
     cv: { A: true, B: false } as Record<string, boolean>,
@@ -351,7 +354,29 @@ export const handlers = [
     ]),
   ),
 
+  http.get('/api/analytics/insights', () => HttpResponse.json(INSIGHTS)),
+
   // ---- config
+  http.get('/api/companies', () => HttpResponse.json(db.companies)),
+  http.post('/api/companies', async ({ request }) => {
+    const b = (await request.json()) as { name: string; careers_url: string }
+    if (db.companies.some((c) => c.name.toLowerCase() === b.name.toLowerCase())) return HttpResponse.json({ detail: 'company exists' }, { status: 409 })
+    const c = { name: b.name, careers_url: b.careers_url, enabled: true, provider: null, notes: null }
+    db.companies.push(c)
+    return HttpResponse.json(c, { status: 201 })
+  }),
+  http.patch('/api/companies/:name', async ({ params, request }) => {
+    const c = db.companies.find((x) => x.name === params.name)
+    if (!c) return notFound()
+    Object.assign(c, Object.fromEntries(Object.entries((await request.json()) as object).filter(([, v]) => v != null)))
+    return HttpResponse.json(c)
+  }),
+  http.delete('/api/companies/:name', ({ params }) => {
+    const i = db.companies.findIndex((x) => x.name === params.name)
+    if (i < 0) return notFound()
+    db.companies.splice(i, 1)
+    return new HttpResponse(null, { status: 204 })
+  }),
   http.get('/api/sources', () => HttpResponse.json(db.sources)),
   http.patch('/api/sources/:source', async ({ params, request }) => {
     const s = db.sources.find((x) => x.source === params.source)
@@ -384,6 +409,13 @@ export const handlers = [
     const gmail = db.secrets.gmail_address && db.secrets.gmail_app_password
     return HttpResponse.json({ cv_a: db.cv.A, cv_b: db.cv.B, gmail, claude_cli: true, careerops: true, playwright: true, complete: db.cv.A && gmail })
   }),
+  http.post('/api/setup/gmail-test', () =>
+    HttpResponse.json(
+      db.secrets.gmail_address && db.secrets.gmail_app_password
+        ? { ok: true, detail: 'IMAP login ok, INBOX readable' }
+        : { ok: false, detail: 'Gmail address or app password missing' },
+    ),
+  ),
   http.put('/api/setup/cv', async ({ request }) => {
     const b = (await request.json()) as { variant: 'A' | 'B' }
     db.cv[b.variant] = true

@@ -324,6 +324,15 @@ class RejectAuditRow(BaseModel):
     sample_lead_ids: list[int]
 
 
+class Insight(BaseModel):
+    """One plain-English, rule-based observation for the Analytics page (no LLM)."""
+
+    kind: Literal["best_source", "weak_source", "variant", "channel", "title", "pace", "response_time", "rejects"]
+    text: str = Field(description='e.g. "Naukri: 3 calls from 12 applies (25%), best source this month"')
+    severity: Literal["info", "good", "warn"] = "info"
+    metric: float | None = None
+
+
 # ---------- sources / settings / secrets / profiles ----------
 
 
@@ -378,6 +387,15 @@ class Targets(BaseModel):
     min_eval_score: float = 3.5
 
 
+class FollowupRules(BaseModel):
+    follow_up_business_days: int = Field(5, ge=1, le=20, description="after applied_at, IST business days")
+    second_follow_up_business_days: int = Field(7, ge=1, le=30, description="after the first follow-up was sent")
+    ghosted_after_days: int = Field(21, ge=7, le=90, description="Applied with no event since -> ghosted proposal")
+    quiet_hours: tuple[int, int] = Field((23, 7), description="local hours [start, end) with no notifications")
+    gmail_lookback_days: int = Field(14, ge=1, le=90, description="first Gmail run reads this far back")
+    extra_holidays: list[str] = Field([], description="YYYY-MM-DD, added to the built-in IST holiday list")
+
+
 class Settings(BaseModel):
     auto_evaluate_top_n: int = Field(10, ge=0, le=50)
     claude_concurrency: int = Field(2, ge=1, le=4)
@@ -387,6 +405,7 @@ class Settings(BaseModel):
     prefilter: PrefilterRules
     schedules: Schedules
     targets: Targets
+    followups: FollowupRules = FollowupRules()
     source_weights: dict[str, float] = {}
 
 
@@ -421,6 +440,31 @@ class SetupStatus(BaseModel):
     careerops: bool
     playwright: bool
     complete: bool
+
+
+class CheckResult(BaseModel):
+    ok: bool
+    detail: str
+
+
+class Company(BaseModel):
+    """One tracked company in data/careerops/portals.yml (career-ops format)."""
+
+    name: str
+    careers_url: str
+    enabled: bool = True
+    provider: str | None = Field(None, description="ATS provider career-ops scans via API; None = websearch")
+    notes: str | None = None
+
+
+class CompanyIn(BaseModel):
+    name: str = Field(min_length=1)
+    careers_url: str = Field(min_length=8)
+
+
+class CompanyPatch(BaseModel):
+    enabled: bool | None = None
+    careers_url: str | None = None
 
 
 class CvUpload(BaseModel):

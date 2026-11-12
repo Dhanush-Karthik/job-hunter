@@ -704,6 +704,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/analytics/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Insights
+         * @description Rule-based observations over the last `days` days (jobhunter.analytics.insights).
+         */
+        get: operations["analyticsInsights"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/sources": {
         parameters: {
             query?: never;
@@ -861,6 +881,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/setup/gmail-test": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Test Gmail
+         * @description Log in to Gmail IMAP with the Keychain secrets (read-only, no mail fetched); ok=False + reason on failure.
+         */
+        post: operations["testGmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Companies
+         * @description tracked_companies from portals.yml, in file order. Empty list if the file is missing.
+         */
+        get: operations["listCompanies"];
+        put?: never;
+        /**
+         * Add Company
+         * @description Append (provider None, websearch scan). 409 if the name exists (case-insensitive).
+         */
+        post: operations["addCompany"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/companies/{name}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Company */
+        delete: operations["deleteCompany"];
+        options?: never;
+        head?: never;
+        /** Patch Company */
+        patch: operations["patchCompany"];
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1013,6 +1095,49 @@ export interface components {
              */
             run_ids: number[];
         };
+        /** CheckResult */
+        CheckResult: {
+            /** Ok */
+            ok: boolean;
+            /** Detail */
+            detail: string;
+        };
+        /**
+         * Company
+         * @description One tracked company in data/careerops/portals.yml (career-ops format).
+         */
+        Company: {
+            /** Name */
+            name: string;
+            /** Careers Url */
+            careers_url: string;
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Provider
+             * @description ATS provider career-ops scans via API; None = websearch
+             */
+            provider?: string | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /** CompanyIn */
+        CompanyIn: {
+            /** Name */
+            name: string;
+            /** Careers Url */
+            careers_url: string;
+        };
+        /** CompanyPatch */
+        CompanyPatch: {
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Careers Url */
+            careers_url?: string | null;
+        };
         /** CvRequest */
         CvRequest: {
             variant: components["schemas"]["ResumeVariant"];
@@ -1060,6 +1185,51 @@ export interface components {
             /** Note */
             note?: string | null;
         };
+        /** FollowupRules */
+        FollowupRules: {
+            /**
+             * Follow Up Business Days
+             * @description after applied_at, IST business days
+             * @default 5
+             */
+            follow_up_business_days: number;
+            /**
+             * Second Follow Up Business Days
+             * @description after the first follow-up was sent
+             * @default 7
+             */
+            second_follow_up_business_days: number;
+            /**
+             * Ghosted After Days
+             * @description Applied with no event since -> ghosted proposal
+             * @default 21
+             */
+            ghosted_after_days: number;
+            /**
+             * Quiet Hours
+             * @description local hours [start, end) with no notifications
+             * @default [
+             *       23,
+             *       7
+             *     ]
+             */
+            quiet_hours: [
+                number,
+                number
+            ];
+            /**
+             * Gmail Lookback Days
+             * @description first Gmail run reads this far back
+             * @default 14
+             */
+            gmail_lookback_days: number;
+            /**
+             * Extra Holidays
+             * @description YYYY-MM-DD, added to the built-in IST holiday list
+             * @default []
+             */
+            extra_holidays: string[];
+        };
         /** Funnel */
         Funnel: {
             /** Stages */
@@ -1094,6 +1264,30 @@ export interface components {
             scheduler: boolean;
             /** Services */
             services: components["schemas"]["ServiceHealth"][];
+        };
+        /**
+         * Insight
+         * @description One plain-English, rule-based observation for the Analytics page (no LLM).
+         */
+        Insight: {
+            /**
+             * Kind
+             * @enum {string}
+             */
+            kind: "best_source" | "weak_source" | "variant" | "channel" | "title" | "pace" | "response_time" | "rejects";
+            /**
+             * Text
+             * @description e.g. "Naukri: 3 calls from 12 applies (25%), best source this month"
+             */
+            text: string;
+            /**
+             * Severity
+             * @default info
+             * @enum {string}
+             */
+            severity: "info" | "good" | "warn";
+            /** Metric */
+            metric?: number | null;
         };
         /** IntakeRequest */
         IntakeRequest: {
@@ -1634,6 +1828,20 @@ export interface components {
             prefilter: components["schemas"]["PrefilterRules"];
             schedules: components["schemas"]["Schedules"];
             targets: components["schemas"]["Targets"];
+            /**
+             * @default {
+             *       "follow_up_business_days": 5,
+             *       "second_follow_up_business_days": 7,
+             *       "ghosted_after_days": 21,
+             *       "quiet_hours": [
+             *         23,
+             *         7
+             *       ],
+             *       "gmail_lookback_days": 14,
+             *       "extra_holidays": []
+             *     }
+             */
+            followups: components["schemas"]["FollowupRules"];
             /**
              * Source Weights
              * @default {}
@@ -3109,6 +3317,37 @@ export interface operations {
             };
         };
     };
+    analyticsInsights: {
+        parameters: {
+            query?: {
+                days?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Insight"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     listSources: {
         parameters: {
             query?: never;
@@ -3365,6 +3604,143 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SetupStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    testGmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CheckResult"];
+                };
+            };
+        };
+    };
+    listCompanies: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Company"][];
+                };
+            };
+        };
+    };
+    addCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Company"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patchCompany: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                name: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompanyPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Company"];
                 };
             };
             /** @description Validation Error */

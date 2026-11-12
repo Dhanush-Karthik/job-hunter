@@ -10,6 +10,22 @@ test "${HERDR_ENV:-}" = 1 || { echo "not inside herdr" >&2; exit 1; }
 DIR="$(cd "$(dirname "$0")/.." && pwd)"
 # shellcheck disable=SC1091
 . "$DIR/agents.conf"
+# Lead keeps ~2/3 width, full height; helpers fill a right column (1 right of lead, 2-3 down, 4 right of 3).
+place_pane() {
+  local layout lead n target dir ratio=()
+  layout=$(herdr pane layout --current)
+  lead=$(jq -r '.result.layout.focused_pane_id' <<<"$layout")
+  n=$(jq --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|length' <<<"$layout")
+  case "$n" in
+    0) target=$lead; dir=right; ratio=(--ratio 0.67) ;;
+    1|2) dir=down  # split the tallest helper
+       target=$(jq -r --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|max_by(.rect.height).pane_id' <<<"$layout") ;;
+    3) dir=right   # bottom helper gets a side-by-side neighbour
+       target=$(jq -r --arg l "$lead" '[.result.layout.panes[]|select(.pane_id!=$l)]|max_by(.rect.y).pane_id' <<<"$layout") ;;
+    *) echo "4 helpers already in this tab; kill one first" >&2; return 1 ;;
+  esac
+  herdr pane split "$target" --direction "$dir" ${ratio[@]+"${ratio[@]}"} --cwd "$DIR" --no-focus | jq -r .result.pane.pane_id
+}
 cmd="${1:-}"; shift || true
 case "$cmd" in
   spawn)
@@ -17,7 +33,7 @@ case "$cmd" in
     case " $ROLES " in *" $role "*) ;; *) echo "unknown role '$role' (ROLES: $ROLES)" >&2; exit 1;; esac
     v() { eval "echo \"\${ROLE_${role}_$1:-}\""; }
     kind=$(v KIND); model=$(v MODEL); effort=$(v EFFORT)
-    pane=$(herdr pane split --current --direction "$SPLIT_DIRECTION" --cwd "$DIR" --no-focus | jq -r .result.pane.pane_id)
+    pane=$(place_pane)
     args=()
     if [ "$kind" = claude ]; then
       [ -n "$model" ]  && args+=(--model "$model")

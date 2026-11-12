@@ -13,6 +13,7 @@ from fastapi import APIRouter
 from sqlmodel import Session, select
 
 from jobhunter.api import convert, queries
+from jobhunter.api._stub import todo
 from jobhunter.api.config import ensure_profiles, profile_due
 from jobhunter.api.deps import SessionDep, db_dt, now_utc, week_start
 from jobhunter.jobs import scheduler
@@ -35,6 +36,7 @@ from jobhunter.schemas import (
     BreakdownRow,
     Funnel,
     FunnelStage,
+    Insight,
     RejectAuditRow,
     ResponseTimes,
     TodaySummary,
@@ -296,3 +298,9 @@ def rejects(
         RejectAuditRow(reason=r, count=n, sample_lead_ids=samples[r])
         for r, n in sorted(counts.items(), key=lambda kv: (-kv[1], kv[0]))
     ]
+
+
+@router.get("/analytics/insights", response_model=list[Insight], operation_id="analyticsInsights")
+def insights(session: SessionDep, days: int = 30) -> list[Insight]:
+    """Rule-based observations over the last `days` days (jobhunter.analytics.insights)."""
+    raise todo()

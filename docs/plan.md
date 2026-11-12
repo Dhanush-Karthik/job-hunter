@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **v3.1, Wave 2 in progress** (Waves 0-1 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3.2, Wave 3 in progress** (Waves 0-2 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -459,7 +459,7 @@ src/jobhunter/pipeline/**              builder W1
 src/jobhunter/careerops/**             codex_builder W2
 src/jobhunter/api/**, jobs/**          builder W2
 src/jobhunter/gmail/**                 codex_builder W3 (alerts, inbound, replies)
-src/jobhunter/followups/**, notify/**, analytics/**, export/**   builder W3
+src/jobhunter/followups/**, notify/**, analytics/**   builder W3 (+ api/**, jobs/** wiring)
 web/src/api/**, web/src/mocks/**       lead
 web/src/app/**, pages/today, pages/leads                         builder2 W1
 web/src/pages/job, pages/tracker, pages/replies                  builder2 W2
@@ -519,12 +519,24 @@ Business rules fixed for Wave 2 (API):
 After Wave 2 the lead runs real intake + one real evaluate, then writes `docs/setup.md` (owner setup to run at full potential, incl. `.eml` export guide).
 
 ### Wave 3: Gmail + feedback loop + insight
-| Agent | Task | Files | Acceptance |
+
+Revised 12 Nov (v3.2), contract-first like Wave 2. Most analytics routes already landed in Wave 2 (`api/insight.py`),
+so the analytics task shrinks to rule-based insights. `export/**` dropped (applications CSV exists). The ghosted
+rule moves from Gmail to follow-ups (it needs no mail). Lead wrote the stubs: `gmail/__init__.py`,
+`followups/__init__.py`, `notify/__init__.py`, `analytics/__init__.py` (signatures + docstrings are the contract),
+schemas `Insight`, `FollowupRules` (`Settings.followups`), `Company*`, `CheckResult`, stub routes
+`/api/companies*`, `/api/setup/gmail-test`, `/api/analytics/insights`, MSW mocks for all of them.
+
+| Agent (role) | Task | Files | Acceptance |
 |---|---|---|---|
-| codex_builder | Gmail module: shared IMAP client (read-only, cursor); alert parsers (Hirist, Instahyre, Cutshort, foundit, Wellfound, Uplers, LinkedIn, Naukri); inbound recruiter classifier; reply/ATS templates → proposals; ghosted rule | `gmail/**`, `tests/test_gmail.py`, `tests/fixtures/emails/**` | `uv run pytest tests/test_gmail.py` (all cards parsed; template prec ≥ .98; no direct status writes) |
-| builder | Follow-up engine (business days, IST holidays), notifications (fresh hot lead, inbound, follow-up due, profile refresh), analytics (funnel, calls by source/channel/title/variant, reject audit), CSV export | `followups/**`, `notify/**`, `analytics/**`, `export/**`, tests | `uv run pytest tests/test_followups.py tests/test_analytics.py` |
-| builder2 | **Analytics**, **Outreach & Follow-ups**, **Sources · Settings · Setup wizard** (query matrix, company list, rules, toggles, profile checklist, run logs) | `pages/analytics/**`, `pages/outreach/**`, `pages/settings/**` | `cd web && npm run build && npm run test` |
-| tester | inbound mail → lead → notification; reply → proposal → accept → calls KPI | `tests/integration/**`, `web/e2e/**` | full `uv run pytest && npx playwright test` |
+| `gmail` (codex_builder) | read-only IMAP client + cursor; classifier (alert / inbound / reply / other); alert parsers for the 8 senders; inbound → lead + inbound proposal; reply templates (ack, rejection, interview, assessment) → status_change / needs_eyes proposals; `check_login`, `health` | `gmail/**`, `tests/test_gmail.py`, `tests/fixtures/emails/**` (sanitized copies of `data/emails/raw`, plus synthetic ones for senders with no sample) | `uv run pytest tests/test_gmail.py` (all cards parsed; reply precision ≥ .98 on fixtures; no Application/Event writes) |
+| `ops` (builder) | follow-ups (IST business days + holidays, drafts, second follow-up), ghosted proposals, notifications (osascript, dedupe, quiet hours), insights; routes for companies (portals.yml), gmail-test, insights; `add_weekdays` → business days; runner dispatch for `intake_gmail` + `followups`, notify after intake, scheduler jobs (gmail every N min, followups hourly 08-21), gmail health row | `followups/**`, `notify/**`, `analytics/**`, `api/**` (not `dump_openapi.py`, `_stub.py`), `jobs/**` (bodies, plus the two dispatch branches), `tests/test_followups.py`, `tests/test_notify.py`, `tests/test_analytics.py`, `tests/test_api_*.py`, `tests/test_jobs.py` | `uv run pytest tests/test_followups.py tests/test_notify.py tests/test_analytics.py tests/test_api_*.py tests/test_jobs.py && uv run python -m jobhunter.api.dump_openapi --check` |
+| `web` (builder2) | **Analytics** (funnel, calls by source/channel/title/variant, weekly vs targets, response time, insights, reject audit with restore), **Outreach & Follow-ups** (due follow-ups, referral drafts, sent log; copy / mark sent / snooze), **Settings** extended: Setup wizard (CV A/B upload, Gmail secrets + Test, status checklist), companies list, prefilter rules, schedules, follow-up rules, run logs | `web/src/pages/{analytics,outreach,settings}/**`, `web/src/app/**`, `web/src/components/**` | `cd web && npm run build && npm run test` |
+| `tester` (after the 3 land) | inbound mail → lead → notification; reply → proposal → accept → calls KPI; follow-up due → outreach; Playwright for Analytics/Outreach/Setup on mocks and real server | `tests/integration/**`, `web/e2e/**`, `tests/fakes/**` | `uv run pytest && cd web && npx playwright test` |
+
+Open on the owner side: real alert samples exist for LinkedIn (3), Instahyre (2), Cutshort (1), Wellfound (1);
+none yet for Naukri, Hirist, foundit, Uplers, so those parsers start from synthetic fixtures and are marked
+unverified until real mail arrives (section 9 gate: ≥ 3 real per sender).
 
 ### Wave 4: integration + ops (lead; tester for final pass)
 | # | Task | Acceptance |
@@ -605,4 +617,4 @@ Totals: `uv run pytest` 157 passed, vitest 28, Playwright 8. Golden seed labels 
 | tester | real-API flow 14 integration tests; Playwright real-server 2/2, mock 8/8 |
 
 Totals: `uv run pytest` 335 passed. Real board fetch: 358 fetched, 336 new, 120 duplicates, 126 dropped.
-Open: pipeline tuning (score resolution at the top, city-in-title drop) given to agent `jobs`, uncommitted until the lead verifies.
+Pipeline tuning (score spread at the top, city-in-title drop) landed in 1a7fd32.

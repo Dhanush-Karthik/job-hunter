@@ -14,7 +14,9 @@ from jobhunter import settings as app_settings
 from jobhunter.api.deps import SessionDep, as_utc, now_utc
 from jobhunter.jobs import scheduler
 from jobhunter.models import Profile, Source, SourceHealth
+from jobhunter.api._stub import todo
 from jobhunter.schemas import (
+    CheckResult,
     CvUpload,
     ProfileOut,
     ProfilePatch,
@@ -220,3 +222,9 @@ def put_cv(body: CvUpload) -> SetupStatus:
         master.parent.mkdir(parents=True, exist_ok=True)
         master.write_text(body.markdown)
     return _setup_status()
+
+
+@router.post("/setup/gmail-test", response_model=CheckResult, operation_id="testGmail")
+def test_gmail() -> CheckResult:
+    """Log in to Gmail IMAP with the Keychain secrets (read-only, no mail fetched); ok=False + reason on failure."""
+    raise todo()

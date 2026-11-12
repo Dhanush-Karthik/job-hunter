@@ -1,7 +1,9 @@
 // Deterministic sample data for MSW (lead-owned). Shapes follow contracts/openapi.json exactly.
 import type {
   ApplicationOut,
+  Company,
   EventOut,
+  Insight,
   LeadDetail,
   LeadSummary,
   OutreachOut,
@@ -208,7 +210,24 @@ export const SETTINGS: Settings = {
   },
   schedules: { boards_every_hours: 3, boards_window: [7, 23], careerops_scan_times: ['08:00', '17:00'], remote_boards_times: ['08:30', '17:30'], gmail_every_minutes: 30 },
   targets: { applied_per_week: 60, referrals_per_week: 15, min_eval_score: 3.5 },
+  followups: { follow_up_business_days: 5, second_follow_up_business_days: 7, ghosted_after_days: 21, quiet_hours: [23, 7], gmail_lookback_days: 14, extra_holidays: [] },
   source_weights: { gmail_inbound: 1.5, careerops_scan: 1.15 },
 }
+
+export function makeCompanies(): Company[] {
+  return [
+    { name: 'Freshworks', careers_url: 'https://careers.smartrecruiters.com/Freshworks', enabled: true, provider: 'smartrecruiters', notes: null },
+    { name: 'Zoho', careers_url: 'https://www.zoho.com/careers/', enabled: true, provider: null, notes: 'ATS unresolved; websearch fallback' },
+    { name: 'Chargebee', careers_url: 'https://www.chargebee.com/careers/', enabled: false, provider: null, notes: null },
+    { name: 'Razorpay', careers_url: 'https://jobs.lever.co/razorpay', enabled: true, provider: 'lever', notes: null },
+  ]
+}
+
+export const INSIGHTS: Insight[] = [
+  { kind: 'best_source', text: 'Naukri: 3 calls from 12 applies (25%), best source in the last 30 days', severity: 'good', metric: 0.25 },
+  { kind: 'weak_source', text: 'Glassdoor: 0 calls from 9 applies; consider fewer applies there', severity: 'warn', metric: 0 },
+  { kind: 'variant', text: 'CV variant B: 2 calls from 6 applies (33%) vs A 2 from 15 (13%)', severity: 'info', metric: 0.33 },
+  { kind: 'pace', text: '34 of 60 applies this week with 2 days left', severity: 'warn', metric: 34 },
+]
 
 export { ago, ahead, NOW }

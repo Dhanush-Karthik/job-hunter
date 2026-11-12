@@ -2156,6 +2156,54 @@
         }
       }
     },
+    "/api/analytics/insights": {
+      "get": {
+        "tags": [
+          "insight"
+        ],
+        "summary": "Insights",
+        "description": "Rule-based observations over the last `days` days (jobhunter.analytics.insights).",
+        "operationId": "analyticsInsights",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 30,
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Insight"
+                  },
+                  "title": "Response Analyticsinsights"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/sources": {
       "get": {
         "tags": [
@@ -2489,6 +2537,179 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/setup/gmail-test": {
+      "post": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Test Gmail",
+        "description": "Log in to Gmail IMAP with the Keychain secrets (read-only, no mail fetched); ok=False + reason on failure.",
+        "operationId": "testGmail",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies": {
+      "get": {
+        "tags": [
+          "config"
+        ],
+        "summary": "List Companies",
+        "description": "tracked_companies from portals.yml, in file order. Empty list if the file is missing.",
+        "operationId": "listCompanies",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/Company"
+                  },
+                  "type": "array",
+                  "title": "Response Listcompanies"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Add Company",
+        "description": "Append (provider None, websearch scan). 409 if the name exists (case-insensitive).",
+        "operationId": "addCompany",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/companies/{name}": {
+      "patch": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Patch Company",
+        "operationId": "patchCompany",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompanyPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Company"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "config"
+        ],
+        "summary": "Delete Company",
+        "operationId": "deleteCompany",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Name"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -3009,6 +3230,119 @@
         ],
         "title": "BulkResult"
       },
+      "CheckResult": {
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "title": "Ok"
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "ok",
+          "detail"
+        ],
+        "title": "CheckResult"
+      },
+      "Company": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "careers_url": {
+            "type": "string",
+            "title": "Careers Url"
+          },
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider",
+            "description": "ATS provider career-ops scans via API; None = websearch"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "careers_url"
+        ],
+        "title": "Company",
+        "description": "One tracked company in data/careerops/portals.yml (career-ops format)."
+      },
+      "CompanyIn": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Name"
+          },
+          "careers_url": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Careers Url"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "careers_url"
+        ],
+        "title": "CompanyIn"
+      },
+      "CompanyPatch": {
+        "properties": {
+          "enabled": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Enabled"
+          },
+          "careers_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Careers Url"
+          }
+        },
+        "type": "object",
+        "title": "CompanyPatch"
+      },
       "CvRequest": {
         "properties": {
           "variant": {
@@ -3167,6 +3501,72 @@
         ],
         "title": "EventOut"
       },
+      "FollowupRules": {
+        "properties": {
+          "follow_up_business_days": {
+            "type": "integer",
+            "maximum": 20.0,
+            "minimum": 1.0,
+            "title": "Follow Up Business Days",
+            "description": "after applied_at, IST business days",
+            "default": 5
+          },
+          "second_follow_up_business_days": {
+            "type": "integer",
+            "maximum": 30.0,
+            "minimum": 1.0,
+            "title": "Second Follow Up Business Days",
+            "description": "after the first follow-up was sent",
+            "default": 7
+          },
+          "ghosted_after_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 7.0,
+            "title": "Ghosted After Days",
+            "description": "Applied with no event since -> ghosted proposal",
+            "default": 21
+          },
+          "quiet_hours": {
+            "prefixItems": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "type": "array",
+            "maxItems": 2,
+            "minItems": 2,
+            "title": "Quiet Hours",
+            "description": "local hours [start, end) with no notifications",
+            "default": [
+              23,
+              7
+            ]
+          },
+          "gmail_lookback_days": {
+            "type": "integer",
+            "maximum": 90.0,
+            "minimum": 1.0,
+            "title": "Gmail Lookback Days",
+            "description": "first Gmail run reads this far back",
+            "default": 14
+          },
+          "extra_holidays": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Extra Holidays",
+            "description": "YYYY-MM-DD, added to the built-in IST holiday list",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "FollowupRules"
+      },
       "Funnel": {
         "properties": {
           "stages": {
@@ -3283,6 +3683,57 @@
           "services"
         ],
         "title": "Health"
+      },
+      "Insight": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "best_source",
+              "weak_source",
+              "variant",
+              "channel",
+              "title",
+              "pace",
+              "response_time",
+              "rejects"
+            ],
+            "title": "Kind"
+          },
+          "text": {
+            "type": "string",
+            "title": "Text",
+            "description": "e.g. \"Naukri: 3 calls from 12 applies (25%), best source this month\""
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "good",
+              "warn"
+            ],
+            "title": "Severity",
+            "default": "info"
+          },
+          "metric": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Metric"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind",
+          "text"
+        ],
+        "title": "Insight",
+        "description": "One plain-English, rule-based observation for the Analytics page (no LLM)."
       },
       "IntakeRequest": {
         "properties": {
@@ -4819,6 +5270,20 @@
           },
           "targets": {
             "$ref": "#/components/schemas/Targets"
+          },
+          "followups": {
+            "$ref": "#/components/schemas/FollowupRules",
+            "default": {
+              "follow_up_business_days": 5,
+              "second_follow_up_business_days": 7,
+              "ghosted_after_days": 21,
+              "quiet_hours": [
+                23,
+                7
+              ],
+              "gmail_lookback_days": 14,
+              "extra_holidays": []
+            }
           },
           "source_weights": {
             "additionalProperties": {
