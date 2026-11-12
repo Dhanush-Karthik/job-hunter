@@ -9,6 +9,8 @@ naukri_profile_bot: false        # D6: reminder-only unless the owner opts in
 query_matrix:
   titles:
     - Java Developer
+    - Java Backend Developer
+    - Senior Java Developer
     - Backend Engineer
     - Software Engineer Java
     - SDE 2

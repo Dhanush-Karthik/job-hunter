@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
@@ -15,7 +16,7 @@ from sqlmodel import select
 
 from jobhunter import careerops, paths
 from jobhunter.careerops._parsing import envelope, machine_summary
-from jobhunter.careerops._runtime import claude_text, run
+from jobhunter.careerops._runtime import NODE_DIR, claude_text, run, scan_timeout
 from jobhunter.careerops.smoke import main as smoke_main
 from jobhunter.models import (
     Actor,
@@ -129,6 +130,55 @@ def test_evaluate(session, lead_run, bridge_env):
     assert "--strict-mcp-config" in args
     assert set(args[args.index("--disallowedTools") + 1].split(",")) >= {"Write", "Edit", "Bash", "Task"}
     assert args[args.index("--add-dir") + 1] == str(paths.CAREEROPS_VENDOR)
+
+
+def assert_claude_isolated(directory):
+    calls = [call for call in records(directory) if call["args"][0] == "-p"]
+    assert calls
+    for call in calls:
+        args = call["args"]
+        assert "--safe-mode" in args
+        assert args[args.index("--setting-sources") + 1] == ""
+        assert "--strict-mcp-config" in args
+        assert "--no-session-persistence" in args
+        assert "--bare" not in args
+
+
+@pytest.mark.parametrize("mode", ["evaluate", "cv", "contacts"])
+def test_all_claude_modes_are_isolated(session, lead_run, bridge_env, mode):
+    lead, run_row = lead_run
+    kwargs = {"run_id": run_row.id, "log": io.StringIO(), "should_cancel": lambda: False}
+    if mode == "cv":
+        careerops.generate_cv(session, lead.id, ResumeVariant.a, **kwargs)
+    elif mode == "contacts":
+        careerops.find_contacts(session, lead.id, **kwargs)
+    else:
+        careerops.evaluate(session, lead.id, **kwargs)
+    assert_claude_isolated(bridge_env)
+
+
+@pytest.mark.parametrize("scenario", ["usage_limit", "usage_limit_zero", "usage_limit_result"])
+def test_usage_limit_has_clear_error(session, lead_run, bridge_env, monkeypatch, scenario):
+    lead, run_row = lead_run
+    monkeypatch.setenv("COPS_SCENARIO", scenario)
+    expected = "Claude usage limit reached; resets at "
+    expected += "9:30pm" if scenario == "usage_limit_result" else "21:30 IST"
+    with pytest.raises(careerops.BridgeError, match=expected):
+        careerops.evaluate(session, lead.id, run_id=run_row.id, log=io.StringIO(), should_cancel=lambda: False)
+    assert session.exec(select(Evaluation)).all() == []
+
+
+def test_stream_usage_limit_precedes_generic_result_error():
+    stream = json.dumps({"type": "rate_limit_event", "rate_limit_info": {
+        "status": "rejected", "resetsAt": 1794499200,
+    }}) + '\n' + json.dumps({"type": "result", "is_error": True, "result": ""})
+    with pytest.raises(careerops.BridgeError, match="Claude usage limit reached; resets at 21:30 IST"):
+        claude_text(stream)
+    assert claude_text(json.dumps({"type": "rate_limit_event", "rate_limit_info": {
+        "status": "allowed_warning", "resetsAt": 1794499200,
+    }}) + '\n' + json.dumps({"type": "result", "result": "ok"})) == "ok"
+    report = "The role requires building APIs with rate limiting and usage limits."
+    assert claude_text(json.dumps({"type": "result", "result": report})) == report
 
 
 def test_evaluate_url_fallback_and_unique_reports(session, lead_run, bridge_env):
@@ -390,3 +440,138 @@ def test_smoke_uses_temporary_database(bridge_env, monkeypatch, capsys):
     assert smoke_main() == 0
     assert sentinel.read_bytes() == b"Owner database must remain untouched"
     assert "score=3.7" in capsys.readouterr().out
+
+
+@pytest.fixture()
+def scan_node(tmp_path):
+    """Run our actual Node scanner with offline providers and a temporary data root."""
+    node_bin = shutil.which("node")
+    if not node_bin:
+        pytest.skip("Node is required for scanner policy subprocess tests")
+    vendor = tmp_path / "vendor"
+    (vendor / "lib").mkdir(parents=True)
+    (vendor / "providers").mkdir()
+    shutil.copy(FIXTURES / "scan_provider.mjs", vendor / "providers" / "_registry.mjs")
+    modules = {
+        "lib/yaml-document.mjs": "export const loadYaml = JSON.parse;",
+        "lib/entry-response-cap.mjs": "export const applyEntryResponseCap = () => {};",
+        "lib/entry-timeout.mjs": "export const applyEntryTimeout = (ctx, e) => { ctx.timeoutMs = e.timeout_ms; };",
+        "providers/_http.mjs": "export const makeHttpCtx = () => ({});",
+        "providers/_connection-scope.mjs": "export const withConnectionScope = fn => fn();",
+    }
+    for name, text in modules.items():
+        (vendor / name).write_text(text)
+
+    def invoke(targets, **env):
+        (tmp_path / "portals.yml").write_text(json.dumps({"tracked_companies": targets}))
+        process_env = {key: value for key, value in os.environ.items() if not key.startswith("JOBHUNTER_SCAN_")}
+        process_env.update({key: str(value) for key, value in env.items()})
+        return subprocess.run(
+            [node_bin, str(NODE_DIR / "scan.mjs"), str(vendor)], check=False, input="{}", capture_output=True,
+            text=True, cwd=tmp_path, env=process_env, timeout=5,
+        )
+    return invoke
+
+
+def test_node_scan_deadline_returns_completed_and_marks_running_and_queued(scan_node):
+    result = scan_node([
+        {"name": "Completed"}, {"name": "RemoteOK", "provider": "remoteok", "hang": True},
+        {"name": "Running", "hang": True}, {"name": "Queued"},
+    ], JOBHUNTER_SCAN_CONCURRENCY=2, JOBHUNTER_SCAN_DEADLINE_S=0.12)
+    assert result.returncode == 0, result.stderr
+    value = json.loads(result.stdout)
+    assert [job["company"] for job in value["postings"]] == ["Completed"]
+    assert set(value["errors"]) == {"RemoteOK: deadline", "Running: deadline", "Queued: deadline"}
+    assert value["sources"]["remoteok"] == {"count": 0, "error": "deadline"}
+    assert "start:Queued" not in result.stderr
+    assert "abort:RemoteOK" in result.stderr
+
+
+def test_node_scan_entry_timeout_frees_worker_and_preserves_results(scan_node):
+    result = scan_node([
+        {"name": "Completed"}, {"name": "Slow tenant", "hang": True}, {"name": "After timeout"},
+    ], JOBHUNTER_SCAN_CONCURRENCY=1, JOBHUNTER_SCAN_ENTRY_TIMEOUT_S=0.05)
+    assert result.returncode == 0, result.stderr
+    value = json.loads(result.stdout)
+    assert {job["company"] for job in value["postings"]} == {"Completed", "After timeout"}
+    assert value["errors"] == ["Slow tenant: timeout after 0.05s"]
+    assert "abort:Slow tenant" in result.stderr
+
+
+@pytest.mark.parametrize("reason,env", [
+    ("deadline", {"JOBHUNTER_SCAN_DEADLINE_S": 0.04}),
+    ("timeout after 0.04s", {"JOBHUNTER_SCAN_ENTRY_TIMEOUT_S": 0.04}),
+])
+def test_node_scan_fails_only_when_zero_targets_succeeded(scan_node, reason, env):
+    result = scan_node([{"name": "Slow", "hang": True}], **env)
+    assert result.returncode != 0
+    assert f"Slow: {reason}" in result.stderr
+    assert result.stdout == ""
+
+
+@pytest.mark.parametrize("concurrency", [None, 2])
+def test_node_scan_default_and_overridden_concurrency(scan_node, concurrency):
+    env = {} if concurrency is None else {"JOBHUNTER_SCAN_CONCURRENCY": concurrency}
+    result = scan_node([{"name": str(i), "delayMs": 30} for i in range(10)], **env)
+    assert result.returncode == 0, result.stderr
+    starts_before_first_result = result.stderr.split("fetched", 1)[0].count("start:")
+    assert starts_before_first_result == (8 if concurrency is None else concurrency)
+    assert len(json.loads(result.stdout)["postings"]) == 10
+
+
+def test_node_location_filter_recall_first_table(scan_node):
+    keep = [None, "", "  ", "Unknown", "N/A", "TBD", "Not specified", "Multiple locations",
+            "India", "Chennai, Tamil Nadu", "Bengaluru", "Bangalore, IN", "Hyderabad", "Pune",
+            "Mumbai", "New Delhi", "Gurgaon", "Gurugram", "Noida", "Kochi", "Coimbatore",
+            "Karnataka", "Tamil-Nadu", "Ahmedabad", "Kerala", "Telangana", "Maharashtra",
+            "Remote", "London / Remote", "Anywhere", "Worldwide", "APAC", "Asia Pacific",
+            "San Francisco; Chennai", "Asia", "Global", "Work from home"]
+    drop = ["San Francisco, CA", "London, United Kingdom", "Berlin, Germany", "Singapore",
+            "New York, USA (Onsite)", "Toronto, Canada", "Paris, France", "Sydney, Australia",
+            "Indianapolis, Indiana", "Onsite - US", "EMEA"]
+    jobs = [{"title": "Java Engineer", "url": f"https://jobs.test/{i}", "location": location}
+            for i, location in enumerate(keep + drop)]
+    result = scan_node([{"name": "Locations", "provider": "himalayas", "jobs": jobs}])
+    assert result.returncode == 0, result.stderr
+    value = json.loads(result.stdout)
+    assert [job["location"] for job in value["postings"]] == keep
+    assert value["sources"]["himalayas"] == {"count": len(keep), "error": None}
+    assert f"{len(jobs)} fetched, {len(keep)} kept" in result.stderr
+
+
+def test_node_scan_empty_success_and_disabled_entries(scan_node):
+    result = scan_node([
+        {"name": "Empty", "jobs": [], "provider": "himalayas"},
+        {"name": "Skipped", "enabled": False, "hang": True},
+        {"name": "Unresolved", "provider": "websearch"},
+    ])
+    assert result.returncode == 0, result.stderr
+    value = json.loads(result.stdout)
+    assert value["postings"] == []
+    assert value["errors"] == ["Unresolved: no public API provider"]
+    assert value["sources"]["himalayas"] == {"count": 0, "error": None}
+    assert "Skipped" not in result.stderr
+
+
+@pytest.mark.parametrize("value,expected", [(None, 1500), ("1800", 2100), ("bad", 1500),
+                                            ("0", 1500), ("nan", 1500), ("inf", 1500)])
+def test_scan_timeout_tracks_node_deadline(monkeypatch, value, expected):
+    if value is None:
+        monkeypatch.delenv("JOBHUNTER_SCAN_DEADLINE_S", raising=False)
+    else:
+        monkeypatch.setenv("JOBHUNTER_SCAN_DEADLINE_S", value)
+    assert scan_timeout() == expected
+
+
+def test_python_scan_passes_extended_timeout(session, bridge_env, monkeypatch):
+    timeouts = []
+    original = careerops.node
+
+    def capture(helper, payload, **kwargs):
+        timeouts.append(kwargs["timeout"])
+        return original(helper, payload, **kwargs)
+
+    monkeypatch.setenv("JOBHUNTER_SCAN_DEADLINE_S", "1800")
+    monkeypatch.setattr(careerops, "node", capture)
+    careerops.scan(session, SETTINGS, log=io.StringIO(), should_cancel=lambda: False)
+    assert timeouts == [2100]

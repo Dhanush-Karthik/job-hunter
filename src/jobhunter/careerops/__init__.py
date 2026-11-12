@@ -44,7 +44,7 @@ from jobhunter.models import (
 from jobhunter.schemas import Settings
 
 from ._parsing import envelope, machine_summary
-from ._runtime import claude_text, node, run
+from ._runtime import CLAUDE_ISOLATION_ARGS, claude_text, node, run, scan_timeout
 
 ShouldCancel = Callable[[], bool]
 
@@ -67,7 +67,7 @@ def scan(session: Session, settings: Settings, *, log: TextIO, should_cancel: Sh
     session.add(health)
     session.commit()
     try:
-        result = node("scan.mjs", {}, log=log, should_cancel=should_cancel)
+        result = node("scan.mjs", {}, log=log, should_cancel=should_cancel, timeout=scan_timeout())
         postings = result["postings"]
         raws = [_raw_job(posting) for posting in postings]
         ingested = pipeline.ingest(session, raws, settings)
@@ -341,6 +341,7 @@ def _transition(session: Session, application: Application, status: AppStatus, n
 def _claude(args: list[str], *, log: TextIO, should_cancel: ShouldCancel) -> str:
     return claude_text(run(
         [os.environ.get("JOBHUNTER_CLAUDE_BIN", "claude"), *args,
+         *CLAUDE_ISOLATION_ARGS,
          "--add-dir", str(paths.CAREEROPS_VENDOR.resolve())], log=log, should_cancel=should_cancel,
     ))
 

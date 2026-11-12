@@ -24,6 +24,14 @@ if capture := os.environ.get("COPS_CAPTURE"):
         stream.write(json.dumps(record) + "\n")
 
 if is_claude:
+    if scenario.startswith("usage_limit"):
+        if scenario != "usage_limit_result":
+            print(json.dumps({"type": "rate_limit_event", "rate_limit_info": {
+                "status": "rejected", "resetsAt": 1794499200,
+            }}))
+        print(json.dumps({"type": "result", "is_error": True,
+                          "result": "You've hit your limit; resets at 9:30pm (Asia/Kolkata)"}))
+        raise SystemExit(0 if scenario == "usage_limit_zero" else 1)
     if scenario == "sleep":
         child = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(60)"])
 

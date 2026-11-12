@@ -4,18 +4,79 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import selectors
 import signal
 import subprocess
 import threading
 import time
 from collections.abc import Callable
+from datetime import datetime
 from pathlib import Path
 from typing import Any, TextIO
+from zoneinfo import ZoneInfo
 
 from jobhunter import paths
 
 NODE_DIR = Path(__file__).with_name("node")
+CLAUDE_ISOLATION_ARGS = [
+    "--safe-mode", "--setting-sources", "", "--strict-mcp-config", "--no-session-persistence",
+]
+
+
+def scan_timeout() -> float:
+    """Match Node's deadline validation and leave five minutes for transport."""
+    try:
+        deadline = float(os.environ.get("JOBHUNTER_SCAN_DEADLINE_S", "1200"))
+    except ValueError:
+        deadline = 1200
+    if not 0 < deadline <= 2_147_483.647:
+        deadline = 1200
+    return deadline + 300
+
+
+def usage_limit_error(output: str) -> str | None:
+    """Read quota diagnostics before a nonzero exit hides the streamed result."""
+    rejected = False
+    reset = None
+    result_text = ""
+    for line in output.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if event.get("type") == "rate_limit_event":
+            info = event.get("rate_limit_info") or event
+            if info.get("status") == "rejected":
+                rejected = True
+                reset = info.get("resetsAt") or reset
+        elif event.get("type") == "result":
+            text = str(event.get("result", ""))
+            quota_result = event.get("is_error") or text.lower().startswith((
+                "you've hit", "you’ve hit", "you have hit", "usage limit", "claude usage limit",
+                "limit reached", "rate limit",
+            ))
+            if quota_result and re.search(r"(?:usage|rate|weekly|session|extra usage) limit|limit (?:reached|exceeded)|"
+                         r"(?:hit|reached|exceeded) (?:your |the )?limit|out of (?:extra )?usage",
+                         text, re.IGNORECASE):
+                rejected = True
+                result_text = text
+                reset = event.get("resetsAt") or reset
+    if not rejected:
+        return None
+    message = "Claude usage limit reached"
+    if reset is not None:
+        try:
+            reset_time = datetime.fromtimestamp(float(reset), ZoneInfo("Asia/Kolkata"))
+            return f"{message}; resets at {reset_time:%H:%M} IST"
+        except (ValueError, TypeError, OverflowError, OSError):
+            pass
+    # Older CLI versions only include a human-readable reset in the result.
+    if match := re.search(r"\bresets?\b[^\n]*", result_text, re.IGNORECASE):
+        return f"{message}; {match.group(0)[:160]}"
+    return message
 
 
 def run(
@@ -97,6 +158,8 @@ def run(
                     threading.Thread(target=proc.wait, daemon=True).start()
                     return b"".join(chunks["stdout"]).decode("utf-8", errors="replace")
         output = b"".join(chunks["stdout"]).decode("utf-8", errors="replace")
+        if limit_error := usage_limit_error(output):
+            raise BridgeError(limit_error)
         if proc.wait() != 0:
             stderr = b"".join(chunks["stderr"]).decode("utf-8", errors="replace").strip()
             reason = stderr.splitlines()[-1] if stderr else f"exit status {proc.returncode}"
@@ -118,14 +181,14 @@ def run(
 
 def node(
     helper: str, payload: dict[str, Any], *, log: TextIO, should_cancel: Callable[[], bool],
-    owner_browser: bool = False,
+    owner_browser: bool = False, timeout: float = 600,
 ) -> Any:
     from jobhunter.careerops import BridgeError
 
     output = run(
         [os.environ.get("JOBHUNTER_NODE_BIN", "node"), str(NODE_DIR / helper),
          str(paths.CAREEROPS_VENDOR.resolve())],
-        payload=payload, log=log, should_cancel=should_cancel, owner_browser=owner_browser,
+        payload=payload, log=log, should_cancel=should_cancel, owner_browser=owner_browser, timeout=timeout,
     )
     try:
         return json.loads(output)
@@ -137,6 +200,8 @@ def claude_text(output: str) -> str:
     """Prefer the final result; assistant snapshots and deltas otherwise overlap."""
     from jobhunter.careerops import BridgeError
 
+    if limit_error := usage_limit_error(output):
+        raise BridgeError(limit_error)
     snapshots: list[str] = []
     deltas: list[str] = []
     plain: list[str] = []
