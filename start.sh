@@ -59,7 +59,7 @@ dev() {
   doctor >/dev/null || { doctor; exit 1; }
   mkdir -p data/logs data/run data/careerops data/cv
   [ -f data/config.yml ] || cp config/jobhunter.example.yml data/config.yml
-  uv run python -c "from jobhunter.db import migrate; migrate()"
+  uv run jobhunter db migrate >/dev/null
   trap 'kill 0' EXIT INT TERM
   uv run uvicorn jobhunter.api.app:app --host 127.0.0.1 --port "$PORT" --reload --reload-dir src &
   (cd web && npm run dev -- --host 127.0.0.1) &
@@ -70,6 +70,13 @@ dev() {
 PIDFILE="$ROOT/data/run/server.pid"
 SERVER_LOG="$ROOT/data/logs/server.log"
 URL="http://127.0.0.1:$PORT"
+LABEL=com.jobhunter.server
+PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+LAUNCHD_DOMAIN="gui/$(id -u)"
+
+autostart_enabled() { [ -f "$PLIST" ]; }
+launchd_loaded() { launchctl print "$LAUNCHD_DOMAIN/$LABEL" >/dev/null 2>&1; }
+xml_escape() { printf '%s' "$1" | sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' -e 's/>/\&gt;/g'; }
 
 read_pid() {
   [ -f "$PIDFILE" ] || return 1
@@ -106,7 +113,7 @@ prepare() {
   if ! ls "$HOME/Library/Caches/ms-playwright" 2>/dev/null | grep -q '^chromium'; then
     (cd web && npx playwright install chromium) || return 1
   fi
-  uv run python -c 'from jobhunter.db import migrate; migrate()' || return 1
+  uv run jobhunter db migrate >/dev/null || return 1
   if [ ! -f web/dist/index.html ] || [ web/index.html -nt web/dist/index.html ] \
       || [ web/package.json -nt web/dist/index.html ] \
       || [ -n "$(find web/src -type f -newer web/dist/index.html -print -quit 2>/dev/null)" ]; then
@@ -116,6 +123,8 @@ prepare() {
 
 stop() {
   local stopped_pid deadline
+  # With autostart on, KeepAlive would respawn the server: unload the agent first.
+  if launchd_loaded; then launchctl bootout "$LAUNCHD_DOMAIN/$LABEL" >/dev/null 2>&1 || true; fi
   if ! running; then
     # uv may have exited while its uvicorn child is still in the managed group.
     if ! read_pid || ! ps -axo pgid=,command= | awk -v group="$server_pid" \
@@ -150,15 +159,22 @@ up() {
     echo "Port $PORT is already in use without a managed pidfile; stop that server or set JOBHUNTER_PORT." >&2
     return 1
   fi
-  # exec preserves the pid while setsid gives stop a group containing uvicorn and its children.
-  nohup .venv/bin/python -c 'import os, sys; os.setsid(); os.execvp("uv", ["uv", "run", "uvicorn", "jobhunter.api.app:app", "--host", "127.0.0.1", "--port", sys.argv[1]])' \
-    "$PORT" >> "$SERVER_LOG" 2>&1 < /dev/null &
-  server_pid=$!
-  printf '%s\n' "$server_pid" > "$PIDFILE"
+  if autostart_enabled; then
+    # launchd owns the process (KeepAlive); the agent runs ./start.sh foreground, which writes the pidfile.
+    if launchd_loaded; then launchctl kickstart "$LAUNCHD_DOMAIN/$LABEL" >/dev/null 2>&1 || true
+    else launchctl bootstrap "$LAUNCHD_DOMAIN" "$PLIST" || return 1; fi
+    server_pid=
+  else
+    # exec preserves the pid while setsid gives stop a group containing uvicorn and its children.
+    nohup .venv/bin/python -c 'import os, sys; os.setsid(); os.execvp("uv", ["uv", "run", "uvicorn", "jobhunter.api.app:app", "--host", "127.0.0.1", "--port", sys.argv[1]])' \
+      "$PORT" >> "$SERVER_LOG" 2>&1 < /dev/null &
+    server_pid=$!
+    printf '%s\n' "$server_pid" > "$PIDFILE"
+  fi
   deadline=$((SECONDS + 30))
   while [ "$SECONDS" -lt "$deadline" ]; do
     if curl --noproxy '*' -fsS --max-time 1 "$URL/api/health" >/dev/null 2>&1; then ready=1; break; fi
-    kill -0 "$server_pid" 2>/dev/null || break
+    if [ -n "$server_pid" ]; then kill -0 "$server_pid" 2>/dev/null || break; fi
     sleep 0.2
   done
   if [ "$ready" -ne 1 ]; then
@@ -167,6 +183,7 @@ up() {
     stop
     return 1
   fi
+  read_pid || server_pid=?
   echo "job-hunter started (pid $server_pid): $URL"
   if [ "${JOBHUNTER_NO_OPEN:-0}" != 1 ]; then open "$URL"; fi
 }
@@ -193,7 +210,58 @@ logs() {
 foreground() {
   prepare || return 1
   if running; then echo "job-hunter is already running (pid $server_pid)" >&2; return 1; fi
+  printf '%s\n' "$$" > "$PIDFILE"  # exec keeps this pid, so status and stop find the server
   exec uv run uvicorn jobhunter.api.app:app --host 127.0.0.1 --port "$PORT"
+}
+
+autostart() {
+  local path_xml port_xml=
+  case "${1:-}" in
+    on)
+      mkdir -p "$(dirname "$PLIST")" data/logs data/run || return 1
+      path_xml=$(xml_escape "$PATH")
+      [ -z "${JOBHUNTER_PORT:-}" ] || port_xml="    <key>JOBHUNTER_PORT</key><string>$(xml_escape "$JOBHUNTER_PORT")</string>"
+      cat > "$PLIST" <<PLISTEOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>$LABEL</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>$(xml_escape "$ROOT")/start.sh</string>
+    <string>foreground</string>
+  </array>
+  <key>RunAtLoad</key><true/>
+  <key>KeepAlive</key><true/>
+  <key>WorkingDirectory</key><string>$(xml_escape "$ROOT")</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>PATH</key><string>$path_xml</string>
+$port_xml
+  </dict>
+  <key>StandardOutPath</key><string>$(xml_escape "$SERVER_LOG")</string>
+  <key>StandardErrorPath</key><string>$(xml_escape "$SERVER_LOG")</string>
+</dict>
+</plist>
+PLISTEOF
+      # A server started by `up` would hold the port: stop it (and any loaded agent) before launchd takes over.
+      stop >/dev/null
+      launchctl bootstrap "$LAUNCHD_DOMAIN" "$PLIST" || return 1
+      echo "autostart on: $PLIST"
+      echo "job-hunter starts at login and restarts if it exits; follow ./start.sh logs -f, check ./start.sh status"
+      ;;
+    off)
+      launchd_loaded && launchctl bootout "$LAUNCHD_DOMAIN/$LABEL" >/dev/null 2>&1
+      rm -f "$PLIST"
+      echo "autostart off (the server is stopped; ./start.sh up starts it again)"
+      ;;
+    status)
+      if ! autostart_enabled; then echo "autostart off"; return 1; fi
+      if launchd_loaded; then echo "autostart on (loaded): $PLIST"; else echo "autostart on (not loaded; ./start.sh up loads it): $PLIST"; fi
+      ;;
+    *) echo 'usage: ./start.sh autostart on|off|status' >&2; return 2 ;;
+  esac
 }
 
 usage() {
@@ -206,7 +274,8 @@ usage: ./start.sh [command]
   status            show pid, uptime and service health
   logs [-f]         tail the server log, optionally following it
   foreground        prepare and run the server in the foreground
-  autostart on|off   not yet: arrives in Wave 4
+  autostart on|off|status
+                    start at login via launchd (RunAtLoad + KeepAlive); while on, up/stop go through launchd
 EOF
 }
 
@@ -220,6 +289,6 @@ case "${1:-up}" in
   status) status ;;
   logs) logs "${2:-}" ;;
   foreground) foreground ;;
-  autostart) echo "'autostart' is not implemented yet (Wave 4)." >&2; exit 2 ;;
+  autostart) autostart "${2:-}" ;;
   *) usage; exit 2 ;;
 esac
