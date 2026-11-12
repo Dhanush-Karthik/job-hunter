@@ -1,0 +1,55 @@
+{
+  "sources": {
+    "greenhouse": "https://boards-api.greenhouse.io/v1/boards/fourkites/jobs",
+    "lever": "https://api.lever.co/v0/postings/hevodata?mode=json",
+    "ashby": "https://api.ashbyhq.com/posting-api/job-board/gainsight",
+    "workable": "https://apply.workable.com/api/v1/widget/accounts/sinch?details=true",
+    "smartrecruiters": "https://api.smartrecruiters.com/v1/companies/Freshworks/postings?limit=1",
+    "recruitee": "https://bunq.recruitee.com/api/offers/"
+  },
+  "payloads": {
+    "greenhouse": {
+      "jobs": [
+        {
+          "absolute_url": "https://job-boards.greenhouse.io/fourkites/jobs/8255592",
+          "id": 8255592,
+          "title": "AI Architect "
+        }
+      ]
+    },
+    "lever": [
+      {
+        "id": "cfdb183c-e9f4-4877-8b8c-bd7a3b4a7fde",
+        "text": "Account Executive",
+        "hostedUrl": "https://jobs.lever.co/hevodata/cfdb183c-e9f4-4877-8b8c-bd7a3b4a7fde"
+      }
+    ],
+    "ashby": {
+      "jobs": [
+        {
+          "id": "146892ae-a133-401a-9565-85691ff3c405",
+          "title": "GRC Engineer",
+          "jobUrl": "https://jobs.ashbyhq.com/gainsight/146892ae-a133-401a-9565-85691ff3c405"
+        }
+      ]
+    },
+    "smartrecruiters": {
+      "content": [
+        {
+          "id": "744000161322320",
+          "name": "Head of Solution Engineering, Americas",
+          "ref": "https://api.smartrecruiters.com/v1/companies/Freshworks/postings/744000161322320"
+        }
+      ]
+    },
+    "recruitee": {
+      "offers": [
+        {
+          "title": "Reporting Agent (France)",
+          "id": 2821648,
+          "careers_url": "https://careers.bunq.com/o/reporting-agent-france-3"
+        }
+      ]
+    }
+  }
+}

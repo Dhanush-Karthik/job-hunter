@@ -1,0 +1,9 @@
+{
+  "cases": [
+    {"company": "Lowe's", "careers_url": "https://talent.lowes.com/", "slug": "talent", "board": {"name": "Slice Talent Community"}, "accepted": false},
+    {"company": "TCS", "careers_url": "https://www.tcs.com/careers", "slug": "tcs", "board": {"name": "Thornbury Community Services"}, "accepted": false},
+    {"company": "Tenable", "careers_url": "https://www.tenable.com/careers", "slug": "tenableinc", "board": {"name": "Tenable, Inc."}, "accepted": true}
+  ],
+  "source_pattern": "https://boards-api.greenhouse.io/v1/boards/<slug>",
+  "note": "False-positive names supplied by lead audit; positive fixture covers corporate suffix normalization."
+}

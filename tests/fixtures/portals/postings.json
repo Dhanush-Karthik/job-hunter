@@ -1,0 +1,9 @@
+{
+  "greenhouse": {"jobs":[{"id":123,"title":"Backend Engineer","absolute_url":"https://job-boards.greenhouse.io/acme/jobs/123"}]},
+  "lever": [{"id":"abc","text":"Software Engineer","hostedUrl":"https://jobs.lever.co/acme/abc"}],
+  "ashby": {"jobs":[{"id":"abc","title":"Platform Engineer","jobUrl":"https://jobs.ashbyhq.com/acme/abc"}]},
+  "workable": {"jobs":[{"id":123,"title":"Backend Engineer","shortlink":"https://apply.workable.com/j/ABC/"}]},
+  "smartrecruiters": {"content":[{"id":"123","name":"Software Engineer","ref":"https://api.smartrecruiters.com/v1/companies/Acme/postings/123"}]},
+  "recruitee": {"offers":[{"id":123,"title":"Backend Engineer","careers_url":"https://acme.recruitee.com/o/backend"}]},
+  "workday": {"jobPostings":[{"title":"Software Engineer","externalPath":"/job/India/Engineer_123"}]}
+}

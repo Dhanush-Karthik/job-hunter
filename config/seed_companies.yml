@@ -1,352 +1,703 @@
-# Curated Java/backend search targets: Chennai, Bengaluru and India-remote.
-# These are employers to scan, not a claim of a current suitable opening.
-# Public branded careers pages are retained; unresolved ATSs use websearch.
-# Freshworks careers URL verified against its official SmartRecruiters board:
-# https://careers.smartrecruiters.com/Freshworks
+# Product, GCC and SaaS employers: Chennai, Bengaluru and India-remote.
+# Targets for discovery, not a claim of a suitable current opening.
 companies:
-  - name: "Freshworks"
-    careers_url: https://careers.smartrecruiters.com/Freshworks
-  - name: "Zoho"
-    careers_url: https://www.zoho.com/careers/
-  - name: "Chargebee"
-    careers_url: https://www.chargebee.com/careers/
-  - name: "Kissflow"
-    careers_url: https://kissflow.com/careers/
-  - name: "Rocketlane"
-    careers_url: https://www.rocketlane.com/careers
-  - name: "Facilio"
-    careers_url: https://facilio.com/careers/
-  - name: "SuperOps"
-    careers_url: https://superops.com/careers
-  - name: "SurveySparrow"
-    careers_url: https://surveysparrow.com/careers/
-  - name: "HappyFox"
-    careers_url: https://www.happyfox.com/jobs/
-  - name: "Uniphore"
-    careers_url: https://www.uniphore.com/careers/
-  - name: "FourKites"
-    careers_url: https://www.fourkites.com/careers/
-  - name: "Yubi"
-    careers_url: https://www.go-yubi.com/careers/
-  - name: "Vivriti Capital"
-    careers_url: https://www.vivriticapital.com/careers.html
-  - name: "M2P Fintech"
-    careers_url: https://m2pfintech.com/careers/
-  - name: "Zeta"
-    careers_url: https://www.zeta.tech/careers/
-  - name: "FSS"
-    careers_url: https://www.fsstech.com/careers
-  - name: "Intellect Design Arena"
-    careers_url: https://www.intellectdesign.com/careers/
-  - name: "Temenos"
-    careers_url: https://www.temenos.com/careers/
-  - name: "Finastra"
-    careers_url: https://careers.finastra.com/
-  - name: "Ramco Systems"
-    careers_url: https://www.ramco.com/careers
-  - name: "Orion Innovation"
-    careers_url: https://www.orioninc.com/careers/
-  - name: "Prodapt"
-    careers_url: https://www.prodapt.com/careers/
-  - name: "Aspire Systems"
-    careers_url: https://www.aspiresys.com/careers
-  - name: "Ideas2IT"
-    careers_url: https://www.ideas2it.com/careers
-  - name: "Kaar Technologies"
-    careers_url: https://www.kaartech.com/careers/
-  - name: "Altimetrik"
-    careers_url: https://www.altimetrik.com/careers/
-  - name: "Tiger Analytics"
-    careers_url: https://www.tigeranalytics.com/careers/
-  - name: "LatentView Analytics"
-    careers_url: https://www.latentview.com/careers/
-  - name: "Crayon Data"
-    careers_url: https://www.crayondata.com/careers/
-  - name: "Securin"
-    careers_url: https://www.securin.io/careers/
-  - name: "Sagent"
-    careers_url: https://sagent.com/careers/
-  - name: "Trimble"
-    careers_url: https://trimble.wd1.myworkdayjobs.com/TrimbleCareers
-  - name: "Walmart Global Tech"
-    careers_url: https://careers.walmart.com/technology
-  - name: "Amazon"
-    careers_url: https://www.amazon.jobs/en/locations/india
-  - name: "PayPal"
-    careers_url: https://paypal.wd1.myworkdayjobs.com/jobs
-  - name: "eBay"
-    careers_url: https://jobs.ebayinc.com/
-  - name: "Comcast"
-    careers_url: https://jobs.comcast.com/
-  - name: "Verizon"
-    careers_url: https://mycareer.verizon.com/
-  - name: "Cisco"
-    careers_url: https://jobs.cisco.com/
-  - name: "Qualcomm"
-    careers_url: https://careers.qualcomm.com/
-  - name: "Ford"
-    careers_url: https://www.careers.ford.com/
-  - name: "Caterpillar"
-    careers_url: https://cat.wd5.myworkdayjobs.com/CaterpillarCareers
-  - name: "Daimler Truck"
-    careers_url: https://jobs.daimlertruck.com/
-  - name: "Standard Chartered"
-    careers_url: https://jobs.standardchartered.com/
-  - name: "Barclays"
-    careers_url: https://search.jobs.barclays/
-  - name: "Citi"
-    careers_url: https://jobs.citi.com/
-  - name: "BNY"
-    careers_url: https://www.bny.com/corporate/global/en/careers.html
-  - name: "Fidelity Investments"
-    careers_url: https://jobs.fidelity.com/
-  - name: "DTCC"
-    careers_url: https://careers.dtcc.com/
-  - name: "Northern Trust"
-    careers_url: https://ntrs.wd1.myworkdayjobs.com/northerntrust
-  - name: "NatWest"
-    careers_url: https://jobs.natwestgroup.com/
-  - name: "Bank of America"
-    careers_url: https://careers.bankofamerica.com/
-  - name: "Wells Fargo"
-    careers_url: https://www.wellsfargojobs.com/
-  - name: "JPMorgan Chase"
-    careers_url: https://careers.jpmorgan.com/
-  - name: "Goldman Sachs"
-    careers_url: https://www.goldmansachs.com/careers/
-  - name: "Morgan Stanley"
-    careers_url: https://www.morganstanley.com/people-opportunities
-  - name: "Deutsche Bank"
-    careers_url: https://careers.db.com/
-  - name: "HSBC"
-    careers_url: https://www.hsbc.com/careers/
-  - name: "UBS"
-    careers_url: https://www.ubs.com/global/en/careers.html
-  - name: "Societe Generale"
-    careers_url: https://careers.societegenerale.com/
-  - name: "ANZ"
-    careers_url: https://careers.anz.com/
-  - name: "Tesco"
-    careers_url: https://www.tesco-careers.com/
-  - name: "Target"
-    careers_url: https://target.wd5.myworkdayjobs.com/targetcareers
-  - name: "Lowe's"
-    careers_url: https://talent.lowes.com/
-  - name: "Wayfair"
-    careers_url: https://www.aboutwayfair.com/careers
-  - name: "Lennox"
-    careers_url: https://www.lennox.com/careers/
-  - name: "Flex"
-    careers_url: https://flextronics.wd1.myworkdayjobs.com/Careers
-  - name: "Philips"
-    careers_url: https://www.careers.philips.com/
-  - name: "Siemens"
-    careers_url: https://jobs.siemens.com/
-  - name: "Bosch"
-    careers_url: https://careers.smartrecruiters.com/BoschGroup
-  - name: "SAP"
-    careers_url: https://jobs.sap.com/
-  - name: "Oracle"
-    careers_url: https://careers.oracle.com/
-  - name: "Salesforce"
-    careers_url: https://salesforce.wd12.myworkdayjobs.com/External_Career_Site
-  - name: "Adobe"
-    careers_url: https://adobe.wd5.myworkdayjobs.com/external_experienced
-  - name: "Microsoft"
-    careers_url: https://careers.microsoft.com/
-  - name: "Google"
-    careers_url: https://www.google.com/about/careers/applications/
-  - name: "Intuit"
-    careers_url: https://jobs.intuit.com/
-  - name: "ServiceNow"
-    careers_url: https://careers.servicenow.com/
-  - name: "Workday"
-    careers_url: https://workday.wd5.myworkdayjobs.com/Workday
-  - name: "Atlassian"
-    careers_url: https://www.atlassian.com/company/careers
-  - name: "Thoughtworks"
-    careers_url: https://www.thoughtworks.com/careers/jobs
-  - name: "Red Hat"
-    careers_url: https://redhat.wd5.myworkdayjobs.com/jobs
-  - name: "IBM"
-    careers_url: https://www.ibm.com/careers/
-  - name: "VMware by Broadcom"
-    careers_url: https://broadcom.wd1.myworkdayjobs.com/External_Career
-  - name: "HCLTech"
-    careers_url: https://www.hcltech.com/careers
-  - name: "Cognizant"
-    careers_url: https://careers.cognizant.com/
-  - name: "Accenture"
-    careers_url: https://www.accenture.com/in-en/careers
-  - name: "Infosys"
-    careers_url: https://www.infosys.com/careers/
-  - name: "TCS"
-    careers_url: https://www.tcs.com/careers
-  - name: "Wipro"
-    careers_url: https://careers.wipro.com/
-  - name: "Capgemini"
-    careers_url: https://www.capgemini.com/careers/
-  - name: "EPAM"
-    careers_url: https://www.epam.com/careers/
-  - name: "GlobalLogic"
-    careers_url: https://www.globallogic.com/careers/
-  - name: "Nagarro"
-    careers_url: https://www.nagarro.com/en/careers
-  - name: "Virtusa"
-    careers_url: https://www.virtusa.com/careers
-  - name: "UST"
-    careers_url: https://www.ust.com/en/careers
-  - name: "Incedo"
-    careers_url: https://www.incedoinc.com/careers/
-  - name: "Persistent Systems"
-    careers_url: https://www.persistent.com/careers/
-  - name: "LTIMindtree"
-    careers_url: https://www.ltimindtree.com/careers/
-  - name: "Publicis Sapient"
-    careers_url: https://careers.publicissapient.com/
-  - name: "Razorpay"
-    careers_url: https://razorpay.com/jobs/
-  - name: "PhonePe"
-    careers_url: https://www.phonepe.com/careers/
-  - name: "Juspay"
-    careers_url: https://juspay.in/careers
-  - name: "Cashfree"
-    careers_url: https://www.cashfree.com/careers/
-  - name: "Pine Labs"
-    careers_url: https://www.pinelabs.com/careers
-  - name: "Paytm"
-    careers_url: https://jobs.lever.co/paytm
-  - name: "Groww"
-    careers_url: https://groww.in/careers
-  - name: "Zerodha"
-    careers_url: https://careers.zerodha.com/
-  - name: "CRED"
-    careers_url: https://careers.cred.club/
-  - name: "Clear"
-    careers_url: https://www.clear.in/careers
-  - name: "Perfios"
-    careers_url: https://www.perfios.com/careers/
-  - name: "KreditBee"
-    careers_url: https://www.kreditbee.in/careers
-  - name: "Navi"
-    careers_url: https://navi.com/careers
-  - name: "Acko"
-    careers_url: https://www.acko.com/careers/
-  - name: "Digit Insurance"
-    careers_url: https://www.godigit.com/careers
-  - name: "Flipkart"
-    careers_url: https://www.flipkartcareers.com/
-  - name: "Myntra"
-    careers_url: https://careers.myntra.com/
-  - name: "Meesho"
-    careers_url: https://www.meesho.io/jobs
-  - name: "Swiggy"
-    careers_url: https://careers.swiggy.com/
-  - name: "Zepto"
-    careers_url: https://www.zeptonow.com/careers
-  - name: "BigBasket"
-    careers_url: https://www.bigbasket.com/careers/
-  - name: "Udaan"
-    careers_url: https://careers.udaan.com/
-  - name: "InMobi"
-    careers_url: https://www.inmobi.com/company/careers
-  - name: "Glance"
-    careers_url: https://glance.com/careers
-  - name: "ShareChat"
-    careers_url: https://sharechat.com/careers
-  - name: "Games24x7"
-    careers_url: https://www.games24x7.com/careers
-  - name: "Dream11"
-    careers_url: https://www.dreamsports.group/careers/
-  - name: "Ola"
-    careers_url: https://careers.olacabs.com/
-  - name: "Uber"
-    careers_url: https://www.uber.com/in/en/careers/
-  - name: "Booking.com"
-    careers_url: https://careers.booking.com/
-  - name: "Expedia Group"
-    careers_url: https://careers.expediagroup.com/
-  - name: "MakeMyTrip"
-    careers_url: https://careers.makemytrip.com/
-  - name: "Amadeus"
-    careers_url: https://amadeus.wd3.myworkdayjobs.com/jobs
-  - name: "Sabre"
-    careers_url: https://sabre.wd1.myworkdayjobs.com/SabreJobs
-  - name: "Amagi"
-    careers_url: https://www.amagi.com/careers/
-  - name: "Icertis"
-    careers_url: https://www.icertis.com/careers/
-  - name: "Whatfix"
-    careers_url: https://whatfix.com/careers/
-  - name: "MoEngage"
-    careers_url: https://www.moengage.com/careers/
-  - name: "CleverTap"
-    careers_url: https://clevertap.com/careers/
-  - name: "Postman"
-    careers_url: https://www.postman.com/company/careers/
-  - name: "BrowserStack"
-    careers_url: https://www.browserstack.com/careers
-  - name: "LambdaTest"
-    careers_url: https://www.lambdatest.com/career
-  - name: "Hasura"
-    careers_url: https://hasura.io/careers/
-  - name: "Cockroach Labs"
-    careers_url: https://www.cockroachlabs.com/careers/
-  - name: "Confluent"
-    careers_url: https://careers.confluent.io/
-  - name: "Elastic"
-    careers_url: https://www.elastic.co/careers/
-  - name: "MongoDB"
-    careers_url: https://www.mongodb.com/company/careers
-  - name: "Redis"
-    careers_url: https://redis.io/careers/
-  - name: "Databricks"
-    careers_url: https://www.databricks.com/company/careers
-  - name: "Snowflake"
-    careers_url: https://careers.snowflake.com/
-  - name: "Nutanix"
-    careers_url: https://www.nutanix.com/company/careers
-  - name: "Rubrik"
-    careers_url: https://www.rubrik.com/company/careers
-  - name: "Cohesity"
-    careers_url: https://careers.cohesity.com/
-  - name: "Cloudera"
-    careers_url: https://www.cloudera.com/careers.html
-  - name: "Okta"
-    careers_url: https://www.okta.com/company/careers/
-  - name: "Ping Identity"
-    careers_url: https://www.pingidentity.com/en/company/careers.html
-  - name: "SailPoint"
-    careers_url: https://sailpoint.wd1.myworkdayjobs.com/SailPoint
-  - name: "GitLab"
-    careers_url: https://about.gitlab.com/jobs/
-  - name: "Automattic"
-    careers_url: https://automattic.com/work-with-us/
-  - name: "Canonical"
-    careers_url: https://canonical.com/careers
-  - name: "Remote"
-    careers_url: https://remote.com/careers
-  - name: "Deel"
-    careers_url: https://www.deel.com/careers/
-  - name: "Turing"
-    careers_url: https://www.turing.com/jobs
-  - name: "Sourcegraph"
-    careers_url: https://sourcegraph.com/jobs
-  - name: "Grafana Labs"
-    careers_url: https://grafana.com/about/careers/
-  - name: "Supabase"
-    careers_url: https://supabase.com/careers
-  - name: "Sentry"
-    careers_url: https://sentry.io/careers/
-  - name: "DigitalOcean"
-    careers_url: https://www.digitalocean.com/careers/
-  - name: "Akamai"
-    careers_url: https://www.akamai.com/careers
-  - name: "Cloudflare"
-    careers_url: https://www.cloudflare.com/careers/
-  - name: "Twilio"
-    careers_url: https://www.twilio.com/company/jobs
-  - name: "Zendesk"
-    careers_url: https://zendesk.wd1.myworkdayjobs.com/zendesk
-  - name: "FreshToHome"
-    careers_url: https://www.freshtohome.com/careers
+- name: Freshworks
+  careers_url: https://careers.smartrecruiters.com/Freshworks
+- name: Zoho
+  careers_url: https://www.zoho.com/careers/
+- name: Chargebee
+  careers_url: https://www.chargebee.com/careers/
+- name: Kissflow
+  careers_url: https://kissflow.com/careers/
+- name: Rocketlane
+  careers_url: https://www.rocketlane.com/careers
+- name: Facilio
+  careers_url: https://facilio.com/careers/
+- name: SuperOps
+  careers_url: https://superops.com/careers
+- name: SurveySparrow
+  careers_url: https://surveysparrow.com/careers/
+- name: HappyFox
+  careers_url: https://www.happyfox.com/jobs/
+- name: Uniphore
+  careers_url: https://www.uniphore.com/careers/
+- name: FourKites
+  careers_url: https://www.fourkites.com/careers/
+- name: Yubi
+  careers_url: https://www.go-yubi.com/careers/
+- name: Vivriti Capital
+  careers_url: https://www.vivriticapital.com/careers.html
+- name: M2P Fintech
+  careers_url: https://m2pfintech.com/careers/
+- name: Zeta
+  careers_url: https://www.zeta.tech/careers/
+- name: FSS
+  careers_url: https://www.fsstech.com/careers
+- name: Intellect Design Arena
+  careers_url: https://www.intellectdesign.com/careers/
+- name: Temenos
+  careers_url: https://www.temenos.com/careers/
+- name: Finastra
+  careers_url: https://careers.finastra.com/
+- name: Ramco Systems
+  careers_url: https://www.ramco.com/careers
+- name: Orion Innovation
+  careers_url: https://www.orioninc.com/careers/
+- name: Prodapt
+  careers_url: https://www.prodapt.com/careers/
+- name: Aspire Systems
+  careers_url: https://www.aspiresys.com/careers
+- name: Ideas2IT
+  careers_url: https://www.ideas2it.com/careers
+- name: Kaar Technologies
+  careers_url: https://www.kaartech.com/careers/
+- name: Altimetrik
+  careers_url: https://www.altimetrik.com/careers/
+- name: Tiger Analytics
+  careers_url: https://www.tigeranalytics.com/careers/
+- name: LatentView Analytics
+  careers_url: https://www.latentview.com/careers/
+- name: Crayon Data
+  careers_url: https://www.crayondata.com/careers/
+- name: Securin
+  careers_url: https://www.securin.io/careers/
+- name: Sagent
+  careers_url: https://sagent.com/careers/
+- name: Trimble
+  careers_url: https://trimble.wd1.myworkdayjobs.com/TrimbleCareers
+- name: Walmart Global Tech
+  careers_url: https://careers.walmart.com/technology
+- name: Amazon
+  careers_url: https://www.amazon.jobs/en/locations/india
+- name: PayPal
+  careers_url: https://paypal.wd1.myworkdayjobs.com/jobs
+- name: eBay
+  careers_url: https://jobs.ebayinc.com/
+- name: Comcast
+  careers_url: https://jobs.comcast.com/
+- name: Verizon
+  careers_url: https://mycareer.verizon.com/
+- name: Cisco
+  careers_url: https://jobs.cisco.com/
+- name: Qualcomm
+  careers_url: https://careers.qualcomm.com/
+- name: Ford
+  careers_url: https://www.careers.ford.com/
+- name: Caterpillar
+  careers_url: https://cat.wd5.myworkdayjobs.com/CaterpillarCareers
+- name: Daimler Truck
+  careers_url: https://jobs.daimlertruck.com/
+- name: Standard Chartered
+  careers_url: https://jobs.standardchartered.com/
+- name: Barclays
+  careers_url: https://search.jobs.barclays/
+- name: Citi
+  careers_url: https://jobs.citi.com/
+- name: BNY
+  careers_url: https://www.bny.com/corporate/global/en/careers.html
+- name: Fidelity Investments
+  careers_url: https://jobs.fidelity.com/
+- name: DTCC
+  careers_url: https://careers.dtcc.com/
+- name: Northern Trust
+  careers_url: https://ntrs.wd1.myworkdayjobs.com/northerntrust
+- name: NatWest
+  careers_url: https://jobs.natwestgroup.com/
+- name: Bank of America
+  careers_url: https://careers.bankofamerica.com/
+- name: Wells Fargo
+  careers_url: https://www.wellsfargojobs.com/
+- name: JPMorgan Chase
+  careers_url: https://careers.jpmorgan.com/
+- name: Goldman Sachs
+  careers_url: https://www.goldmansachs.com/careers/
+- name: Morgan Stanley
+  careers_url: https://www.morganstanley.com/people-opportunities
+- name: Deutsche Bank
+  careers_url: https://careers.db.com/
+- name: HSBC
+  careers_url: https://www.hsbc.com/careers/
+- name: UBS
+  careers_url: https://www.ubs.com/global/en/careers.html
+- name: Societe Generale
+  careers_url: https://careers.societegenerale.com/
+- name: ANZ
+  careers_url: https://careers.anz.com/
+- name: Tesco
+  careers_url: https://www.tesco-careers.com/
+- name: Target
+  careers_url: https://target.wd5.myworkdayjobs.com/targetcareers
+- name: Lowe's
+  careers_url: https://talent.lowes.com/
+- name: Wayfair
+  careers_url: https://www.aboutwayfair.com/careers
+- name: Lennox
+  careers_url: https://www.lennox.com/careers/
+- name: Flex
+  careers_url: https://flextronics.wd1.myworkdayjobs.com/Careers
+- name: Philips
+  careers_url: https://www.careers.philips.com/
+- name: Siemens
+  careers_url: https://jobs.siemens.com/
+- name: Bosch
+  careers_url: https://careers.smartrecruiters.com/BoschGroup
+- name: SAP
+  careers_url: https://jobs.sap.com/
+- name: Oracle
+  careers_url: https://careers.oracle.com/
+- name: Salesforce
+  careers_url: https://salesforce.wd12.myworkdayjobs.com/External_Career_Site
+- name: Adobe
+  careers_url: https://adobe.wd5.myworkdayjobs.com/external_experienced
+- name: Microsoft
+  careers_url: https://careers.microsoft.com/
+- name: Google
+  careers_url: https://www.google.com/about/careers/applications/
+- name: Intuit
+  careers_url: https://jobs.intuit.com/
+- name: ServiceNow
+  careers_url: https://careers.servicenow.com/
+- name: Workday
+  careers_url: https://workday.wd5.myworkdayjobs.com/Workday
+- name: Atlassian
+  careers_url: https://www.atlassian.com/company/careers
+- name: Thoughtworks
+  careers_url: https://www.thoughtworks.com/careers/jobs
+- name: Red Hat
+  careers_url: https://redhat.wd5.myworkdayjobs.com/jobs
+- name: IBM
+  careers_url: https://www.ibm.com/careers/
+- name: VMware by Broadcom
+  careers_url: https://broadcom.wd1.myworkdayjobs.com/External_Career
+- name: HCLTech
+  careers_url: https://www.hcltech.com/careers
+- name: Cognizant
+  careers_url: https://careers.cognizant.com/
+- name: Accenture
+  careers_url: https://www.accenture.com/in-en/careers
+- name: Infosys
+  careers_url: https://www.infosys.com/careers/
+- name: TCS
+  careers_url: https://www.tcs.com/careers
+- name: Wipro
+  careers_url: https://careers.wipro.com/
+- name: Capgemini
+  careers_url: https://www.capgemini.com/careers/
+- name: EPAM
+  careers_url: https://www.epam.com/careers/
+- name: GlobalLogic
+  careers_url: https://www.globallogic.com/careers/
+- name: Nagarro
+  careers_url: https://www.nagarro.com/en/careers
+- name: Virtusa
+  careers_url: https://www.virtusa.com/careers
+- name: UST
+  careers_url: https://www.ust.com/en/careers
+- name: Incedo
+  careers_url: https://www.incedoinc.com/careers/
+- name: Persistent Systems
+  careers_url: https://www.persistent.com/careers/
+- name: LTIMindtree
+  careers_url: https://www.ltimindtree.com/careers/
+- name: Publicis Sapient
+  careers_url: https://careers.publicissapient.com/
+- name: Razorpay
+  careers_url: https://razorpay.com/jobs/
+- name: PhonePe
+  careers_url: https://www.phonepe.com/careers/
+- name: Juspay
+  careers_url: https://juspay.in/careers
+- name: Cashfree
+  careers_url: https://www.cashfree.com/careers/
+- name: Pine Labs
+  careers_url: https://www.pinelabs.com/careers
+- name: Paytm
+  careers_url: https://jobs.lever.co/paytm
+- name: Groww
+  careers_url: https://groww.in/careers
+- name: Zerodha
+  careers_url: https://careers.zerodha.com/
+- name: CRED
+  careers_url: https://careers.cred.club/
+- name: Clear
+  careers_url: https://www.clear.in/careers
+- name: Perfios
+  careers_url: https://www.perfios.com/careers/
+- name: KreditBee
+  careers_url: https://www.kreditbee.in/careers
+- name: Navi
+  careers_url: https://navi.com/careers
+- name: Acko
+  careers_url: https://www.acko.com/careers/
+- name: Digit Insurance
+  careers_url: https://www.godigit.com/careers
+- name: Flipkart
+  careers_url: https://www.flipkartcareers.com/
+- name: Myntra
+  careers_url: https://careers.myntra.com/
+- name: Meesho
+  careers_url: https://www.meesho.io/jobs
+- name: Swiggy
+  careers_url: https://careers.swiggy.com/
+- name: Zepto
+  careers_url: https://www.zeptonow.com/careers
+- name: BigBasket
+  careers_url: https://www.bigbasket.com/careers/
+- name: Udaan
+  careers_url: https://careers.udaan.com/
+- name: InMobi
+  careers_url: https://www.inmobi.com/company/careers
+- name: Glance
+  careers_url: https://glance.com/careers
+- name: ShareChat
+  careers_url: https://sharechat.com/careers
+- name: Games24x7
+  careers_url: https://www.games24x7.com/careers
+- name: Dream11
+  careers_url: https://www.dreamsports.group/careers/
+- name: Ola
+  careers_url: https://careers.olacabs.com/
+- name: Uber
+  careers_url: https://www.uber.com/in/en/careers/
+- name: Booking.com
+  careers_url: https://careers.booking.com/
+- name: Expedia Group
+  careers_url: https://careers.expediagroup.com/
+- name: MakeMyTrip
+  careers_url: https://careers.makemytrip.com/
+- name: Amadeus
+  careers_url: https://amadeus.wd3.myworkdayjobs.com/jobs
+- name: Sabre
+  careers_url: https://sabre.wd1.myworkdayjobs.com/SabreJobs
+- name: Amagi
+  careers_url: https://www.amagi.com/careers/
+- name: Icertis
+  careers_url: https://www.icertis.com/careers/
+- name: Whatfix
+  careers_url: https://whatfix.com/careers/
+- name: MoEngage
+  careers_url: https://www.moengage.com/careers/
+- name: CleverTap
+  careers_url: https://clevertap.com/careers/
+- name: Postman
+  careers_url: https://www.postman.com/company/careers/
+- name: BrowserStack
+  careers_url: https://www.browserstack.com/careers
+- name: LambdaTest
+  careers_url: https://www.lambdatest.com/career
+- name: Hasura
+  careers_url: https://hasura.io/careers/
+- name: Cockroach Labs
+  careers_url: https://www.cockroachlabs.com/careers/
+- name: Confluent
+  careers_url: https://careers.confluent.io/
+- name: Elastic
+  careers_url: https://www.elastic.co/careers/
+- name: MongoDB
+  careers_url: https://www.mongodb.com/company/careers
+- name: Redis
+  careers_url: https://redis.io/careers/
+- name: Databricks
+  careers_url: https://www.databricks.com/company/careers
+- name: Snowflake
+  careers_url: https://careers.snowflake.com/
+- name: Nutanix
+  careers_url: https://www.nutanix.com/company/careers
+- name: Rubrik
+  careers_url: https://www.rubrik.com/company/careers
+- name: Cohesity
+  careers_url: https://careers.cohesity.com/
+- name: Cloudera
+  careers_url: https://www.cloudera.com/careers.html
+- name: Okta
+  careers_url: https://www.okta.com/company/careers/
+- name: Ping Identity
+  careers_url: https://www.pingidentity.com/en/company/careers.html
+- name: SailPoint
+  careers_url: https://sailpoint.wd1.myworkdayjobs.com/SailPoint
+- name: GitLab
+  careers_url: https://about.gitlab.com/jobs/
+- name: Automattic
+  careers_url: https://automattic.com/work-with-us/
+- name: Canonical
+  careers_url: https://canonical.com/careers
+- name: Remote
+  careers_url: https://remote.com/careers
+- name: Deel
+  careers_url: https://www.deel.com/careers/
+- name: Turing
+  careers_url: https://www.turing.com/jobs
+- name: Sourcegraph
+  careers_url: https://sourcegraph.com/jobs
+- name: Grafana Labs
+  careers_url: https://grafana.com/about/careers/
+- name: Supabase
+  careers_url: https://supabase.com/careers
+- name: Sentry
+  careers_url: https://sentry.io/careers/
+- name: DigitalOcean
+  careers_url: https://www.digitalocean.com/careers/
+- name: Akamai
+  careers_url: https://www.akamai.com/careers
+- name: Cloudflare
+  careers_url: https://www.cloudflare.com/careers/
+- name: Twilio
+  careers_url: https://www.twilio.com/company/jobs
+- name: Zendesk
+  careers_url: https://zendesk.wd1.myworkdayjobs.com/zendesk
+- name: FreshToHome
+  careers_url: https://www.freshtohome.com/careers
+- name: CyberArk
+  careers_url: https://careers.smartrecruiters.com/Cyberark1
+- name: Saviynt
+  careers_url: https://jobs.lever.co/saviynt
+- name: Securonix
+  careers_url: https://www.securonix.com/careers/
+- name: Sumo Logic
+  careers_url: https://job-boards.greenhouse.io/sumologic
+- name: Netskope
+  careers_url: https://job-boards.greenhouse.io/netskope
+- name: Zscaler
+  careers_url: https://job-boards.greenhouse.io/zscaler
+- name: CrowdStrike
+  careers_url: https://crowdstrike.wd5.myworkdayjobs.com/crowdstrikecareers
+- name: SentinelOne
+  careers_url: https://job-boards.greenhouse.io/sentinellabs
+- name: Palo Alto Networks
+  careers_url: https://careers.smartrecruiters.com/PaloAltoNetworks2
+- name: Fortinet
+  careers_url: https://www.fortinet.com/corporate/careers
+- name: Check Point
+  careers_url: https://careers.checkpoint.com/
+- name: Tenable
+  careers_url: https://job-boards.greenhouse.io/tenableinc
+- name: Rapid7
+  careers_url: https://rapid7.wd1.myworkdayjobs.com/Rapid7
+- name: Qualys
+  careers_url: https://qualys.wd5.myworkdayjobs.com/Careers
+- name: Snyk
+  careers_url: https://job-boards.greenhouse.io/snyk
+- name: Wiz
+  careers_url: https://job-boards.greenhouse.io/wizinc
+- name: Abnormal AI
+  careers_url: https://job-boards.greenhouse.io/abnormalsecurity
+- name: Arctic Wolf
+  careers_url: https://arcticwolf.wd1.myworkdayjobs.com/External
+- name: Veeam
+  careers_url: https://careers.veeam.com/
+- name: Druva
+  careers_url: https://www.druva.com/about/careers
+- name: Commvault
+  careers_url: https://commvault.wd5.myworkdayjobs.com/CommvaultCareers
+- name: Delinea
+  careers_url: https://delinea.wd1.myworkdayjobs.com/DelineaCareers
+- name: BeyondTrust
+  careers_url: https://job-boards.greenhouse.io/beyondtrust
+- name: RSA
+  careers_url: https://www.rsa.com/company/careers/
+- name: OneTrust
+  careers_url: https://job-boards.greenhouse.io/onetrust
+- name: SecurityScorecard
+  careers_url: https://job-boards.greenhouse.io/securityscorecard
+- name: CloudSEK
+  careers_url: https://www.cloudsek.com/careers
+- name: Scrut Automation
+  careers_url: https://www.scrut.io/careers
+- name: Sprinto
+  careers_url: https://jobs.lever.co/Sprinto
+- name: Appsmith
+  careers_url: https://jobs.ashbyhq.com/appsmith
+- name: ToolJet
+  careers_url: https://www.tooljet.com/careers
+- name: Yugabyte
+  careers_url: https://job-boards.greenhouse.io/yugabyte
+- name: SingleStore
+  careers_url: https://job-boards.greenhouse.io/singlestore
+- name: Couchbase
+  careers_url: https://job-boards.greenhouse.io/couchbaseinc
+- name: Neo4j
+  careers_url: https://job-boards.greenhouse.io/neo4j
+- name: ScyllaDB
+  careers_url: https://www.scylladb.com/company/careers/
+- name: Aerospike
+  careers_url: https://job-boards.greenhouse.io/aerospike
+- name: ClickHouse
+  careers_url: https://job-boards.greenhouse.io/clickhouse
+- name: Starburst
+  careers_url: https://jobs.lever.co/starburstdata
+- name: StarTree
+  careers_url: https://job-boards.greenhouse.io/startree
+- name: DataStax
+  careers_url: https://www.datastax.com/company/careers
+- name: Fivetran
+  careers_url: https://job-boards.greenhouse.io/fivetran
+- name: dbt Labs
+  careers_url: https://job-boards.greenhouse.io/dbtlabsinc
+- name: Airbyte
+  careers_url: https://jobs.ashbyhq.com/airbyte
+- name: Airflow Astronomer
+  careers_url: https://jobs.ashbyhq.com/astronomer
+- name: Hevo Data
+  careers_url: https://hevodata.com/careers/
+- name: Atlan
+  careers_url: https://jobs.lever.co/atlan
+- name: Alation
+  careers_url: https://job-boards.greenhouse.io/alation
+- name: Collibra
+  careers_url: https://job-boards.greenhouse.io/collibra
+- name: Informatica
+  careers_url: https://www.informatica.com/about-us/careers.html
+- name: Qlik
+  careers_url: https://www.qlik.com/us/company/careers
+- name: Dremio
+  careers_url: https://job-boards.greenhouse.io/dremio
+- name: ThoughtSpot
+  careers_url: https://job-boards.greenhouse.io/thoughtspot
+- name: Sigma Computing
+  careers_url: https://job-boards.greenhouse.io/sigmacomputing
+- name: Datadog
+  careers_url: https://job-boards.greenhouse.io/datadog
+- name: New Relic
+  careers_url: https://job-boards.greenhouse.io/newrelic
+- name: Splunk
+  careers_url: https://www.splunk.com/en_us/careers.html
+- name: Dynatrace
+  careers_url: https://careers.dynatrace.com/
+- name: Harness
+  careers_url: https://job-boards.greenhouse.io/harnessinc
+- name: LaunchDarkly
+  careers_url: https://job-boards.greenhouse.io/launchdarkly
+- name: JFrog
+  careers_url: https://job-boards.greenhouse.io/jfrog
+- name: Sonar
+  careers_url: https://jobs.lever.co/sonarsource
+- name: Docker
+  careers_url: https://jobs.ashbyhq.com/docker
+- name: Kong
+  careers_url: https://jobs.lever.co/kong
+- name: Tyk
+  careers_url: https://tyk.io/current-vacancies/
+- name: Gravitee
+  careers_url: https://www.gravitee.io/careers
+- name: WSO2
+  careers_url: https://wso2.com/careers/
+- name: Descope
+  careers_url: https://www.descope.com/careers
+- name: WorkOS
+  careers_url: https://jobs.ashbyhq.com/workos
+- name: Stytch
+  careers_url: https://jobs.ashbyhq.com/stytch
+- name: Teleport
+  careers_url: https://jobs.lever.co/teleport
+- name: Tailscale
+  careers_url: https://job-boards.greenhouse.io/tailscale
+- name: Twingate
+  careers_url: https://jobs.ashbyhq.com/twingate
+- name: Aiven
+  careers_url: https://job-boards.greenhouse.io/aiven
+- name: Redpanda
+  careers_url: https://job-boards.greenhouse.io/redpandadata
+- name: Temporal
+  careers_url: https://job-boards.greenhouse.io/temporaltechnologies
+- name: Camunda
+  careers_url: https://job-boards.greenhouse.io/camunda
+- name: PostHog
+  careers_url: https://jobs.ashbyhq.com/posthog
+- name: Quince
+  careers_url: https://jobs.lever.co/quince
+- name: Rippling
+  careers_url: https://www.rippling.com/careers
+- name: Gusto
+  careers_url: https://job-boards.greenhouse.io/gusto
+- name: Multiplier
+  careers_url: https://www.usemultiplier.com/careers
+- name: Papaya Global
+  careers_url: https://www.papayaglobal.com/careers/
+- name: Darwinbox
+  careers_url: https://darwinbox.com/careers
+- name: Keka
+  careers_url: https://www.keka.com/careers
+- name: Leena AI
+  careers_url: https://leena.ai/careers
+- name: Yellow.ai
+  careers_url: https://yellow.ai/careers/
+- name: Observe.AI
+  careers_url: https://jobs.lever.co/observeai
+- name: Gupshup
+  careers_url: https://www.gupshup.io/careers
+- name: Exotel
+  careers_url: https://exotel.com/careers/
+- name: Plivo
+  careers_url: https://jobs.lever.co/plivo
+- name: Vonage
+  careers_url: https://job-boards.greenhouse.io/vonage
+- name: Sinch
+  careers_url: https://apply.workable.com/sinch/
+- name: MessageBird
+  careers_url: https://bird.com/careers
+- name: Infobip
+  careers_url: https://infobip.wd3.myworkdayjobs.com/InfobipCareers
+- name: Sendbird
+  careers_url: https://job-boards.greenhouse.io/sendbird
+- name: Contentstack
+  careers_url: https://job-boards.greenhouse.io/contentstack
+- name: Contentful
+  careers_url: https://job-boards.greenhouse.io/contentful
+- name: Sanity
+  careers_url: https://jobs.ashbyhq.com/sanity
+- name: Strapi
+  careers_url: https://jobs.lever.co/strapi
+- name: Algolia
+  careers_url: https://job-boards.greenhouse.io/algolia
+- name: Bloomreach
+  careers_url: https://job-boards.greenhouse.io/bloomreach
+- name: Yext
+  careers_url: https://job-boards.greenhouse.io/yext
+- name: Sprinklr
+  careers_url: https://sprinklr.wd1.myworkdayjobs.com/careers
+- name: Sprout Social
+  careers_url: https://job-boards.greenhouse.io/sproutsocial
+- name: Braze
+  careers_url: https://job-boards.greenhouse.io/braze
+- name: Iterable
+  careers_url: https://job-boards.greenhouse.io/iterable
+- name: Klaviyo
+  careers_url: https://job-boards.greenhouse.io/klaviyo
+- name: WebEngage
+  careers_url: https://webengage.com/careers/
+- name: Netcore Cloud
+  careers_url: https://netcorecloud.com/careers/
+- name: LeadSquared
+  careers_url: https://www.leadsquared.com/careers/
+- name: HighLevel
+  careers_url: https://jobs.lever.co/gohighlevel
+- name: Mindtickle
+  careers_url: https://jobs.lever.co/mindtickle
+- name: Seismic
+  careers_url: https://job-boards.greenhouse.io/seismic
+- name: Highspot
+  careers_url: https://jobs.lever.co/highspot
+- name: Gainsight
+  careers_url: https://www.gainsight.com/careers/
+- name: Zuora
+  careers_url: https://job-boards.greenhouse.io/zuora
+- name: Coupa
+  careers_url: https://jobs.lever.co/coupa
+- name: Arcesium
+  careers_url: https://job-boards.greenhouse.io/arcesium
+- name: Addepar
+  careers_url: https://job-boards.greenhouse.io/addepar1
+- name: Fiserv
+  careers_url: https://fiserv.wd5.myworkdayjobs.com/EXT
+- name: FIS
+  careers_url: https://fis.wd5.myworkdayjobs.com/SearchJobs
+- name: Broadridge
+  careers_url: https://broadridge.wd5.myworkdayjobs.com/Careers
+- name: Nasdaq
+  careers_url: https://nasdaq.wd1.myworkdayjobs.com/Global_External_Site
+- name: MSCI
+  careers_url: https://careers.msci.com/
+- name: FactSet
+  careers_url: https://factset.wd1.myworkdayjobs.com/FactSetCareers
+- name: S&P Global
+  careers_url: https://spgi.wd5.myworkdayjobs.com/SPGI_Careers
+- name: Moody's
+  careers_url: https://careers.moodys.com/
+- name: LSEG
+  careers_url: https://lseg.wd3.myworkdayjobs.com/Careers
+- name: BlackRock
+  careers_url: https://blackrock.wd1.myworkdayjobs.com/BlackRock_Professional
+- name: BlackLine
+  careers_url: https://careers.blackline.com/
+- name: Avalara
+  careers_url: https://careers.avalara.com/
+- name: Tipalti
+  careers_url: https://job-boards.greenhouse.io/tipalti
+- name: Airwallex
+  careers_url: https://jobs.lever.co/airwallex
+- name: Wise
+  careers_url: https://careers.smartrecruiters.com/Wise
+- name: Revolut
+  careers_url: https://www.revolut.com/careers/
+- name: Stripe
+  careers_url: https://job-boards.greenhouse.io/stripe
+- name: Adyen
+  careers_url: https://job-boards.greenhouse.io/adyen
+- name: PayU
+  careers_url: https://jobs.lever.co/payu
+- name: Payoneer
+  careers_url: https://job-boards.greenhouse.io/payoneer
+- name: Paychex
+  careers_url: https://careers.paychex.com/
+- name: ChargePoint
+  careers_url: https://job-boards.greenhouse.io/chargepoint
+- name: Samsara
+  careers_url: https://job-boards.greenhouse.io/samsara
+- name: Motive
+  careers_url: https://job-boards.greenhouse.io/gomotive
+- name: Tekion
+  careers_url: https://job-boards.greenhouse.io/tekion
+- name: o9 Solutions
+  careers_url: https://o9solutions.wd3.myworkdayjobs.com/o9Solutions
+- name: Blue Yonder
+  careers_url: https://jda.wd5.myworkdayjobs.com/JDA_Careers
+- name: Manhattan Associates
+  careers_url: https://manh.wd1.myworkdayjobs.com/External
+- name: Kinaxis
+  careers_url: https://careers.kinaxis.com/
+- name: Anaplan
+  careers_url: https://job-boards.greenhouse.io/anaplan
+- name: Planful
+  careers_url: https://planful.com/careers/
+- name: HighRadius
+  careers_url: https://www.highradius.com/careers/
+- name: Eightfold AI
+  careers_url: https://eightfold.ai/careers/
+- name: Visa
+  careers_url: https://careers.smartrecruiters.com/Visa
+- name: Mastercard
+  careers_url: https://mastercard.wd1.myworkdayjobs.com/CorporateCareers
+- name: ZoomInfo
+  careers_url: https://job-boards.greenhouse.io/zoominfo
+- name: Zoom
+  careers_url: https://zoom.wd5.myworkdayjobs.com/Zoom
+- name: Docusign
+  careers_url: https://job-boards.greenhouse.io/docusign
+- name: Box
+  careers_url: https://job-boards.greenhouse.io/boxinc
+- name: Dropbox
+  careers_url: https://job-boards.greenhouse.io/dropbox
+- name: HubSpot
+  careers_url: https://job-boards.greenhouse.io/hubspotjobs
+- name: PagerDuty
+  careers_url: https://job-boards.greenhouse.io/pagerduty
+- name: Five9
+  careers_url: https://job-boards.greenhouse.io/five9
+- name: RingCentral
+  careers_url: https://ringcentral.wd1.myworkdayjobs.com/RC_External
+- name: Guidewire
+  careers_url: https://careers.guidewire.com/
+- name: Duck Creek Technologies
+  careers_url: https://duckcreek.wd1.myworkdayjobs.com/DuckCreekCareers
+- name: Workiva
+  careers_url: https://workiva.wd1.myworkdayjobs.com/careers
+- name: Appian
+  careers_url: https://job-boards.greenhouse.io/appian
+- name: Pegasystems
+  careers_url: https://www.pega.com/about/careers
+- name: Sage
+  careers_url: https://www.sage.com/en-gb/company/careers/
+- name: UKG
+  careers_url: https://careers.ukg.com/
+- name: Autodesk
+  careers_url: https://autodesk.wd1.myworkdayjobs.com/Ext
+- name: Cadence
+  careers_url: https://cadence.wd1.myworkdayjobs.com/External_Careers
+- name: Applied Materials
+  careers_url: https://amat.wd1.myworkdayjobs.com/External
+- name: KLA
+  careers_url: https://kla.wd1.myworkdayjobs.com/Search
+- name: NXP
+  careers_url: https://nxp.wd3.myworkdayjobs.com/careers
+- name: Micron
+  careers_url: https://micron.wd1.myworkdayjobs.com/External
