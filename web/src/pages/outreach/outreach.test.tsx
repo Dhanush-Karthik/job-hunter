@@ -30,14 +30,17 @@ function capture(method: string, pathname: string) {
 const setup = () => renderWithProviders(<OutreachPage />, { route: '/outreach' })
 const card = (name: RegExp) => screen.getByRole('listitem', { name })
 
-describe('Outreach & Follow-ups', () => {
+describe('Follow-ups', () => {
   it('says nothing is sent by the app and lists the due follow-up with contact, due date and draft', async () => {
     setup()
-    expect(screen.getByText(/Copy, send it yourself, then Mark sent/)).toBeInTheDocument()
+    expect(screen.getByText(/send it yourself .*then mark it sent\. The app never sends anything/)).toBeInTheDocument()
     const c = await waitFor(() => card(/Freshworks/))
     expect(within(c).getByRole('link', { name: /Freshworks/ })).toHaveAttribute('href', '/jobs/1')
-    expect(within(c).getByText('careers@freshworks.example')).toBeInTheDocument()
-    expect(within(c).getByText('Due')).toBeInTheDocument()
+    expect(within(c).getByText(/to careers@freshworks\.example/)).toBeInTheDocument()
+    expect(within(c).getByText(/^(Overdue by|Due today)/)).toBeInTheDocument()
+    // the message stays folded until asked for
+    expect(within(c).queryByText(/following up on my application/)).not.toBeInTheDocument()
+    await userEvent.setup().click(within(c).getByRole('button', { name: /Show message for Freshworks/ }))
     expect(within(c).getByText(/following up on my application/)).toBeInTheDocument()
     // referrals are on their own tab
     expect(screen.queryByText(/Okta/)).not.toBeInTheDocument()
@@ -46,11 +49,11 @@ describe('Outreach & Follow-ups', () => {
   it('shows referral drafts on the Referrals tab', async () => {
     const user = userEvent.setup()
     setup()
-    await user.click(screen.getByRole('tab', { name: 'Referrals' }))
+    await user.click(screen.getByRole('tab', { name: 'Referral requests' }))
+    expect(screen.getByTestId('location')).toHaveTextContent('/outreach?tab=referrals')
     const c = await waitFor(() => card(/Okta/))
-    expect(within(c).getByText(/Rahul S - Staff Engineer/)).toBeInTheDocument()
-    expect(within(c).getByText('Referral')).toBeInTheDocument()
-    expect(within(c).queryByText('Due')).not.toBeInTheDocument()
+    expect(within(c).getByText(/Referral request · to Rahul S - Staff Engineer/)).toBeInTheDocument()
+    expect(within(c).queryByText(/Overdue|Due/)).not.toBeInTheDocument()
   })
 
   it('copies the draft to the clipboard', async () => {
@@ -71,7 +74,7 @@ describe('Outreach & Follow-ups', () => {
     await waitFor(() => expect(posts).toHaveLength(1))
     await waitFor(() => expect(screen.getByText('No follow-ups due')).toBeInTheDocument())
 
-    await user.click(screen.getByRole('tab', { name: 'Sent log' }))
+    await user.click(screen.getByRole('tab', { name: 'Sent' }))
     const sent = await waitFor(() => card(/Freshworks/))
     expect(within(sent).getByText(/^Sent /)).toBeInTheDocument()
     expect(within(sent).queryByRole('button', { name: /Mark sent/ })).not.toBeInTheDocument()
@@ -83,6 +86,7 @@ describe('Outreach & Follow-ups', () => {
     const posts = capture('POST', '/api/outreach/2/snooze')
     setup()
     const c = await waitFor(() => card(/Freshworks/))
+    await user.click(within(c).getByRole('button', { name: /Show message for Freshworks/ }))
     await user.click(within(c).getByRole('button', { name: 'Snooze Freshworks · Senior Software Engineer - Java 3 days' }))
     await waitFor(() => expect(posts).toEqual([{ days: 3 }]))
     // the mock keeps snoozed items in the list; the real API excludes them, so just check the request and the offered choices
@@ -94,6 +98,7 @@ describe('Outreach & Follow-ups', () => {
     const patches = capture('PATCH', '/api/outreach/2')
     setup()
     const c = await waitFor(() => card(/Freshworks/))
+    await user.click(within(c).getByRole('button', { name: /Show message for Freshworks/ }))
     await user.click(within(c).getByRole('button', { name: /Edit draft for Freshworks/ }))
     const box = within(c).getByLabelText(/Draft for Freshworks/)
     await user.clear(box)
@@ -109,7 +114,7 @@ describe('Outreach & Follow-ups', () => {
     setup()
     expect(await screen.findByText('No follow-ups due')).toBeInTheDocument()
     server.use(http.get('/api/outreach', () => HttpResponse.json({ detail: 'boom' }, { status: 500 })))
-    await user.click(screen.getByRole('tab', { name: 'Sent log' }))
+    await user.click(screen.getByRole('tab', { name: 'Sent' }))
     expect(await screen.findByText('500 boom')).toBeInTheDocument()
   })
 })

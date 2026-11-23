@@ -6,22 +6,41 @@ import type { Funnel } from '@/api/client'
 import { Bar } from './bars'
 import { callsOf, pct } from './calc'
 import type { UseQueryResult } from '@tanstack/react-query'
+import { useResponseTimes } from './use-analytics'
 
-export function CallsHeadline({ funnel }: { funnel: UseQueryResult<Funnel> }) {
-  const calls = callsOf(funnel.data)
+/** Headline numbers for the range: applications, calls, call rate, and how long companies take to answer. */
+export function KpiRow({ funnel }: { funnel: UseQueryResult<Funnel> }) {
+  const calls = callsOf(funnel.data) ?? 0
+  const applied = funnel.data?.stages.find((s) => s.status === 'Applied')?.count ?? 0
+  const rt = useResponseTimes()
+  const days = (d: number | null | undefined) => (d == null ? '—' : `${Math.round(d * 10) / 10} d`)
+  const stats = [
+    { label: 'Applied', value: String(applied), hint: 'Applications sent in this range' },
+    { label: 'Interview calls', value: String(calls), aria: `${calls} interview calls`, hint: 'Applications that reached Screening' },
+    { label: 'Call rate', value: applied ? pct(calls / applied) : '—', hint: 'Interview calls per application' },
+    {
+      label: 'Typical reply time',
+      value: days(rt.data?.median_days_to_first_response),
+      hint: `Median days from applying to the first reply (90% within ${days(rt.data?.p90_days_to_first_response)}, ${rt.data?.samples ?? 0} replies)`,
+    },
+  ]
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>Interview calls</CardTitle>
-        <CardDescription>Applications that reached Screening in this range.</CardDescription>
-      </CardHeader>
       <CardContent>
         {funnel.isPending ? (
-          <Skeleton className="h-12 w-24" role="status" aria-busy="true" aria-label="Loading calls" />
+          <Skeleton className="h-16" role="status" aria-busy="true" aria-label="Loading calls" />
         ) : (
-          <div className="text-5xl font-semibold tabular-nums" aria-label={`${calls ?? 0} interview calls`}>
-            {calls ?? 0}
-          </div>
+          <dl className="grid grid-cols-2 gap-6 sm:grid-cols-4">
+            {stats.map((s) => (
+              <div key={s.label} title={s.hint}>
+                <dt className="text-sm text-muted-foreground">{s.label}</dt>
+                <dd className="text-3xl font-semibold tabular-nums" aria-label={s.aria}>
+                  {s.value}
+                </dd>
+                <p className="mt-0.5 text-xs text-muted-foreground">{s.hint}</p>
+              </div>
+            ))}
+          </dl>
         )}
       </CardContent>
     </Card>
@@ -34,7 +53,7 @@ export function FunnelCard({ funnel }: { funnel: UseQueryResult<Funnel> }) {
     <Card>
       <CardHeader>
         <CardTitle>Funnel</CardTitle>
-        <CardDescription>How many applications reached each stage, and the share that moved on from the stage before.</CardDescription>
+        <CardDescription>How far applications got. The percentage is the share of the previous stage that made it this far.</CardDescription>
       </CardHeader>
       <CardContent>
         {funnel.isPending ? (
@@ -44,12 +63,14 @@ export function FunnelCard({ funnel }: { funnel: UseQueryResult<Funnel> }) {
         ) : (
           <ol className="grid gap-3" aria-label="Funnel stages">
             {funnel.data.stages.map((s) => (
-              <li key={s.status} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 text-sm" aria-label={s.status}>
+              <li key={s.status} className="grid grid-cols-[6.5rem_1fr_7rem] items-center gap-3 text-sm" aria-label={s.status}>
                 <StatusBadge status={s.status} className="justify-self-start" />
                 <Bar value={s.count} max={max} />
-                <span className="tabular-nums">
+                <span className="flex items-baseline justify-end gap-2 tabular-nums whitespace-nowrap">
                   <span className="font-medium">{s.count}</span>
-                  <span className="ml-2 inline-block w-14 text-right text-xs text-muted-foreground">{s.conversion_from_prev == null ? '' : `${pct(s.conversion_from_prev)} of prev`}</span>
+                  <span className="w-12 text-right text-xs text-muted-foreground" title="Share of the stage before that got this far">
+                    {s.conversion_from_prev == null ? '' : pct(s.conversion_from_prev)}
+                  </span>
                 </span>
               </li>
             ))}

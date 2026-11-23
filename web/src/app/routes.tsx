@@ -1,5 +1,5 @@
 import { lazy } from 'react'
-import { Link, Route, Routes } from 'react-router-dom'
+import { Link, Navigate, Route, Routes } from 'react-router-dom'
 import { AppLayout } from './layout'
 
 // One chunk per page; AppLayout wraps the outlet in Suspense with the PageLoading fallback.
@@ -11,14 +11,13 @@ const RepliesPage = lazy(() => import('@/pages/replies/replies-page').then((m) =
 const SettingsPage = lazy(() => import('@/pages/settings/settings-page').then((m) => ({ default: m.SettingsPage })))
 const OutreachPage = lazy(() => import('@/pages/outreach/outreach-page').then((m) => ({ default: m.OutreachPage })))
 const AnalyticsPage = lazy(() => import('@/pages/analytics/analytics-page').then((m) => ({ default: m.AnalyticsPage })))
-const QuickApplyPage = lazy(() => import('@/pages/leads/quick-apply-page').then((m) => ({ default: m.QuickApplyPage })))
 
 function NotFound() {
   return (
     <div className="py-16 text-center">
       <h1 className="text-xl font-semibold">Page not found</h1>
       <Link to="/" className="mt-2 inline-block text-sm underline">
-        Back to Today
+        Back to Home
       </Link>
     </div>
   )
@@ -30,7 +29,8 @@ export function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route index element={<TodayPage />} />
         <Route path="leads" element={<LeadsPage />} />
-        <Route path="leads/quick-apply" element={<QuickApplyPage />} />
+        {/* Old Quick apply page: now the "To apply" tab of Jobs. */}
+        <Route path="leads/quick-apply" element={<Navigate to="/leads?tab=apply" replace />} />
         <Route path="jobs/:id" element={<JobDetailPage />} />
         <Route path="tracker" element={<TrackerPage />} />
         <Route path="replies" element={<RepliesPage />} />

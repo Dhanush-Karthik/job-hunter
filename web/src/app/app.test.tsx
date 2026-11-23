@@ -39,13 +39,22 @@ const setup = (route: string) =>
   )
 
 describe('app shell', () => {
-  it('routes to Today by default and lists every page in the nav', async () => {
+  it('routes to Home by default and lists every page in the nav, grouped', async () => {
     setup('/')
-    expect(await screen.findByRole('heading', { name: 'Today' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Home' })).toBeInTheDocument()
     const nav = screen.getByRole('navigation', { name: 'Main' })
-    for (const name of ['Today', 'Leads', 'Quick apply', 'Tracker', 'Analytics', 'Settings']) {
-      expect(within(nav).getByRole('link', { name })).toBeInTheDocument()
-    }
+    const links = within(nav).getAllByRole('link').map((a) => [a.textContent?.replace(/\d+\s*(pending|problems)$/, ''), a.getAttribute('href')])
+    expect(links).toEqual([
+      ['Home', '/'],
+      ['Jobs', '/leads'],
+      ['Inbox', '/replies'],
+      ['Follow-ups', '/outreach'],
+      ['Applications', '/tracker'],
+      ['Insights', '/analytics'],
+      ['Settings', '/settings'],
+    ])
+    expect(within(nav).getByText('Daily work')).toBeInTheDocument()
+    expect(within(nav).getByText('Progress')).toBeInTheDocument()
   })
 
   it('shows pending counts from the API on the nav', async () => {
@@ -53,37 +62,43 @@ describe('app shell', () => {
     server.use(http.get('/api/outreach', () => HttpResponse.json(makeOutreach().slice(0, 2))))
     setup('/')
     const nav = screen.getByRole('navigation', { name: 'Main' })
-    expect(await within(nav).findByRole('link', { name: /Replies & Inbound\s*3\s*pending/ })).toBeInTheDocument()
-    expect(await within(nav).findByRole('link', { name: /Outreach & Follow-ups\s*2\s*pending/ })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: /Inbox\s*3\s*pending/ })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: /Follow-ups\s*2\s*pending/ })).toBeInTheDocument()
+    expect(await within(nav).findByRole('link', { name: /Jobs\s*3\s*pending/ })).toBeInTheDocument() // shortlisted, not applied
+    expect(await within(nav).findByRole('link', { name: /Settings\s*2\s*problems/ })).toBeInTheDocument() // services down
   })
 
-  it('routes the Wave 2 pages (job detail, tracker, replies, settings)', async () => {
+  it('redirects the old Quick apply page to the To apply tab', async () => {
+    setup('/leads/quick-apply')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Jobs' })).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: /To apply/, selected: true })).toBeInTheDocument()
+  })
+
+  it('routes job detail, applications, inbox and settings', async () => {
     setup('/jobs/7')
     expect(await screen.findByRole('heading', { level: 1, name: 'Java Developer' })).toBeInTheDocument()
     cleanup()
     setup('/tracker')
-    expect(await screen.findByRole('heading', { name: 'Tracker' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Applications' })).toBeInTheDocument()
     expect(await screen.findByRole('region', { name: 'Applied column' })).toBeInTheDocument()
     cleanup()
     setup('/replies')
-    expect(await screen.findByRole('heading', { name: 'Replies & Inbound' })).toBeInTheDocument()
-    expect(await screen.findByText('Inbound recruiters')).toBeInTheDocument()
-    expect(screen.queryByText(/Coming in Wave/)).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Inbox' })).toBeInTheDocument()
+    expect(await screen.findByText('Recruiters reaching out')).toBeInTheDocument()
     cleanup()
     setup('/settings')
     expect(await screen.findByRole('heading', { name: 'Settings' })).toBeInTheDocument()
-    expect(await screen.findByLabelText('Claude concurrency')).toBeInTheDocument()
+    expect(await screen.findByText('What to search for')).toBeInTheDocument()
   })
 
-  it('routes the Wave 3 pages (outreach, analytics) with no placeholders left', async () => {
+  it('routes follow-ups and insights', async () => {
     setup('/outreach')
-    expect(await screen.findByRole('heading', { name: 'Outreach & Follow-ups' })).toBeInTheDocument()
-    expect(await screen.findByRole('tab', { name: 'Due follow-ups' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Follow-ups' })).toBeInTheDocument()
+    expect(await screen.findByRole('tab', { name: 'Due now' })).toBeInTheDocument()
     cleanup()
     setup('/analytics')
-    expect(await screen.findByRole('heading', { name: 'Analytics' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Insights' })).toBeInTheDocument()
     expect(await screen.findByLabelText('Date range')).toBeInTheDocument()
-    expect(screen.queryByText(/Coming in Wave/)).not.toBeInTheDocument()
   })
 
   it('persists the theme choice in localStorage', async () => {

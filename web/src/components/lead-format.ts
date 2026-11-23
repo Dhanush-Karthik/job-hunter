@@ -44,3 +44,13 @@ export const quickScorePct = (l: Pick<LeadSummary, 'quick_score'>) => Math.round
 
 /** Dropped by the prefilter and not restored by the owner. */
 export const isRejected = (l: Pick<LeadSummary, 'prefilter_pass' | 'restored'>) => !l.prefilter_pass && !l.restored
+
+/** "Bengaluru · hybrid · 3–5 yrs · 12–18 LPA", skipping whatever the post does not say. */
+export function leadFacts(l: Pick<LeadSummary, 'location' | 'work_mode' | 'exp_min' | 'exp_max' | 'ctc_min' | 'ctc_max'>, { ctc = true } = {}) {
+  const place = formatPlace(l)
+  return [place === '—' ? null : place, formatExp(l), ctc ? formatCtc(l) : null].filter(Boolean).join(' · ')
+}
+
+/** Status names as the owner thinks of them. */
+export const STATUS_LABEL: Partial<Record<LeadSummary['status'], string>> = { New: 'To review', Ready: 'CV approved' }
+export const statusLabel = (s: LeadSummary['status']) => STATUS_LABEL[s] ?? s

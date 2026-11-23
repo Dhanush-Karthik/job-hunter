@@ -17,8 +17,8 @@ export function InsightsCard({ range }: { range: Range }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Insights</CardTitle>
-        <CardDescription>Rule-based reading of your own numbers: what to do more or less of.</CardDescription>
+        <CardTitle>What to change</CardTitle>
+        <CardDescription>Suggestions from your own numbers: what to do more or less of.</CardDescription>
       </CardHeader>
       <CardContent>
         {q.isPending ? (

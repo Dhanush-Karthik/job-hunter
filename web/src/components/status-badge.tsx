@@ -12,12 +12,13 @@ const TONE: Partial<Record<AppStatus, string>> = {
   Offer: 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-300',
   Accepted: 'bg-emerald-500/25 text-emerald-800 dark:text-emerald-300',
   Rejected: 'bg-destructive/10 text-destructive',
+  New: 'bg-amber-500/15 text-amber-700 dark:text-amber-400',
 }
 
-export function StatusBadge({ status, className }: { status: AppStatus; className?: string }) {
+export function StatusBadge({ status, label, className }: { status: AppStatus; label?: string; className?: string }) {
   return (
     <Badge variant="secondary" className={cn(TONE[status], className)}>
-      {status}
+      {label ?? status}
     </Badge>
   )
 }

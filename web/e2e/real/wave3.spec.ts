@@ -4,7 +4,7 @@ test('real API: analytics, outreach and settings render and companies load', asy
   const company = await request.post('/api/companies', { data: { name: 'Real Browser Company', careers_url: 'https://example.test/careers' } })
   expect(company.status()).toBe(201)
   try {
-    for (const [path, title] of [['/analytics', 'Analytics'], ['/outreach', 'Outreach & Follow-ups'], ['/settings', 'Settings']]) {
+    for (const [path, title] of [['/analytics', 'Insights'], ['/outreach', 'Follow-ups'], ['/settings?tab=companies', 'Settings']]) {
       const failures: string[] = []
       const listen = (r: import('@playwright/test').Response) => {
         if (r.url().includes('/api/') && !r.ok()) failures.push(`${r.status()} ${r.url()}`)
@@ -14,7 +14,7 @@ test('real API: analytics, outreach and settings render and companies load', asy
       await expect(page.getByRole('heading', { level: 1, name: title, exact: true })).toBeVisible()
       if (path === '/analytics') await expect(page.getByRole('list', { name: 'Funnel stages' })).toBeVisible()
       if (path === '/outreach') await expect(page.getByText('No follow-ups due', { exact: true })).toBeVisible()
-      if (path === '/settings') await expect(page.getByRole('switch', { name: 'Enable Real Browser Company', exact: true })).toBeChecked()
+      if (path.startsWith('/settings')) await expect(page.getByRole('switch', { name: 'Enable Real Browser Company', exact: true })).toBeChecked()
       await expect(page.getByText('Something went wrong', { exact: true })).toHaveCount(0)
       expect(failures).toEqual([])
       page.off('response', listen)

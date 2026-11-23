@@ -1,8 +1,9 @@
 import { ArrowLeft, ExternalLink, ShieldCheck, ShieldX } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import type { LeadDetail } from '@/api/client'
 import { fmtDateTime } from '@/components/format'
-import { CHANNEL_LABEL, formatCtc, formatExp, formatPlace, SOURCE_LABEL } from '@/components/lead-format'
+import { CHANNEL_LABEL, formatCtc, formatExp, formatPlace, SOURCE_LABEL, statusLabel } from '@/components/lead-format'
+import { relativeDay } from '@/components/time'
 import { FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
 import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
@@ -11,7 +12,7 @@ import { Button } from '@/components/ui/button'
 function LiveBadge({ lead }: { lead: LeadDetail }) {
   const live = lead.evaluation?.is_live ?? lead.is_live
   const at = lead.evaluation?.live_verified_at
-  if (live == null) return <Badge variant="outline">Live status unknown</Badge>
+  if (live == null) return null
   return (
     <Badge
       variant="secondary"
@@ -24,13 +25,15 @@ function LiveBadge({ lead }: { lead: LeadDetail }) {
 }
 
 export function JobHeader({ lead }: { lead: LeadDetail }) {
-  const facts = [formatPlace(lead), formatExp(lead), formatCtc(lead) ?? 'CTC unknown'].filter(Boolean).join(' · ')
+  const navigate = useNavigate()
+  const place = formatPlace(lead)
+  const facts = [place === '—' ? null : place, formatExp(lead), formatCtc(lead) ?? 'Salary not stated', `found ${relativeDay(lead.posted_at ?? lead.found_at)}`].filter(Boolean).join(' · ')
+  // Back to wherever the owner came from (Jobs, Applications, Inbox...); a direct link falls back to Jobs.
+  const back = () => (window.history.state?.idx > 0 ? navigate(-1) : navigate('/leads'))
   return (
     <header className="mb-6 grid gap-3">
-      <Button asChild variant="ghost" size="sm" className="-ml-2 w-fit">
-        <Link to="/leads">
-          <ArrowLeft /> Leads
-        </Link>
+      <Button variant="ghost" size="sm" className="-ml-2 w-fit" onClick={back}>
+        <ArrowLeft /> Back
       </Button>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
@@ -41,13 +44,17 @@ export function JobHeader({ lead }: { lead: LeadDetail }) {
         <ScoreCell lead={lead} />
       </div>
       <div className="flex flex-wrap items-center gap-2">
-        <StatusBadge status={lead.status} />
+        <StatusBadge status={lead.status} label={statusLabel(lead.status)} />
         {lead.is_fresh && <FreshBadge />}
         {lead.is_inbound && <InboundBadge />}
         <LiveBadge lead={lead} />
-        <Badge variant="outline">{CHANNEL_LABEL[lead.apply_channel]}</Badge>
+        {lead.apply_channel !== 'unknown' && <Badge variant="outline">{CHANNEL_LABEL[lead.apply_channel]}</Badge>}
         <Badge variant="outline">{SOURCE_LABEL[lead.source]}</Badge>
-        {lead.duplicate_ids.length > 0 && <Badge variant="outline">{lead.duplicate_ids.length} duplicates merged</Badge>}
+        {lead.duplicate_ids.length > 0 && (
+          <Badge variant="outline" title="The same job was found on other sites and merged into this one">
+            also on {lead.duplicate_ids.length} other site{lead.duplicate_ids.length === 1 ? '' : 's'}
+          </Badge>
+        )}
       </div>
       <div className="flex flex-wrap gap-2">
         {lead.canonical_url && (

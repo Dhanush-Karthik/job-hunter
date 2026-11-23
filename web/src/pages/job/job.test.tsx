@@ -55,7 +55,7 @@ describe('Job detail', () => {
     expect(screen.getByLabelText('Loading job')).toBeInTheDocument()
     expect(await screen.findByRole('heading', { level: 1, name: 'Software Engineer II, Identity Platform' })).toBeInTheDocument()
     expect(screen.getByText('Okta')).toBeInTheDocument()
-    expect(screen.getByText('A 4.6')).toBeInTheDocument()
+    expect(screen.getByText('A 4.6/5')).toBeInTheDocument()
     expect(screen.getByText('Screening')).toBeInTheDocument()
     expect(screen.getByText('Posting is live')).toBeInTheDocument()
     expect(screen.getByText('Company ATS')).toBeInTheDocument()
@@ -85,7 +85,7 @@ describe('Job detail', () => {
     show(7)
     // no report yet, so the page opens on the job description
     expect(await screen.findByText(/hiring a backend engineer/)).toBeInTheDocument()
-    await user.click(screen.getByRole('tab', { name: 'Evaluation report' }))
+    await user.click(screen.getByRole('tab', { name: 'AI evaluation' }))
     expect(await screen.findByText('Not evaluated yet')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /^Evaluate/ }))
     await waitFor(() => expect(evals).toHaveLength(1))
@@ -146,7 +146,33 @@ describe('Job detail', () => {
     await user.click(await screen.findByRole('button', { name: /Mark applied/ }))
     const timeline = await screen.findByRole('list', { name: 'Application timeline' })
     expect(await within(timeline).findByText('Ready → Applied')).toBeInTheDocument()
-    await waitFor(() => expect(screen.getByRole('button', { name: /Mark applied/ })).toBeDisabled())
+    // once applied, the apply steps give way to the status picker
+    await waitFor(() => expect(screen.queryByRole('button', { name: /Mark applied/ })).not.toBeInTheDocument())
+    expect(screen.getByText('Waiting on the company')).toBeInTheDocument()
+    expect(screen.getByRole('combobox', { name: 'New status' })).toBeInTheDocument()
+  })
+
+  it('says what to do next for a new lead, and updates the status after applying', async () => {
+    const user = userEvent.setup()
+    const moves = capture('POST', '/api/applications/1/transition')
+    const { unmount } = show(7)
+    expect(await screen.findByText('Worth applying?')).toBeInTheDocument()
+    expect(screen.queryByRole('list', { name: 'Steps to apply' })).not.toBeInTheDocument()
+    unmount()
+
+    show(1) // Freshworks, Applied
+    expect(await screen.findByText('Waiting on the company')).toBeInTheDocument()
+    await user.selectOptions(screen.getByRole('combobox', { name: 'New status' }), 'Rejected')
+    await user.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(moves).toEqual([{ to_status: 'Rejected', rejected_at_stage: 'Applied' }]))
+  })
+
+  it('walks a shortlisted lead through the four apply steps', async () => {
+    show(2) // Zoho, Shortlisted, no CV yet
+    const steps = await screen.findByRole('list', { name: 'Steps to apply' })
+    expect(within(steps).getAllByRole('listitem')).toHaveLength(4)
+    expect(within(steps).getByText('Generate a tailored CV')).toBeInTheDocument()
+    expect(within(steps).getByRole('button', { name: /Mark applied/ })).toBeEnabled()
   })
 
   it('lists contact drafts with copy buttons and finds contacts', async () => {

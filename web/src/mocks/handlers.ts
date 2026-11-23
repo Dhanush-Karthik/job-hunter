@@ -303,11 +303,12 @@ export const handlers = [
       referrals_target: db.settings.targets.referrals_per_week,
       fresh_hot_leads: live.filter((l) => l.is_fresh && l.status === 'New').sort((a, b) => b.quick_score - a.quick_score).slice(0, 5),
       actions: [
-        { kind: 'inbound', title: 'TalentCorp Consulting: Keycloak / IAM Engineer', subtitle: 'Recruiter reached out 2 h ago', lead_id: 8, proposal_id: 2 },
-        { kind: 'proposal', title: 'Freshworks replied: move to Screening?', subtitle: 'confidence 93%', application_id: 1, proposal_id: 1 },
-        { kind: 'follow_up', title: 'Follow up with Freshworks', subtitle: 'due 2 h ago', application_id: 1, outreach_id: 2, due_at: ago(2) },
-        { kind: 'quick_apply', title: '2 quick-applies waiting', subtitle: 'Zoho, Postman', lead_id: null },
-        { kind: 'profile_refresh', title: 'Refresh Naukri profile', subtitle: 'last refreshed 30 h ago', platform: 'naukri' },
+        // Titles follow api/insight.py so the Home page parses the same shapes it gets for real.
+        { kind: 'inbound', title: 'TalentCorp Consulting — Keycloak / IAM Engineer', subtitle: 'Keycloak opening - Bengaluru - immediate', lead_id: 8, proposal_id: 2 },
+        { kind: 'proposal', title: 'Freshworks — Senior Software Engineer - Java', subtitle: 'status_change: Next steps for your application', application_id: 1, proposal_id: 1 },
+        { kind: 'follow_up', title: 'Follow up: Freshworks', subtitle: 'Senior Software Engineer - Java', application_id: 1, outreach_id: 2, due_at: ago(50) },
+        { kind: 'quick_apply', title: '2 quick-apply jobs waiting', lead_id: null },
+        { kind: 'profile_refresh', title: 'Refresh your naukri profile', subtitle: 'https://www.naukri.com/mnjuser/profile', platform: 'naukri' },
         { kind: 'cv_review', title: 'Approve CV for Razorpay SDE 2', subtitle: 'variant A generated', lead_id: 4, application_id: 4 },
       ],
       health: [
@@ -349,11 +350,14 @@ export const handlers = [
   http.get('/api/analytics/response-times', () => HttpResponse.json({ median_days_to_first_response: 4.5, p90_days_to_first_response: 11, samples: 14 })),
   http.get('/api/analytics/rejects', () =>
     HttpResponse.json([
-      { reason: 'location', count: 312, sample_lead_ids: [10] },
-      { reason: 'experience', count: 120, sample_lead_ids: [11] },
-      { reason: 'stack', count: 88, sample_lead_ids: [] },
-      { reason: 'ctc', count: 14, sample_lead_ids: [] },
-      { reason: 'stale', count: 40, sample_lead_ids: [] },
+      // One row per exact reason, as api/insight.py reports them; the UI groups them by rule.
+      { reason: 'location: Pune', count: 300, sample_lead_ids: [10] },
+      { reason: 'location: Delhi', count: 12, sample_lead_ids: [] },
+      { reason: 'experience: min 8 >= 6', count: 120, sample_lead_ids: [11] },
+      { reason: 'stack: sales', count: 88, sample_lead_ids: [] },
+      { reason: 'ctc: max 4.2 LPA < 10', count: 14, sample_lead_ids: [] },
+      { reason: 'stale: 44 days', count: 30, sample_lead_ids: [] },
+      { reason: 'stale: 60 days', count: 10, sample_lead_ids: [] },
     ]),
   ),
 

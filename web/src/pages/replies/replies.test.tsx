@@ -22,77 +22,105 @@ function capture(pathname: string) {
 const setup = () => renderWithProviders(<RepliesPage />, { route: '/replies' })
 const card = (name: RegExp) => screen.getByRole('listitem', { name })
 
-describe('Replies & Inbound', () => {
-  it('groups pending proposals, inbound recruiters first, with evidence and confidence', async () => {
+const NEEDS_EYES = {
+  id: 7,
+  type: 'needs_eyes',
+  application_id: 1,
+  lead_id: 1,
+  company: 'Freshworks',
+  title: 'Senior Software Engineer - Java',
+  payload: { message_id: '<x@y>' },
+  evidence: 'Your application was viewed by Freshworks\n---------- This email was intended for You. Learn why we included this: https://www.linkedin.com/help/x?lipi=abc&amp;b=1',
+  confidence: 0,
+  state: 'pending',
+  created_at: new Date().toISOString(),
+}
+
+describe('Inbox', () => {
+  it('groups pending emails, recruiters first, with a readable preview', async () => {
     setup()
     await screen.findByText('TalentCorp Consulting · Keycloak / IAM Engineer')
-    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/\d+$/, ''))).toEqual(['Inbound recruiters', 'Status changes', 'Ghosted'])
+    expect(screen.getAllByRole('heading', { level: 2 }).map((h) => h.textContent?.replace(/\d+$/, ''))).toEqual(['Recruiters reaching out', 'Application updates'])
 
     const inbound = card(/TalentCorp/)
     expect(within(inbound).getByText(/found your profile on Naukri/)).toBeInTheDocument()
-    expect(within(inbound).getByText('88% confident')).toBeInTheDocument()
     expect(within(inbound).getByText(/from Arun K/)).toBeInTheDocument()
     expect(within(inbound).getByRole('link', { name: /TalentCorp/ })).toHaveAttribute('href', '/jobs/8')
-    expect(within(inbound).getByRole('button', { name: 'Convert to application' })).toBeInTheDocument()
-    expect(within(inbound).queryByRole('button', { name: /^Accept/ })).not.toBeInTheDocument()
+    expect(within(inbound).getByRole('button', { name: 'Add to my jobs' })).toBeInTheDocument()
+    expect(within(inbound).queryByText(/confident/)).not.toBeInTheDocument()
 
     const change = card(/Freshworks/)
-    expect(within(change).getByText('93% confident')).toBeInTheDocument()
     expect(within(change).getByText('Screening')).toBeInTheDocument()
+    expect(within(change).getByRole('button', { name: 'Mark Screening' })).toBeInTheDocument()
     expect(within(change).getByText(/would like to schedule a 30 min call/)).toBeInTheDocument()
-    expect(within(card(/Atlassian/)).getByText('100% confident')).toBeInTheDocument()
+    expect(within(card(/Atlassian/)).getByRole('button', { name: 'Mark Ghosted' })).toBeInTheDocument()
   })
 
-  it('accepts a proposal as proposed (no payload edit)', async () => {
+  it('confirms an update as proposed (no payload edit)', async () => {
     const user = userEvent.setup()
     const posts = capture('/api/proposals/1/accept')
     setup()
     await screen.findByText(/Freshworks/)
-    await user.click(within(card(/Freshworks/)).getByRole('button', { name: 'Accept' }))
+    await user.click(within(card(/Freshworks/)).getByRole('button', { name: 'Mark Screening' }))
     await waitFor(() => expect(screen.queryByText(/Freshworks/)).not.toBeInTheDocument())
     expect(posts).toEqual([{ payload: null }])
   })
 
-  it('edits the target status before accepting', async () => {
+  it('picks a different status before confirming', async () => {
     const user = userEvent.setup()
     const posts = capture('/api/proposals/1/accept')
     setup()
     await screen.findByText(/Freshworks/)
     const c = card(/Freshworks/)
-    await user.click(within(c).getByRole('button', { name: 'Edit' }))
+    await user.click(within(c).getByRole('button', { name: 'Different status' }))
     await user.selectOptions(within(c).getByRole('combobox', { name: /New status for Freshworks/ }), 'Technical')
-    expect(within(c).getByRole('button', { name: 'Accept as Technical' })).toBeInTheDocument()
-    await user.click(within(c).getByRole('button', { name: 'Accept as Technical' }))
-    await waitFor(() => expect(posts).toEqual([{ payload: { to_status: 'Technical' } }]))
+    await user.click(within(c).getByRole('button', { name: 'Mark Technical' }))
+    await waitFor(() => expect(posts).toEqual([{ payload: { to_status: 'Technical', rejected_at_stage: null } }]))
     await waitFor(() => expect(screen.queryByText(/Freshworks/)).not.toBeInTheDocument())
   })
 
-  it('dismisses a proposal', async () => {
+  it('ignores an email', async () => {
     const user = userEvent.setup()
     const posts = capture('/api/proposals/3/dismiss')
     setup()
     await screen.findByText(/Atlassian/)
-    await user.click(within(card(/Atlassian/)).getByRole('button', { name: 'Dismiss' }))
+    await user.click(within(card(/Atlassian/)).getByRole('button', { name: 'Ignore' }))
     await waitFor(() => expect(screen.queryByText(/Atlassian/)).not.toBeInTheDocument())
     expect(posts).toHaveLength(1)
-    expect(screen.queryByRole('heading', { name: /Ghosted/ })).not.toBeInTheDocument() // empty group disappears
   })
 
-  it('converts an inbound recruiter into an application', async () => {
+  it('adds an inbound recruiter role to my jobs', async () => {
     const user = userEvent.setup()
     const posts = capture('/api/proposals/2/convert')
     setup()
     await screen.findByText(/TalentCorp/)
-    await user.click(within(card(/TalentCorp/)).getByRole('button', { name: 'Convert to application' }))
+    await user.click(within(card(/TalentCorp/)).getByRole('button', { name: 'Add to my jobs' }))
     await waitFor(() => expect(screen.queryByText(/TalentCorp/)).not.toBeInTheDocument())
     expect(posts).toHaveLength(1)
+  })
+
+  it('moves the application itself for an unsure email, then closes it', async () => {
+    server.use(http.get('/api/proposals', () => HttpResponse.json([NEEDS_EYES])))
+    const user = userEvent.setup()
+    const moves = capture('/api/applications/1/transition')
+    const accepts = capture('/api/proposals/7/accept')
+    setup()
+    const c = await screen.findByRole('listitem', { name: /Freshworks/ })
+    expect(screen.getByRole('heading', { level: 2, name: /Please check/ })).toBeInTheDocument()
+    // the preview drops the separator line, the footer and the tracking URL
+    expect(within(c).getByText('Your application was viewed by Freshworks')).toBeInTheDocument()
+    expect(c).not.toHaveTextContent(/linkedin\.com|intended for|-----/)
+    await user.selectOptions(await within(c).findByRole('combobox', { name: /New status for Freshworks/ }), 'Rejected')
+    await user.click(within(c).getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(moves).toEqual([{ to_status: 'Rejected', rejected_at_stage: 'Applied' }]))
+    await waitFor(() => expect(accepts).toEqual([{ payload: null }]))
   })
 
   it('explains the empty state', async () => {
     server.use(http.get('/api/proposals', () => HttpResponse.json([])))
     setup()
-    expect(await screen.findByText('Nothing to confirm')).toBeInTheDocument()
-    expect(screen.getByText(/Gmail capture arrives in Wave 3/)).toBeInTheDocument()
+    expect(await screen.findByText('Inbox zero')).toBeInTheDocument()
+    expect(screen.getByText(/Gmail is checked every 30 minutes/)).toBeInTheDocument()
   })
 
   it('shows an error state', async () => {

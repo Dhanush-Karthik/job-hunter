@@ -22,17 +22,18 @@ function capture(method: string, pathname: string) {
 
 const setup = () => renderWithProviders(<AnalyticsPage />, { route: '/analytics' })
 
-describe('Analytics', () => {
-  it('shows the headline calls, funnel with conversion, and response times', async () => {
+describe('Insights', () => {
+  it('shows the headline numbers, the funnel with conversion, and reply times', async () => {
     setup()
     expect(await screen.findByLabelText('9 interview calls')).toBeInTheDocument()
+    expect(screen.getByText('Call rate', { selector: 'dt' }).nextElementSibling).toHaveTextContent('10.7%') // 9 of 84
+    expect(await screen.findByText('4.5 d')).toBeInTheDocument()
+    expect(screen.getByText(/90% within 11 d, 14 replies/)).toBeInTheDocument()
     const funnel = await screen.findByRole('list', { name: 'Funnel stages' })
     const applied = within(funnel).getByRole('listitem', { name: 'Applied' })
     expect(within(applied).getByText('84')).toBeInTheDocument()
-    expect(within(applied).getByText('70% of prev')).toBeInTheDocument()
-    expect(within(within(funnel).getByRole('listitem', { name: 'Screening' })).getByText('10.7% of prev')).toBeInTheDocument()
-    expect(await screen.findByText('4.5 days')).toBeInTheDocument()
-    expect(screen.getByText('11 days')).toBeInTheDocument()
+    expect(within(applied).getByText('70%')).toBeInTheDocument()
+    expect(within(within(funnel).getByRole('listitem', { name: 'Screening' })).getByText('10.7%')).toBeInTheDocument()
   })
 
   it('renders insights with severity styling', async () => {
@@ -85,23 +86,8 @@ describe('Analytics', () => {
     expect(funnels.some((f) => f.search.includes(`date_from=${from7.getFullYear()}-`))).toBe(true)
   })
 
-  it('lists reject reasons with sample links and restores a lead', async () => {
-    const user = userEvent.setup()
-    const restores = capture('POST', '/api/leads/10/restore')
-    setup()
-    const location = await screen.findByRole('row', { name: /location/i })
-    expect(within(location).getByText('312')).toBeInTheDocument()
-    expect(within(location).getByRole('link', { name: 'Lead #10' })).toHaveAttribute('href', '/jobs/10')
-    await user.click(within(location).getByRole('button', { name: 'Restore lead #10' }))
-    await waitFor(() => expect(restores).toHaveLength(1))
-    expect(await within(screen.getByRole('row', { name: /location/i })).findByText('Restored')).toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Restore lead #10' })).not.toBeInTheDocument()
-    // reasons with no samples have nothing to restore
-    expect(within(screen.getByRole('row', { name: /stack/i })).queryByRole('button')).not.toBeInTheDocument()
-  })
-
   it('shows an error state when a section fails', async () => {
-    server.use(http.get('/api/analytics/rejects', () => HttpResponse.json({ detail: 'boom' }, { status: 500 })))
+    server.use(http.get('/api/analytics/insights', () => HttpResponse.json({ detail: 'boom' }, { status: 500 })))
     setup()
     expect(await screen.findByText('500 boom')).toBeInTheDocument()
   })

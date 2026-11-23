@@ -15,8 +15,14 @@ import { followupsValid, inRange, prefilterValid, schedulesValid } from './valid
 
 const BOARD_SITES: Source[] = ['linkedin', 'naukri', 'indeed', 'glassdoor', 'google']
 
-/** Editable Settings (N, concurrency, targets, query matrix, prefilter, schedules, follow-ups). The rest of the object is sent back untouched. */
-export function SettingsForm({ initial }: { initial: Settings }) {
+export type Section = 'targets' | 'evaluation' | 'query' | 'prefilter' | 'schedules' | 'followups'
+
+/**
+ * Editable Settings, one tab's worth of sections at a time. The whole object is sent back on save,
+ * so sections on other tabs keep the server's values.
+ */
+export function SettingsForm({ initial, sections }: { initial: Settings; sections: Section[] }) {
+  const has = (x: Section) => sections.includes(x)
   const [s, setS] = useState(initial)
   const save = useSaveSettings()
   const patch = (p: Partial<Settings>) => setS((prev) => ({ ...prev, ...p }))
@@ -44,32 +50,38 @@ export function SettingsForm({ initial }: { initial: Settings }) {
         if (valid) save.mutate(s)
       }}
     >
+      {has('targets') && (
       <Card>
         <CardHeader>
-          <CardTitle>Evaluation</CardTitle>
-          <CardDescription>Each evaluation uses Claude quota (about 3.5 min and a fair bit of tokens), so keep N modest.</CardDescription>
-        </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <NumberField label="Auto-evaluate top N per day" value={s.auto_evaluate_top_n} min={0} max={50} onChange={(n) => patch({ auto_evaluate_top_n: n })} />
-          <NumberField label="Claude concurrency" value={s.claude_concurrency} min={1} max={4} onChange={(n) => patch({ claude_concurrency: n })} />
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Targets</CardTitle>
+          <CardTitle>Weekly goals</CardTitle>
+          <CardDescription>Shown on Home. The minimum AI score is the bar for applying unless you override it.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
           <NumberField label="Applications per week" value={s.targets.applied_per_week} min={0} max={1000} onChange={(n) => patch({ targets: { ...s.targets, applied_per_week: n } })} />
-          <NumberField label="Referrals per week" value={s.targets.referrals_per_week} min={0} max={1000} onChange={(n) => patch({ targets: { ...s.targets, referrals_per_week: n } })} />
-          <NumberField label="Minimum eval score" value={s.targets.min_eval_score} min={0} max={5} step={0.1} onChange={(n) => patch({ targets: { ...s.targets, min_eval_score: n } })} />
+          <NumberField label="Referral requests per week" value={s.targets.referrals_per_week} min={0} max={1000} onChange={(n) => patch({ targets: { ...s.targets, referrals_per_week: n } })} />
+          <NumberField label="Minimum AI score (0-5)" value={s.targets.min_eval_score} min={0} max={5} step={0.1} onChange={(n) => patch({ targets: { ...s.targets, min_eval_score: n } })} />
         </CardContent>
       </Card>
+      )}
 
+      {has('evaluation') && (
       <Card>
         <CardHeader>
-          <CardTitle>Query matrix</CardTitle>
-          <CardDescription>Board intake searches every title in every location on the ticked sites, rotating through them each run.</CardDescription>
+          <CardTitle>AI evaluation</CardTitle>
+          <CardDescription>The best new matches get an AI fit report automatically each day. Each one takes about 3.5 minutes of Claude quota, so keep the number modest.</CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <NumberField label="Auto-evaluate top N per day" value={s.auto_evaluate_top_n} min={0} max={50} onChange={(n) => patch({ auto_evaluate_top_n: n })} />
+          <NumberField label="Evaluations running at once" value={s.claude_concurrency} min={1} max={4} onChange={(n) => patch({ claude_concurrency: n })} />
+        </CardContent>
+      </Card>
+      )}
+
+      {has('query') && (
+      <Card>
+        <CardHeader>
+          <CardTitle>What to search for</CardTitle>
+          <CardDescription>Every title is searched in every location on the ticked job sites, a few at a time each run so no site blocks you.</CardDescription>
         </CardHeader>
         <CardContent className="grid gap-4">
           <ChipInput label="Titles" values={qm.titles} onChange={(titles) => setQm({ titles })} placeholder="e.g. Java Developer" />
@@ -94,15 +106,17 @@ export function SettingsForm({ initial }: { initial: Settings }) {
           </fieldset>
         </CardContent>
       </Card>
+      )}
 
-      <PrefilterCard value={s.prefilter} onChange={(prefilter) => patch({ prefilter })} />
-      <SchedulesCard value={s.schedules} onChange={(schedules) => patch({ schedules })} />
-      <FollowupsCard value={s.followups} onChange={(followups) => patch({ followups })} />
+      {has('prefilter') && <PrefilterCard value={s.prefilter} onChange={(prefilter) => patch({ prefilter })} />}
+      {has('schedules') && <SchedulesCard value={s.schedules} onChange={(schedules) => patch({ schedules })} />}
+      {has('followups') && <FollowupsCard value={s.followups} onChange={(followups) => patch({ followups })} />}
 
-      <div className="flex items-center gap-3">
+      <div className="sticky bottom-0 z-10 -mx-1 flex items-center gap-3 bg-background/95 px-1 py-3 backdrop-blur">
         <Button type="submit" disabled={!valid || !dirty || save.isPending}>
           Save settings
         </Button>
+        {dirty && valid && <span className="text-sm text-muted-foreground">Unsaved changes</span>}
         {!valid && <span className="text-sm text-destructive">Fix the highlighted fields first.</span>}
       </div>
     </form>

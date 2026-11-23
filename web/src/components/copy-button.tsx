@@ -4,13 +4,13 @@ import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 
 /** Copies text to the clipboard. Drafts are copy-only: nothing in the app sends a message. */
-export function CopyButton({ text, label }: { text: string; label: string }) {
+export function CopyButton({ text, label, caption = 'Copy', variant = 'outline' }: { text: string; label: string; caption?: string; variant?: 'outline' | 'default' }) {
   const [done, setDone] = useState(false)
   return (
     <Button
       type="button"
       size="sm"
-      variant="outline"
+      variant={variant}
       aria-label={label}
       onClick={async () => {
         try {
@@ -23,7 +23,7 @@ export function CopyButton({ text, label }: { text: string; label: string }) {
         }
       }}
     >
-      {done ? <Check /> : <Copy />} {done ? 'Copied' : 'Copy'}
+      {done ? <Check /> : <Copy />} {done ? 'Copied' : caption}
     </Button>
   )
 }

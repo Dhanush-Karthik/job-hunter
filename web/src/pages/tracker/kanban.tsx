@@ -13,18 +13,18 @@ import {
 } from '@dnd-kit/core'
 import { ChevronDown, ChevronRight, GripVertical } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { CLOSED, PIPELINE, type ApplicationOut, type AppStatus } from '@/api/client'
+import { CLOSED, type ApplicationOut, type AppStatus } from '@/api/client'
 import { SOURCE_LABEL } from '@/components/lead-format'
 import { NativeSelect } from '@/components/native-select'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { allowedTargets, CLOSED_COLUMN } from './transitions'
+import { dueLabel, relativeDay } from '@/components/time'
+import { allowedTargets, BOARD, CLOSED_COLUMN } from './transitions'
 
 type Props = { apps: ApplicationOut[]; onMove: (app: ApplicationOut, to: AppStatus) => void }
 
-const day = (iso: string) => new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-
 function CardBody({ app }: { app: ApplicationOut }) {
+  const follow = app.next_follow_up_at && !CLOSED.includes(app.status) ? dueLabel(app.next_follow_up_at) : null
   return (
     <>
       <div className="truncate font-medium" title={app.company}>
@@ -33,12 +33,16 @@ function CardBody({ app }: { app: ApplicationOut }) {
       <div className="truncate text-xs text-muted-foreground" title={app.title}>
         {app.title}
       </div>
-      <div className="mt-1.5 flex flex-wrap gap-1">
-        {app.eval_score != null && <Badge variant="secondary">{app.eval_score.toFixed(1)}</Badge>}
-        {app.resume_variant && <Badge variant="outline">CV {app.resume_variant}</Badge>}
-        <Badge variant="outline">{SOURCE_LABEL[app.source]}</Badge>
+      <div className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
+        {app.applied_at && <span>Applied {relativeDay(app.applied_at)}</span>}
+        <span>{SOURCE_LABEL[app.source]}</span>
+        {app.resume_variant && <span>CV {app.resume_variant}</span>}
       </div>
-      {app.next_follow_up_at && <div className="mt-1 text-xs text-muted-foreground">Follow up {day(app.next_follow_up_at)}</div>}
+      {follow && (
+        <div className={cn('mt-1 text-xs', follow.overdue ? 'font-medium text-destructive' : 'text-muted-foreground')}>
+          Follow-up {follow.overdue ? follow.text.toLowerCase() : follow.text.replace('Due ', 'due ')}
+        </div>
+      )}
     </>
   )
 }
@@ -47,7 +51,7 @@ function KanbanCard({ app, onMove }: { app: ApplicationOut; onMove: Props['onMov
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({ id: app.id })
   const targets = allowedTargets(app.status)
   return (
-    <li ref={setNodeRef} className={cn('relative rounded-lg border bg-card p-2.5 text-sm shadow-xs', isDragging && 'opacity-40')}>
+    <li ref={setNodeRef} className={cn('relative min-w-0 rounded-lg border bg-card p-2.5 text-sm shadow-xs', isDragging && 'opacity-40')}>
       <div className="flex items-start gap-1">
         <button
           type="button"
@@ -101,7 +105,8 @@ function Zone({ status, apps, active, onMove, heading = 'h2' }: { status: AppSta
         {status}
         <Badge variant="secondary">{apps.length}</Badge>
       </H>
-      <ul className="grid gap-2" aria-label={`${status} applications`}>
+      {apps.length === 0 && <p className="px-1 pb-1 text-xs text-muted-foreground">None</p>}
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-2" aria-label={`${status} applications`}>
         {apps.map((a) => (
           <KanbanCard key={a.id} app={a} onMove={onMove} />
         ))}
@@ -130,12 +135,12 @@ export function Kanban({ apps, onMove }: Props) {
   return (
     <DndContext sensors={sensors} onDragStart={start} onDragEnd={end} onDragCancel={() => setActive(null)}>
       <div className="flex flex-col gap-3 md:flex-row md:items-start md:overflow-x-auto md:pb-2">
-        {PIPELINE.map((s) => (
-          <div key={s} className="md:w-64 md:shrink-0">
+        {BOARD.map((s) => (
+          <div key={s} className="min-w-0 md:min-w-40 md:flex-1">
             <Zone status={s} apps={by(s)} active={active} onMove={onMove} />
           </div>
         ))}
-        <div className="md:w-64 md:shrink-0">
+        <div className="min-w-0 md:min-w-40 md:flex-1">
           <button
             type="button"
             aria-expanded={showClosed}

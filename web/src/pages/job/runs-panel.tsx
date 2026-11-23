@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { CircleAlert, CircleCheck, CircleSlash, Loader2 } from 'lucide-react'
+import { ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleSlash, Loader2 } from 'lucide-react'
 import type { RunOut } from '@/api/client'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { isActive, RUN_LABEL, useRunLog } from './use-job'
@@ -46,20 +46,35 @@ function RunRow({ run }: { run: RunOut }) {
   )
 }
 
+/** Background tasks for this job (evaluation, CV, live check...). Folded unless something is running or just failed. */
 export function RunsPanel({ runs }: { runs: RunOut[] }) {
+  const [open, setOpen] = useState<boolean | null>(null)
+  // Once something ran while the page was open, keep the log visible so the result does not vanish when it settles.
+  const [watched, setWatched] = useState(false)
+  const attention = runs.some(isActive) || runs[0]?.state === 'failed'
+  if (attention && !watched) setWatched(true)
   if (!runs.length) return null
+  const shown = open ?? (attention || watched)
   return (
-    <Card>
+    <Card size="sm">
       <CardHeader>
-        <CardTitle>Runs</CardTitle>
+        <CardTitle>
+          <button type="button" className="flex w-full items-center gap-2 text-left" aria-expanded={shown} onClick={() => setOpen(!shown)}>
+            {shown ? <ChevronDown className="size-4" aria-hidden /> : <ChevronRight className="size-4" aria-hidden />}
+            Activity log
+            <span className="text-xs font-normal text-muted-foreground">{runs.length} task{runs.length === 1 ? '' : 's'}</span>
+          </button>
+        </CardTitle>
       </CardHeader>
-      <CardContent>
-        <ul className="divide-y" aria-label="Runs for this lead">
-          {runs.slice(0, 5).map((r) => (
-            <RunRow key={r.id} run={r} />
-          ))}
-        </ul>
-      </CardContent>
+      {shown && (
+        <CardContent>
+          <ul className="divide-y" aria-label="Runs for this lead">
+            {runs.slice(0, 5).map((r) => (
+              <RunRow key={r.id} run={r} />
+            ))}
+          </ul>
+        </CardContent>
+      )}
     </Card>
   )
 }

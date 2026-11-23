@@ -23,7 +23,7 @@ export function AppLayout() {
       <aside className="sticky top-0 hidden h-svh w-60 shrink-0 flex-col gap-4 border-r bg-sidebar p-3 text-sidebar-foreground md:flex">
         <Brand />
         <SidebarNav />
-        <div className="mt-auto flex items-center justify-between px-1">
+        <div className="flex items-center justify-between border-t px-1 pt-3">
           <span className="text-xs text-muted-foreground">Theme</span>
           <ThemeToggle />
         </div>
@@ -44,7 +44,7 @@ export function AppLayout() {
                 <SheetDescription className="sr-only">Navigation</SheetDescription>
               </SheetHeader>
               <SidebarNav onNavigate={() => setOpen(false)} />
-              <div className="mt-auto flex items-center justify-between px-1">
+              <div className="flex items-center justify-between border-t px-1 pt-3">
                 <span className="text-xs text-muted-foreground">Theme</span>
                 <ThemeToggle />
               </div>

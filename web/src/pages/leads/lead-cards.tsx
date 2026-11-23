@@ -1,6 +1,7 @@
 import { Link, useNavigate } from 'react-router-dom'
 import type { LeadSummary } from '@/api/client'
-import { CHANNEL_LABEL, SOURCE_LABEL, formatCtc, formatExp, formatPlace, isRejected } from '@/components/lead-format'
+import { CHANNEL_LABEL, SOURCE_LABEL, formatCtc, formatExp, formatPlace, isRejected, statusLabel } from '@/components/lead-format'
+import { StatusBadge } from '@/components/status-badge'
 import { FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -18,7 +19,9 @@ export function LeadCards({
   allSelected,
   onToggleAll,
   actions,
+  showStatus = true,
 }: {
+  showStatus?: boolean
   items: CardItem[]
   allSelected: boolean | 'indeterminate'
   onToggleAll: (v: boolean) => void
@@ -60,19 +63,14 @@ export function LeadCards({
                   {[formatPlace(l), formatExp(l)].filter((x) => x && x !== '—').join(' · ')}
                 </div>
                 <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                  {formatCtc(l) ? <Badge variant="outline">{formatCtc(l)}</Badge> : <Badge variant="outline">CTC unknown</Badge>}
+                  {formatCtc(l) && <Badge variant="outline">{formatCtc(l)}</Badge>}
                   <Badge variant="outline">{SOURCE_LABEL[l.source]}</Badge>
-                  <Badge variant="outline">{CHANNEL_LABEL[l.apply_channel]}</Badge>
-                  <Badge variant="secondary">{l.status}</Badge>
-                  {l.prefilter_tags.filter((t) => t !== 'CTC unknown').map((t) => (
-                    <Badge key={t} variant="secondary">
-                      {t}
-                    </Badge>
-                  ))}
+                  {l.apply_channel !== 'unknown' && <Badge variant="outline">{CHANNEL_LABEL[l.apply_channel]}</Badge>}
+                  {showStatus && <StatusBadge status={l.status} label={statusLabel(l.status)} />}
                   {l.restored && <Badge variant="secondary">Restored</Badge>}
                 </div>
                 {isRejected(l) && l.prefilter_reasons.length > 0 && (
-                  <div className="mt-1 text-xs text-destructive/80">{l.prefilter_reasons.join('; ')}</div>
+                  <div className="mt-1 text-xs text-destructive/80">Auto-filtered: {l.prefilter_reasons.join('; ')}</div>
                 )}
               </div>
               <div onClick={stop}>

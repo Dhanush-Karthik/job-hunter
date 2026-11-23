@@ -1,4 +1,4 @@
-import { Link, useParams } from 'react-router-dom'
+import { useParams } from 'react-router-dom'
 import { Markdown } from '@/components/markdown'
 import { EmptyState, ErrorState } from '@/components/query-states'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -42,7 +42,7 @@ export function JobDetailPage() {
         <div className="min-w-0">
           <Tabs defaultValue={report ? 'report' : 'jd'}>
             <TabsList>
-              <TabsTrigger value="report">Evaluation report</TabsTrigger>
+              <TabsTrigger value="report">AI evaluation</TabsTrigger>
               <TabsTrigger value="jd">Job description</TabsTrigger>
             </TabsList>
             <TabsContent value="report" className="mt-4 rounded-xl border p-4">
@@ -51,7 +51,7 @@ export function JobDetailPage() {
               ) : (
                 <EmptyState
                   title="Not evaluated yet"
-                  hint={runList.some((r) => r.kind === 'evaluate' && isActive(r)) ? 'Evaluation is running…' : 'Press Evaluate to get the A-F report.'}
+                  hint={runList.some((r) => r.kind === 'evaluate' && isActive(r)) ? 'Evaluation is running (about 3 minutes)…' : 'Press Evaluate with AI for a fit report: what matches your CV, the gaps, and how to pitch it.'}
                 />
               )}
             </TabsContent>
@@ -62,19 +62,15 @@ export function JobDetailPage() {
         </div>
         <div className="grid min-w-0 content-start gap-4">
           <ActionsCard lead={lead!} runs={runList} mutations={mutations} />
+          {lead!.application && <CvPanel application={lead!.application} runs={runList} mutations={mutations} />}
+          {lead!.application && (
+            <OutreachCard items={lead!.outreach} searching={mutations.contacts.isPending || runList.some((r) => r.kind === 'contacts' && isActive(r))} onFind={() => mutations.contacts.mutate()} />
+          )}
+          {lead!.application && <NotesCard key={lead!.application.id} app={lead!.application} mutations={mutations} />}
+          {lead!.events.length > 0 && <Timeline events={lead!.events} />}
           <RunsPanel runs={runList} />
-          <CvPanel application={lead!.application} runs={runList} mutations={mutations} />
-          <OutreachCard items={lead!.outreach} searching={mutations.contacts.isPending || runList.some((r) => r.kind === 'contacts' && isActive(r))} onFind={() => mutations.contacts.mutate()} />
-          <NotesCard key={lead!.application?.id ?? 'none'} app={lead!.application} mutations={mutations} />
-          <Timeline events={lead!.events} />
         </div>
       </div>
-      <p className="mt-6 text-xs text-muted-foreground">
-        <Link to="/tracker" className="underline">
-          Tracker
-        </Link>{' '}
-        shows this lead once it is shortlisted.
-      </p>
     </>
   )
 }

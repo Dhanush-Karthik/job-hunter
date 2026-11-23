@@ -35,16 +35,20 @@ describe('transitions map', () => {
 })
 
 describe('Tracker board', () => {
-  it('renders the pipeline columns with their cards and a collapsed Closed column', async () => {
+  it('renders the post-apply columns, a summary, a pointer to To apply and a collapsed Closed column', async () => {
     setup()
     expect(screen.getByLabelText('Loading tracker')).toBeInTheDocument()
-    expect(await screen.findByText('Zoho')).toBeInTheDocument()
-    for (const s of ['Shortlisted', 'Ready', 'Applied', 'Screening', 'Technical', 'Final', 'Offer']) expect(column(s)).toBeInTheDocument()
-    expect(within(column('Shortlisted')).getByText('Postman')).toBeInTheDocument()
-    expect(within(column('Ready')).getByText('Razorpay')).toBeInTheDocument()
+    expect(await screen.findByText('Freshworks')).toBeInTheDocument()
+    for (const s of ['Applied', 'Screening', 'Technical', 'Final', 'Offer']) expect(column(s)).toBeInTheDocument()
+    // Shortlisted / Ready are handled in Jobs > To apply, not on the board
+    expect(screen.queryByRole('region', { name: 'Shortlisted column' })).not.toBeInTheDocument()
+    expect(screen.queryByText('Zoho')).not.toBeInTheDocument()
+    expect(screen.getByText(/3 shortlisted jobs are not applied to yet/)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Go to To apply' })).toHaveAttribute('href', '/leads?tab=apply')
     expect(within(column('Applied')).getByText('Freshworks')).toBeInTheDocument()
     expect(within(column('Screening')).getByText('Okta')).toBeInTheDocument()
     expect(within(column('Offer')).queryByRole('listitem')).not.toBeInTheDocument()
+    expect(screen.getByText('Interviewing').nextElementSibling).toHaveTextContent('1')
 
     // Atlassian is Rejected: hidden until Closed is opened
     const toggle = screen.getByRole('button', { name: /Closed/ })
@@ -58,33 +62,33 @@ describe('Tracker board', () => {
 
   it('links each card to its job page', async () => {
     setup()
-    const link = await screen.findByRole('link', { name: 'Zoho: Backend Developer (Java)' })
-    expect(link).toHaveAttribute('href', '/jobs/2')
+    const link = await screen.findByRole('link', { name: 'Freshworks: Senior Software Engineer - Java' })
+    expect(link).toHaveAttribute('href', '/jobs/1')
   })
 
   it('moves a card with the Move to menu and posts the transition', async () => {
     const user = userEvent.setup()
-    const posts = capture('/api/applications/2/transition')
+    const posts = capture('/api/applications/1/transition')
     setup()
-    await screen.findByText('Zoho')
-    const menu = screen.getByRole('combobox', { name: 'Move Zoho to' })
-    expect(within(menu).getAllByRole('option').map((o) => o.textContent)).toEqual(['Move to…', 'Ready', 'Skipped', 'Applied'])
-    await user.selectOptions(menu, 'Ready')
-    await waitFor(() => expect(within(column('Ready')).getByText('Zoho')).toBeInTheDocument())
-    expect(within(column('Shortlisted')).queryByText('Zoho')).not.toBeInTheDocument()
-    expect(posts).toEqual([{ to_status: 'Ready', rejected_at_stage: null }])
+    await screen.findByText('Freshworks')
+    const menu = screen.getByRole('combobox', { name: 'Move Freshworks to' })
+    expect(within(menu).getAllByRole('option').map((o) => o.textContent)).toEqual(['Move to…', 'Screening', 'Rejected', 'Ghosted', 'Withdrawn'])
+    await user.selectOptions(menu, 'Screening')
+    await waitFor(() => expect(within(column('Screening')).getByText('Freshworks')).toBeInTheDocument())
+    expect(within(column('Applied')).queryByText('Freshworks')).not.toBeInTheDocument()
+    expect(posts).toEqual([{ to_status: 'Screening', rejected_at_stage: null }])
   })
 
   it('snaps the card back and toasts when the server answers 409', async () => {
     const user = userEvent.setup()
     const toastError = vi.spyOn(toast, 'error')
-    server.use(http.post('/api/applications/:id/transition', () => HttpResponse.json({ detail: 'cannot move Shortlisted -> Ready' }, { status: 409 })))
+    server.use(http.post('/api/applications/:id/transition', () => HttpResponse.json({ detail: 'cannot move Applied -> Screening' }, { status: 409 })))
     setup()
-    await screen.findByText('Zoho')
-    await user.selectOptions(screen.getByRole('combobox', { name: 'Move Zoho to' }), 'Ready')
-    await waitFor(() => expect(toastError).toHaveBeenCalledWith('409 cannot move Shortlisted -> Ready'))
-    await waitFor(() => expect(within(column('Shortlisted')).getByText('Zoho')).toBeInTheDocument())
-    expect(within(column('Ready')).queryByText('Zoho')).not.toBeInTheDocument()
+    await screen.findByText('Freshworks')
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Move Freshworks to' }), 'Screening')
+    await waitFor(() => expect(toastError).toHaveBeenCalledWith('409 cannot move Applied -> Screening'))
+    await waitFor(() => expect(within(column('Applied')).getByText('Freshworks')).toBeInTheDocument())
+    expect(within(column('Screening')).queryByText('Freshworks')).not.toBeInTheDocument()
   })
 
   it('asks for the rejected stage and will not confirm without one', async () => {
@@ -123,7 +127,7 @@ describe('Tracker board', () => {
   it('offers no moves from a closed status', async () => {
     const user = userEvent.setup()
     setup()
-    await screen.findByText('Zoho')
+    await screen.findByText('Freshworks')
     await user.click(screen.getByRole('button', { name: /Closed/ }))
     expect(within(column('Rejected')).getByText('Atlassian')).toBeInTheDocument()
     expect(screen.queryByRole('combobox', { name: 'Move Atlassian to' })).not.toBeInTheDocument()
@@ -132,7 +136,7 @@ describe('Tracker board', () => {
   it('shows empty and error states', async () => {
     server.use(http.get('/api/applications', () => HttpResponse.json([])))
     const { unmount } = setup()
-    expect(await screen.findByText('Nothing tracked yet')).toBeInTheDocument()
+    expect(await screen.findByText('No applications yet')).toBeInTheDocument()
     unmount()
     server.use(http.get('/api/applications', () => HttpResponse.json({ detail: 'boom' }, { status: 500 })))
     setup()
@@ -166,7 +170,7 @@ describe('Tracker table', () => {
   it('toggles between board and table and keeps the choice in the URL', async () => {
     const user = userEvent.setup()
     setup()
-    await screen.findByText('Zoho')
+    await screen.findByText('Freshworks')
     await user.click(screen.getByRole('tab', { name: 'Table' }))
     expect(await screen.findByRole('table')).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/tracker?view=table')

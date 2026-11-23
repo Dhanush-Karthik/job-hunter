@@ -13,8 +13,8 @@ export function PrefilterCard({ value: p, onChange }: { value: P; onChange: (p: 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Prefilter rules</CardTitle>
-        <CardDescription>Leads that fail these never reach the Leads list. Check the reject audit on Analytics before tightening them.</CardDescription>
+        <CardTitle>Automatic filters</CardTitle>
+        <CardDescription>Jobs that fail these rules are hidden from Jobs. Check “What the filters removed” below before tightening them.</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-4">
         <ChipInput label="Accepted cities" values={p.cities} onChange={(cities) => set({ cities })} placeholder="e.g. Chennai" />

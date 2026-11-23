@@ -1,4 +1,7 @@
-import { TRANSITIONS, type AppStatus } from '@/api/client'
+import { PIPELINE, TRANSITIONS, type AppStatus } from '@/api/client'
+
+/** Board columns: the stages after applying. Shortlisted / Ready live in Jobs > To apply. */
+export const BOARD: AppStatus[] = PIPELINE.filter((s) => s !== 'Shortlisted' && s !== 'Ready')
 
 /** Closed column, in display order. */
 export const CLOSED_COLUMN: AppStatus[] = ['Rejected', 'Ghosted', 'Withdrawn', 'Declined', 'Accepted', 'Skipped', 'Expired']

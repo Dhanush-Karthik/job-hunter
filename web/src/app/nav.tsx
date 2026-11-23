@@ -1,51 +1,80 @@
-import { BarChart3, CalendarCheck, Inbox, ListChecks, Send, Settings, Target, Zap, type LucideIcon } from 'lucide-react'
+import { BarChart3, Briefcase, Home, Inbox, KanbanSquare, Send, Settings, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
-import { useNavCounts } from './nav-counts'
+import { useNavCounts, type NavCounts } from './nav-counts'
 
-type Item = { to: string; label: string; Icon: LucideIcon; end?: boolean; count?: 'proposals' | 'followUps' }
+type Item = { to: string; label: string; hint: string; Icon: LucideIcon; end?: boolean; count?: keyof NavCounts }
+type Group = { label?: string; items: Item[] }
 
-const NAV_ITEMS: Item[] = [
-  { to: '/', label: 'Today', Icon: CalendarCheck, end: true },
-  { to: '/leads', label: 'Leads', Icon: Target, end: true },
-  { to: '/leads/quick-apply', label: 'Quick apply', Icon: Zap },
-  { to: '/tracker', label: 'Tracker', Icon: ListChecks },
-  { to: '/replies', label: 'Replies & Inbound', Icon: Inbox, count: 'proposals' },
-  { to: '/outreach', label: 'Outreach & Follow-ups', Icon: Send, count: 'followUps' },
-  { to: '/analytics', label: 'Analytics', Icon: BarChart3 },
-  { to: '/settings', label: 'Settings', Icon: Settings },
+// Grouped by what the owner is doing: daily work, then the bigger picture, then configuration.
+const NAV: Group[] = [
+  { items: [{ to: '/', label: 'Home', hint: "Today's to-do list", Icon: Home, end: true }] },
+  {
+    label: 'Daily work',
+    items: [
+      { to: '/leads', label: 'Jobs', hint: 'Review new matches and apply', Icon: Briefcase, count: 'toApply' },
+      { to: '/replies', label: 'Inbox', hint: 'Recruiter mail and status updates to confirm', Icon: Inbox, count: 'proposals' },
+      { to: '/outreach', label: 'Follow-ups', hint: 'Messages to send', Icon: Send, count: 'followUps' },
+    ],
+  },
+  {
+    label: 'Progress',
+    items: [
+      { to: '/tracker', label: 'Applications', hint: 'Every application by stage', Icon: KanbanSquare },
+      { to: '/analytics', label: 'Insights', hint: 'What is working', Icon: BarChart3 },
+    ],
+  },
 ]
+const SETTINGS: Item = { to: '/settings', label: 'Settings', hint: 'Search rules, companies, account, system', Icon: Settings, count: 'problems' }
+
+function NavItem({ item: { to, label, hint, Icon, end, count }, counts, onNavigate }: { item: Item; counts: NavCounts; onNavigate?: () => void }) {
+  const n = count ? counts[count] : 0
+  const alert = count === 'problems'
+  return (
+    <NavLink
+      to={to}
+      end={end}
+      title={hint}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        cn(
+          'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+          isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/80',
+        )
+      }
+    >
+      <Icon className="size-4 shrink-0" aria-hidden />
+      <span className="flex-1 truncate">{label}</span>
+      {n > 0 && (
+        <span
+          className={cn(
+            'rounded-full px-1.5 text-xs font-semibold tabular-nums',
+            alert ? 'bg-destructive text-white' : 'bg-primary text-primary-foreground',
+          )}
+        >
+          {n}
+          <span className="sr-only">{alert ? ' problems' : ' pending'}</span>
+        </span>
+      )}
+    </NavLink>
+  )
+}
 
 export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const counts = useNavCounts()
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1">
-      {NAV_ITEMS.map(({ to, label, Icon, end, count }) => {
-        const n = count ? counts[count] : 0
-        return (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'text-sidebar-foreground/80',
-              )
-            }
-          >
-            <Icon className="size-4 shrink-0" aria-hidden />
-            <span className="flex-1 truncate">{label}</span>
-            {n > 0 && (
-              <span className="rounded-full bg-primary px-1.5 text-xs font-semibold text-primary-foreground tabular-nums">
-                {n}
-                <span className="sr-only"> pending</span>
-              </span>
-            )}
-          </NavLink>
-        )
-      })}
+    <nav aria-label="Main" className="flex flex-1 flex-col gap-4">
+      {NAV.map((g, i) => (
+        <div key={g.label ?? i} className="grid gap-1">
+          {g.label && <div className="px-2.5 pb-0.5 text-xs font-medium text-muted-foreground">{g.label}</div>}
+          {g.items.map((item) => (
+            <NavItem key={item.to} item={item} counts={counts} onNavigate={onNavigate} />
+          ))}
+        </div>
+      ))}
+      <div className="mt-auto grid gap-1">
+        <NavItem item={SETTINGS} counts={counts} onNavigate={onNavigate} />
+      </div>
     </nav>
   )
 }

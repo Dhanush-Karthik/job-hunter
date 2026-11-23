@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures'
 
-test('Leads renders ten rows; search and Fresh only narrow the list', async ({ page }) => {
-  await page.goto('/leads')
+test('All jobs renders ten rows; search and Fresh only narrow the list', async ({ page }) => {
+  await page.goto('/leads?tab=all')
   const rows = page.getByRole('table').locator('tbody tr')
   await expect(rows).toHaveCount(10)
   await page.getByRole('searchbox', { name: 'Search company or title' }).fill('Zoho')
@@ -9,7 +9,8 @@ test('Leads renders ten rows; search and Fresh only narrow the list', async ({ p
   await expect(rows.first()).toContainText('Zoho')
   await page.getByRole('searchbox', { name: 'Search company or title' }).fill('')
   await expect(rows).toHaveCount(10)
-  const fresh = page.getByRole('checkbox', { name: 'Fresh only', exact: true })
+  await page.getByRole('button', { name: /Filters/ }).click()
+  const fresh = page.getByRole('checkbox', { name: 'Fresh only (last 48 h)', exact: true })
   await fresh.click()
   await expect(fresh).toBeChecked()
   await expect(rows).toHaveCount(7)
@@ -18,7 +19,7 @@ test('Leads renders ten rows; search and Fresh only narrow the list', async ({ p
 })
 
 test('Sort by posted date changes the rendered order', async ({ page }) => {
-  await page.goto('/leads')
+  await page.goto('/leads?tab=all')
   const rows = page.getByRole('table').locator('tbody tr')
   await expect(rows).toHaveCount(10)
   const scoreOrder = await rows.locator('a').allTextContents()
@@ -33,8 +34,8 @@ test('Sort by posted date changes the rendered order', async ({ page }) => {
   ])
 })
 
-test('Bulk skip requires a reason and removes both leads from the New queue', async ({ page }) => {
-  await page.goto('/leads?status=New')
+test('Bulk skip requires a reason and removes both leads from To review', async ({ page }) => {
+  await page.goto('/leads')
   const rows = page.getByRole('table').locator('tbody tr')
   await expect(rows).toHaveCount(4)
   const selected = await rows.locator('a').allTextContents()
@@ -53,7 +54,9 @@ test('Bulk skip requires a reason and removes both leads from the New queue', as
   await expect(dialog).toHaveCount(0)
   await expect(rows).toHaveCount(2)
   for (const title of selected.slice(0, 2)) await expect(rows.getByRole('link', { name: title, exact: true })).toHaveCount(0)
-  // Confirm persisted mock state through the status filter as well.
+  // Confirm persisted mock state through the All tab's status filter as well.
+  await page.getByRole('tab', { name: /All jobs/ }).click()
+  await page.getByRole('button', { name: /Filters/ }).click()
   await page.getByRole('combobox', { name: 'Status', exact: true }).selectOption('Skipped')
   await expect(rows).toHaveCount(2)
   for (const title of selected.slice(0, 2)) await expect(rows.getByRole('link', { name: title, exact: true })).toBeVisible()
@@ -61,7 +64,7 @@ test('Bulk skip requires a reason and removes both leads from the New queue', as
 
 test('Mobile uses ten cards instead of a table', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  await page.goto('/leads')
+  await page.goto('/leads?tab=all')
   await expect(page.getByRole('checkbox', { name: 'Select all leads on this page' })).toBeVisible()
   await expect(page.getByRole('table')).toHaveCount(0)
   const cards = page.getByRole('listitem').filter({ has: page.getByRole('checkbox') })
@@ -71,7 +74,7 @@ test('Mobile uses ten cards instead of a table', async ({ page }) => {
 })
 
 test('At 1280x800 row actions fit without horizontal scrolling', async ({ page }) => {
-  await page.goto('/leads')
+  await page.goto('/leads?tab=all')
   const table = page.getByRole('table')
   await expect(table.locator('tbody tr')).toHaveCount(10)
   const dimensions = await table.evaluate((element) => {

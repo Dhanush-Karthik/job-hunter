@@ -243,16 +243,19 @@ stateDiagram-v2
 
 ### 6.4 Dashboard pages
 
-| Page | Shows | Actions |
-|---|---|---|
-| **Today** | Headline: **interview calls this week**; applied vs 60 target; referrals vs 15; fresh hot leads; action queue (inbound recruiters, replies to confirm, follow-ups due, quick-applies waiting, profile refresh due); service health | Jump into any item · Run intake now |
-| **Leads** | Ranked table: score, fresh badge, channel, company, title, city, exp, CTC, source, prefilter tags; filters; **Quick-apply view** (platform 1-click jobs grouped for batching) | Shortlist · Skip · Evaluate · Verify · bulk actions |
-| **Job detail** | JD, A-F report, match, live status, contacts, drafts, timeline | Generate CV A/B → preview → Approve · **Assist apply** (opens pre-filled form) · Open apply link · Copy referral/cover draft · Mark applied · notes |
-| **Tracker** | Kanban (Shortlisted → Offer + closed column) and full table; search/filter | Drag status (asks for reject stage) · CSV export |
-| **Replies & Inbound** | Proposed status changes with evidence; inbound recruiter leads | Accept · Edit · Dismiss · Convert inbound → application |
-| **Outreach & Follow-ups** | Referral targets per company, drafts, due follow-ups, sent log | Copy · Mark sent · Snooze |
-| **Analytics** | Funnel with stage conversion; **calls by source / channel / title / variant**; time-to-response; weekly vs targets; reject audit | Restore lead · date range |
-| **Sources · Settings · Setup** | First-run wizard (CV, prefs, Gmail app password → Keychain), source toggles and health, query matrix, company list, prefilter rules, schedules, N, profile checklist, run logs | Edit · toggle · Run now |
+Restructured 23 Nov 2026 around the daily loop (review → apply → confirm mail → follow up). The sidebar groups pages by
+what the owner is doing; anything that is configuration or diagnostics lives under Settings. Routes kept their paths.
+
+| Nav group | Page (route) | Shows | Actions |
+|---|---|---|---|
+| — | **Home** (`/`) | Week strip: applied vs target, referrals vs target, interview calls vs last week; **To do** list, one row per kind of work in priority order (recruiters, email updates, follow-ups, CVs to approve, shortlisted jobs to apply to, profile refresh); fresh matches; a banner only when a service is down | Jump to the page that handles a task · Shortlist / Skip · Open Naukri + Mark done |
+| Daily work | **Jobs** (`/leads`) | Tabs: **To review** (New), **To apply** (Shortlisted + Ready on every channel, with the next step per job), **All jobs** (any status, auto-filtered jobs on request). Search + sort up front, other filters folded behind one button | Shortlist · Skip · Evaluate · Verify · bulk actions · Prepare CV · Apply on site · Mark applied · Find new jobs |
+| Daily work | **Inbox** (`/replies`) | Recruiters reaching out, application updates (status change / ghosted), "please check" mails; cleaned previews (entities decoded, URLs and footers dropped) | Add to my jobs · Mark *status* · Different status · Ignore · for unsure mails: change the application status directly |
+| Daily work | **Follow-ups** (`/outreach`) | Due now (most overdue first, "Overdue by N days"), referral requests, sent; messages folded until opened | Copy message · Mark sent · Edit · Remind me in 1/3/7 days |
+| Progress | **Applications** (`/tracker`) | Summary (waiting, interviewing, offers, closed); board from Applied → Offer + collapsed Closed; pointer to Jobs › To apply for not-yet-applied ones; table view of everything | Drag or Move to… (asks for reject stage) · CSV export |
+| Progress | **Insights** (`/analytics`) | Applied, calls, call rate, typical reply time; suggestions; funnel; calls by source / channel / title / variant; weekly pace | Date range |
+| — | **Job detail** (`/jobs/:id`) | Header facts; AI evaluation / JD tabs; **next-step card** by status (New: shortlist or skip; Shortlisted/Ready: 4 apply steps; Applied+: status picker); tailored CV, contacts, notes, timeline; activity log folded unless a task is running | as before; nothing submits or sends |
+| bottom | **Settings** (`/settings?tab=`) | Tabs: Job search (query matrix, automatic filters, what the filters removed, grouped by rule with named examples), Companies, Goals & automation (targets, AI evaluation, schedules, follow-ups), Profiles, CVs & Gmail, System (service health, sources, run logs) | Edit · toggle · restore · run now |
 
 ## 7. Diagrams: runtime, startup, build, user workflow
 

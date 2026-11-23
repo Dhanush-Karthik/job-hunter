@@ -1,7 +1,7 @@
 import { test, expect } from './fixtures'
 
 test('setup saves Gmail secrets and tests the connection', async ({ page }) => {
-  await page.goto('/settings')
+  await page.goto('/settings?tab=account')
   await expect(page.getByRole('list', { name: 'Setup checklist' })).toBeVisible()
   await page.getByLabel(/^Gmail address/).fill('owner@example.com')
   await page.getByLabel(/^App password/).fill('abcd efgh ijkl mnop')
@@ -18,6 +18,7 @@ test('setup saves Gmail secrets and tests the connection', async ({ page }) => {
 
 test('companies can be added, disabled and deleted', async ({ page }) => {
   await page.goto('/settings')
+  await page.getByRole('tab', { name: 'Companies', exact: true }).click()
   await page.getByLabel('Company name', { exact: true }).fill('Browser Test Co')
   await page.getByLabel('Careers URL', { exact: true }).fill('https://example.test/careers')
   await page.getByRole('button', { name: 'Add company', exact: true }).click()
@@ -31,14 +32,15 @@ test('companies can be added, disabled and deleted', async ({ page }) => {
 })
 
 test('follow-up rules save and a run log opens', async ({ page }) => {
-  await page.goto('/settings')
+  await page.goto('/settings?tab=goals')
   await page.getByRole('spinbutton', { name: 'First follow-up after (business days)', exact: true }).fill('7')
-  await page.getByRole('spinbutton', { name: 'Propose ghosted after (days)', exact: true }).fill('28')
+  await page.getByRole('spinbutton', { name: 'Suggest ghosted after (days of silence)', exact: true }).fill('28')
   const saved = page.waitForResponse((r) => r.url().endsWith('/api/settings') && r.request().method() === 'PUT')
   await page.getByRole('button', { name: 'Save settings', exact: true }).click()
   expect((await saved).ok()).toBeTruthy()
   await expect(page.getByRole('spinbutton', { name: 'First follow-up after (business days)', exact: true })).toHaveValue('7')
-  await expect(page.getByRole('spinbutton', { name: 'Propose ghosted after (days)', exact: true })).toHaveValue('28')
+  await expect(page.getByRole('spinbutton', { name: 'Suggest ghosted after (days of silence)', exact: true })).toHaveValue('28')
+  await page.getByRole('tab', { name: 'System', exact: true }).click()
   await page.getByRole('button', { name: 'Show log of run 2', exact: true }).click()
   await expect(page.getByLabel('Log of run 2', { exact: true })).toContainText('linkedin: 48 rows')
   await page.getByRole('button', { name: 'Hide log of run 2', exact: true }).click()

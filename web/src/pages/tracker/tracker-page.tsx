@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Download, Search } from 'lucide-react'
 import { toast } from 'sonner'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { CLOSED, PIPELINE, type ApplicationOut, type AppStatus } from '@/api/client'
 import { NativeSelect } from '@/components/native-select'
 import { PageHeader } from '@/components/page-header'
@@ -13,8 +13,31 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Kanban } from './kanban'
 import { RejectDialog } from './reject-dialog'
 import { TrackerTable } from './tracker-table'
-import { allowedTargets } from './transitions'
+import { allowedTargets, BOARD } from './transitions'
 import { useApplications, useFiltered, useMoveApplication } from './use-tracker'
+
+const PRE_APPLY: AppStatus[] = ['Shortlisted', 'Ready']
+const INTERVIEWING: AppStatus[] = ['Screening', 'Technical', 'Final']
+
+function Summary({ apps }: { apps: ApplicationOut[] }) {
+  const count = (pred: (a: ApplicationOut) => boolean) => apps.filter(pred).length
+  const stats = [
+    { label: 'Waiting for a reply', value: count((a) => a.status === 'Applied'), hint: 'Applied, no response yet' },
+    { label: 'Interviewing', value: count((a) => INTERVIEWING.includes(a.status)), hint: 'Screening, technical or final round' },
+    { label: 'Offers', value: count((a) => a.status === 'Offer' || a.status === 'Accepted'), hint: 'Offers received' },
+    { label: 'Closed', value: count((a) => CLOSED.includes(a.status) && a.applied_at != null), hint: 'Rejected, ghosted or withdrawn after applying' },
+  ]
+  return (
+    <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {stats.map((s) => (
+        <div key={s.label} className="rounded-xl border p-3" title={s.hint}>
+          <dt className="text-xs text-muted-foreground">{s.label}</dt>
+          <dd className="text-2xl font-semibold tabular-nums">{s.value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
 
 export function TrackerPage() {
   const [params, setParams] = useSearchParams()
@@ -25,6 +48,7 @@ export function TrackerPage() {
   const move = useMoveApplication()
   const [rejecting, setRejecting] = useState<ApplicationOut | null>(null)
   const shown = useFiltered(apps.data, { q, status })
+  const waiting = shown.filter((a) => PRE_APPLY.includes(a.status)).length
 
   const request = (app: ApplicationOut, to: AppStatus) => {
     if (to === app.status) return
@@ -39,8 +63,8 @@ export function TrackerPage() {
   return (
     <>
       <PageHeader
-        title="Tracker"
-        description="Drag a card, or use its Move to… menu. Rejections ask for the stage."
+        title="Applications"
+        description="Every job you applied to, by stage. Drag a card or use Move to… when something changes."
         actions={
           <Button asChild variant="outline" size="sm">
             <a href="/api/applications/export.csv" download="applications.csv">
@@ -63,7 +87,7 @@ export function TrackerPage() {
         <div className="w-44">
           <NativeSelect aria-label="Status" value={status} onChange={(e) => setStatus(e.target.value as AppStatus | '')}>
             <option value="">All statuses</option>
-            {[...PIPELINE, ...CLOSED].map((s) => (
+            {(view === 'table' ? [...PIPELINE, ...CLOSED] : [...BOARD, ...CLOSED]).map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -72,6 +96,7 @@ export function TrackerPage() {
         </div>
       </div>
 
+      {apps.data && apps.data.length > 0 && <Summary apps={apps.data} />}
       {apps.isPending ? (
         <div className="grid gap-3 md:grid-cols-4" role="status" aria-busy="true" aria-label="Loading tracker">
           {[0, 1, 2, 3].map((i) => (
@@ -81,11 +106,21 @@ export function TrackerPage() {
       ) : apps.isError ? (
         <ErrorState error={apps.error} onRetry={() => apps.refetch()} />
       ) : apps.data.length === 0 ? (
-        <EmptyState title="Nothing tracked yet" hint="Shortlist a lead and it lands in the first column." />
+        <EmptyState title="No applications yet" hint="Shortlist a job, apply on the site and mark it applied: it shows up here." />
       ) : view === 'table' ? (
         shown.length ? <TrackerTable apps={shown} /> : <EmptyState title="No applications match" />
       ) : (
-        <Kanban apps={shown} onMove={request} />
+        <>
+          {waiting > 0 && (
+            <p className="mb-3 text-sm text-muted-foreground">
+              {waiting} shortlisted job{waiting === 1 ? ' is' : 's are'} not applied to yet.{' '}
+              <Link to="/leads?tab=apply" className="font-medium text-foreground underline underline-offset-2">
+                Go to To apply
+              </Link>
+            </p>
+          )}
+          <Kanban apps={shown.filter((a) => !PRE_APPLY.includes(a.status))} onMove={request} />
+        </>
       )}
 
       <RejectDialog
