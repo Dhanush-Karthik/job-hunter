@@ -1,8 +1,12 @@
 # job-hunter defaults. ./start.sh copies this to data/config.yml on first run.
-# Values here seed the settings table once; afterwards edit them in the dashboard (Settings page).
+# Values here seed the settings table ONCE; afterwards edit them in the dashboard (Settings page).
+# Every key is explained in docs/configuration.md.
+#
+# The search terms, cities and stack words below describe one developer's search (Java backend, Chennai /
+# Bengaluru). CHANGE THEM to yours, in this file before the first start or later on the Settings page.
 
 auto_evaluate_top_n: 10          # D2
-claude_concurrency: 2            # protects the Claude Pro quota
+claude_concurrency: 3            # parallel evaluations (codex/claude); protects the quota
 notifications: true              # D4, macOS osascript
 naukri_profile_bot: false        # D6: reminder-only unless the owner opts in
 
@@ -59,3 +63,57 @@ source_weights:                  # quick-score multiplier per source
   google: 0.95
   indeed: 0.9
   glassdoor: 0.9
+
+evaluator:                       # lean evaluation: one structured-JSON call per posting, no tools
+  mode: lean                     # full = career-ops A-H report (slow, ~10x the tokens)
+  engines: [codex, claude]       # tried in order; an engine at its usage limit is skipped for 3 h
+  codex_model: gpt-6.2-sol
+  codex_effort: low
+  claude_model: sonnet
+  claude_effort: low
+  timeout_seconds: 180
+  jd_max_chars: 7000
+
+nightly:                         # midnight funnel: intake -> lean-evaluate the best new leads -> Today's picks
+  enabled: true
+  time: "00:00"
+  candidates: 40                 # LLM evaluations per night (never the backlog)
+  max_age_hours: 72              # posted (or found) within; posts from the last 24 h rank higher
+  min_quick_score: 0.35
+  max_exp_min: 3                 # posts asking more years are never evaluated or picked (owner has 2.5)
+  per_company: 2
+  pick_min_eval: 3.5             # Today's picks quality bar
+  picks_max: 20
+  picks_window_hours: 48
+
+reachout:                        # "Email HR" card on every job page (docs/email-hr.md). Nothing is sent without a click.
+  enabled: true
+  daily_cap: 25                  # emails per rolling 24 h
+  cooldown_days: 14              # no second email to the same address inside this many days
+  max_jobs: 8                    # jobs listed in one email (1-8)
+  default_attach: tailored       # tailored (job's CV PDF, else resume) | base (uploaded resume) | none
+  look_up_web: true              # open the job page and company careers/contact pages to find an address
+  guess_addresses: true          # suggest careers@ / hr@ ... at the company domain (never auto-selected)
+  guess_prefixes: [careers, hr, jobs, talent, recruitment]
+  me:                            # who signs; blank = data/careerops/config/profile.yml
+    name: ""
+    phone: ""
+    linkedin: ""
+    github: ""
+    headline: ""                 # used as {role}, e.g. "Java backend engineer"
+  # Placeholders: {greeting} {opening} {jobs} {role} {company} {title} {job_id} {count} {name} {phone}
+  #               {linkedin} {github} {signature} {location} {url}
+  subject_one: "Application for {title} (Job ID {job_id}) - {name}"
+  subject_many: "Applying for {count} roles at {company} - {name}"
+  body: |-
+    {greeting}
+
+    {opening}
+    {jobs}
+
+    I am a {role}. My resume is attached; the roles above match my recent work, and I would be glad to share more detail or speak with the hiring team.
+
+    Thank you for your time.
+
+    Regards,
+    {signature}
