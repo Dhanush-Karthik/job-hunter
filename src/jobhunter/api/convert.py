@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime, timedelta
+from urllib.parse import quote
 
 from sqlalchemy import func, or_
 from sqlmodel import Session, select
@@ -11,7 +12,9 @@ from sqlmodel import Session, select
 from jobhunter import careerops
 from jobhunter import schemas as sc
 from jobhunter.api.deps import as_utc, now_utc
-from jobhunter.models import Application, AppStatus, Evaluation, Event, Lead, Outreach, Proposal
+from jobhunter.models import Application, AppStatus, Evaluation, Event, Lead, Outreach, Proposal, Source
+from jobhunter.pipeline.experience import exp_fit
+from jobhunter.settings import get_settings
 
 log = logging.getLogger(__name__)
 
@@ -20,6 +23,14 @@ FRESH_HOURS = 48
 
 def is_fresh(lead: Lead, now: datetime) -> bool:
     return as_utc(lead.posted_at or lead.found_at) >= now - timedelta(hours=FRESH_HOURS)
+
+
+def gmail_link(message_id: str | None) -> str | None:
+    """Gmail search that opens exactly this email (Message-ID header). No account or address in the URL."""
+    mid = (message_id or "").strip().removeprefix("<").removesuffix(">").strip()
+    if not mid or "#" in mid:  # alert cards are 'message-id#card-index': not one email's id
+        return None
+    return f"https://mail.google.com/mail/u/0/#search/{quote(f'rfc822msgid:{mid}', safe=':')}"
 
 
 def latest_evaluations(session: Session, lead_ids: list[int]) -> dict[int, Evaluation]:
@@ -31,6 +42,7 @@ def latest_evaluations(session: Session, lead_ids: list[int]) -> dict[int, Evalu
 
 def lead_summaries(session: Session, leads: list[Lead], now: datetime | None = None) -> list[sc.LeadSummary]:
     now = now or now_utc()
+    exp_years = get_settings(session).prefilter.exp_years
     ids = [lead.id for lead in leads]
     apps = {a.lead_id: a for a in session.exec(select(Application).where(Application.lead_id.in_(ids)))} if ids else {}
     evals = latest_evaluations(session, ids)
@@ -53,11 +65,14 @@ def lead_summaries(session: Session, leads: list[Lead], now: datetime | None = N
             posted_at=as_utc(lead.posted_at), found_at=as_utc(lead.found_at), is_fresh=is_fresh(lead, now),
             role_family=lead.role_family, quick_score=lead.quick_score,
             eval_score=ev.score if ev else None, eval_grade=ev.grade if ev else None,
+            call_chance=ev.call_chance if ev and ev.call_chance in ("high", "medium", "low") else None,
+            pick_reason=ev.verdict if ev else None,
             is_live=ev.is_live if ev else None, is_inbound=lead.is_inbound,
             prefilter_pass=lead.prefilter_pass, prefilter_reasons=lead.prefilter_reasons,
             prefilter_tags=lead.prefilter_tags, restored=lead.restored,
             duplicates=max(sizes.get(lead.dedupe_group, 1) - 1, 0) if lead.dedupe_group else 0,
             status=app.status if app else AppStatus.new, application_id=app.id if app else None,
+            exp_fit=exp_fit(lead.exp_min, lead.exp_max, exp_years),
         ))
     return out
 
@@ -136,13 +151,22 @@ def outreach_outs(session: Session, rows: list[Outreach]) -> list[sc.OutreachOut
 
 def proposal_outs(session: Session, rows: list[Proposal]) -> list[sc.ProposalOut]:
     labels, app_lead = _lead_labels(session, {r.lead_id for r in rows}, {r.application_id for r in rows})
+    wanted = {i for i in [*(r.lead_id for r in rows), *app_lead.values()] if i is not None}
+    links = (
+        {i: apply_url or canonical for i, apply_url, canonical in session.exec(
+            select(Lead.id, Lead.apply_url, Lead.canonical_url).where(Lead.id.in_(wanted)))}
+        if wanted
+        else {}
+    )
     out = []
     for r in rows:
-        company, title = labels.get(r.lead_id or app_lead.get(r.application_id), (None, None))
+        lead_id = r.lead_id or app_lead.get(r.application_id)
+        company, title = labels.get(lead_id, (None, None))
         out.append(sc.ProposalOut(
             id=r.id, type=r.type, application_id=r.application_id, lead_id=r.lead_id, company=company,
             title=title, payload=r.payload, evidence=r.evidence, confidence=r.confidence, state=r.state,
-            created_at=as_utc(r.created_at),
+            created_at=as_utc(r.created_at), email_url=gmail_link((r.payload or {}).get("message_id")),
+            apply_url=links.get(lead_id),
         ))
     return out
 
@@ -172,6 +196,7 @@ def lead_detail(session: Session, lead: Lead) -> sc.LeadDetail:
     )
     return sc.LeadDetail(
         **summary.model_dump(),
+        source_email_url=gmail_link(lead.source_ref) if lead.source == Source.gmail_inbound else None,
         jd_text=lead.jd_text,
         evaluation=sc.Evaluation(
             id=ev.id, score=ev.score, grade=ev.grade, report_md=report_text(ev), is_live=ev.is_live,

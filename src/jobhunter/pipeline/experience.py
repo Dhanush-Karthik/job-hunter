@@ -162,3 +162,34 @@ def parse_experience(
                     (info.exp_min, info.exp_max), info.inferred = val, f"job level {job_level}"
                 break
     return info
+
+
+# How the owner's wanted range (settings.prefilter.exp_years, e.g. 2-4) maps to a fit, from a posting's stated minimum.
+#   min <= high-1  -> "ok"       (3+ years asked, owner can say yes)
+#   min == high    -> "stretch"  (asks for the top of the owner's range)
+#   min >  high    -> "above"    (asks for more than the owner has)
+# The score multiplier drops 15% per year the minimum sits above `high - 1` and never below 40%.
+EXP_STEP = 0.15
+EXP_FLOOR = 0.40
+
+
+def exp_fit(exp_min: float | None, exp_max: float | None, exp_years: tuple[float, float]) -> str:
+    """'ok' | 'stretch' | 'above' | 'unknown' for a posting's stated experience against the owner's range."""
+    if exp_min is None:
+        return "unknown" if exp_max is None else "ok"
+    high = exp_years[1]
+    if exp_min <= high - 1:
+        return "ok"
+    return "stretch" if exp_min <= high else "above"
+
+
+def exp_factor(exp: ExpInfo, exp_years: tuple[float, float]) -> float:
+    """Multiplier in [EXP_FLOOR, 1] for the quick score. Title-inferred levels count half: they are a guess."""
+    if exp.flags or exp.exp_min is None:
+        return 1.0
+    steps = exp.exp_min - (exp_years[1] - 1)
+    if steps <= 0:
+        return 1.0
+    if exp.inferred:
+        steps /= 2
+    return max(EXP_FLOOR, 1.0 - EXP_STEP * steps)

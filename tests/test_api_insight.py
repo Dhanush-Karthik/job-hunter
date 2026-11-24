@@ -61,30 +61,26 @@ def test_today_counters(client, db):
     assert body["referrals_week"] == 2 and body["referrals_target"] == 15
 
 
-def test_today_fresh_hot_leads(client, db):
-    now = utcnow()
-    best = make_lead(db, quick_score=0.3, company="BestEval")
-    make_eval(db, best, 4.6)
-    high = make_lead(db, quick_score=0.9, company="HighQuick")
-    low = make_lead(db, quick_score=0.6, company="LowQuick")
-    make_lead(db, quick_score=0.99, posted_at=now - timedelta(days=5))  # not fresh
-    make_app(db, make_lead(db, quick_score=0.95), AppStatus.shortlisted)  # not New
-    make_lead(db, quick_score=0.95, prefilter_pass=False)  # dropped
-    make_lead(db, quick_score=0.95, dedupe_group="dup-of-high")
-    second = make_lead(db, quick_score=0.95, dedupe_group="dup-of-high")
-    assert second.id  # non-primary member stays out
+def test_today_shows_nightly_picks_only(client, db):
+    """fresh_hot_leads now carries Today's picks: evaluated leads above the bar, best first (jobs.nightly)."""
+    top = make_lead(db, quick_score=0.3, company="TopEval")
+    make_eval(db, top, 4.6, call_chance="high", verdict="Great Java backend match")
+    mid = make_lead(db, quick_score=0.9, company="MidEval")
+    make_eval(db, mid, 3.8, call_chance="medium")
+    make_eval(db, make_lead(db, company="BelowBar"), 3.2, call_chance="high")
+    make_lead(db, quick_score=0.99, company="NotEvaluated")
+    make_app(db, done := make_lead(db, company="Applied"), AppStatus.applied)
+    make_eval(db, done, 4.9)
     body = client.get("/api/today").json()
-    ids = [x["id"] for x in body["fresh_hot_leads"]]
-    assert ids[0] == best.id  # evaluated first, then by quick score
-    assert ids.index(high.id) < ids.index(low.id)
-    assert second.id not in ids
-    assert all(x["is_fresh"] and x["status"] == "New" and x["prefilter_pass"] for x in body["fresh_hot_leads"])
+    assert [x["company"] for x in body["fresh_hot_leads"]] == ["TopEval", "MidEval"]
+    first = body["fresh_hot_leads"][0]
+    assert first["call_chance"] == "high" and first["pick_reason"] == "Great Java backend match"
 
 
-def test_today_hot_leads_capped_at_ten(client, db):
-    for _ in range(13):
-        make_lead(db)
-    assert len(client.get("/api/today").json()["fresh_hot_leads"]) == 10
+def test_today_picks_capped_by_settings(client, db):
+    for _ in range(23):
+        make_eval(db, make_lead(db), 4.0, call_chance="medium")
+    assert len(client.get("/api/today").json()["fresh_hot_leads"]) == 20
 
 
 def test_today_actions_in_order(client, db, fakes):

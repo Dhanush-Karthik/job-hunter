@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { PageHeader } from '@/components/page-header'
 import { NativeSelect } from '@/components/native-select'
 import { Label } from '@/components/ui/label'
-import { BreakdownCard } from './breakdown-card'
-import { FunnelCard, KpiRow } from './funnel-card'
 import { InsightsCard } from './insights-card'
+import { KpiRow } from './kpi-row'
+import { OutcomeCard } from './outcome-card'
+import { PipelineCard } from './pipeline-card'
 import { RANGES, useFunnel, type Range } from './use-analytics'
 import { WeeklyCard } from './weekly-card'
 
@@ -15,7 +16,7 @@ export function AnalyticsPage() {
     <>
       <PageHeader
         title="Insights"
-        description="Which channels, titles and CVs turn applications into interview calls, so you can do more of what works."
+        description="How jobs flow from shortlist to interview call, and which sources, channels, titles and CVs get you there."
         actions={
           <div className="flex items-center gap-2">
             <Label htmlFor="analytics-range" className="text-muted-foreground">
@@ -33,9 +34,9 @@ export function AnalyticsPage() {
       />
       <div className="grid gap-6">
         <KpiRow funnel={funnel} />
+        <PipelineCard funnel={funnel} />
+        <OutcomeCard range={range} />
         <InsightsCard range={range} />
-        <FunnelCard funnel={funnel} />
-        <BreakdownCard range={range} />
         <WeeklyCard />
       </div>
     </>

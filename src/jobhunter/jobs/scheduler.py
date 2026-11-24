@@ -2,7 +2,9 @@
 
 Local timezone (Asia/Kolkata on the owner's Mac). Jobs, all via runner.submit:
   - intake_boards every settings.schedules.boards_every_hours inside boards_window [start, end)
-  - careerops_scan at careerops_scan_times; when it succeeds -> auto_evaluate()
+  - careerops_scan at careerops_scan_times (intake only; no LLM evaluation during the day)
+  - nightly funnel (jobs.nightly): nightly_start at settings.nightly.time, nightly_keepawake 10 min before it,
+    nightly_catchup every 30 min until noon (a Mac that slept through midnight runs on waking)
   - intake_gmail every settings.schedules.gmail_every_minutes; each firing is skipped quietly unless both Gmail
     secrets are in the Keychain and SourceHealth "gmail_alert" is enabled and not paused
   - followups hourly 08:00-21:00 local
@@ -24,7 +26,7 @@ from keyring.errors import KeyringError
 from sqlmodel import Session, select
 
 from jobhunter import gmail, paths, secrets
-from jobhunter.jobs import runner
+from jobhunter.jobs import nightly, power, runner
 from jobhunter.models import (
     Application,
     AppStatus,
@@ -85,9 +87,17 @@ def _scheduled(kind: RunKind) -> None:
 
 
 def _scan_finished(event: RunOut) -> None:
-    if event.kind in (RunKind.careerops_scan, RunKind.intake_remote) and event.state == RunState.succeeded:
-        with Session(runner.engine_factory()) as session:
-            auto_evaluate(session, get_settings(session))
+    """Evaluation happens only in the nightly funnel (token budget); this hook advances it."""
+    nightly.on_run_finished(event)
+
+
+def _nightly(stage: str) -> None:
+    try:
+        nightly.start() if stage == "start" else nightly.catch_up()
+    except Exception:
+        import logging
+
+        logging.getLogger(__name__).exception("nightly %s failed", stage)
 
 
 def start() -> None:
@@ -164,6 +174,15 @@ def reload(settings: Settings) -> None:
         id="followups",
         replace_existing=True,
     )
+    if settings.nightly.enabled:
+        hour, minute = map(int, settings.nightly.time.split(":"))
+        _scheduler.add_job(_nightly, CronTrigger(hour=hour, minute=minute, timezone=TIMEZONE), args=["start"],
+                           id="nightly_start", replace_existing=True)
+        before = datetime.combine(datetime.now(TIMEZONE).date(), time(hour, minute)) - timedelta(minutes=10)
+        _scheduler.add_job(power.hold_awake, CronTrigger(hour=before.hour, minute=before.minute, timezone=TIMEZONE),
+                           args=[2 * 3600], id="nightly_keepawake", replace_existing=True)
+        _scheduler.add_job(_nightly, CronTrigger(hour="0-11", minute="5,35", timezone=TIMEZONE), args=["catchup"],
+                           id="nightly_catchup", replace_existing=True)
 
 
 def is_running() -> bool:

@@ -15,6 +15,7 @@ import urllib.request
 from sqlmodel import Session, select
 
 from jobhunter.db import get_engine
+from jobhunter.db.migrate import SCHEMA_VERSION
 from jobhunter.models import Evaluation, Lead, Source, SourceHealth
 
 from . import test_wave2_flow
@@ -76,7 +77,7 @@ def test_cli_migrate_health_and_server_down(tmp_path):
 
     migrated = cli("db", "migrate")
     assert migrated.returncode == 0, migrated.stderr
-    assert "schema version 1" in migrated.stdout
+    assert f"schema version {SCHEMA_VERSION}" in migrated.stdout
     assert (tmp_path / "jobhunter.sqlite").is_file()
     with (tmp_path / "server.log").open("w+") as log:
         server = subprocess.Popen(

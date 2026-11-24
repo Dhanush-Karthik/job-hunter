@@ -81,7 +81,8 @@ def usage_limit_error(output: str) -> str | None:
 
 def run(
     args: list[str], *, log: TextIO, should_cancel: Callable[[], bool],
-    payload: dict[str, Any] | None = None, timeout: float = 600, owner_browser: bool = False,
+    payload: dict[str, Any] | str | None = None, timeout: float = 600, owner_browser: bool = False,
+    cwd: Path | None = None,
 ) -> str:
     from jobhunter.careerops import BridgeError, Cancelled
 
@@ -99,7 +100,7 @@ def run(
     log.flush()
     try:
         proc = subprocess.Popen(
-            args, cwd=paths.CAREEROPS_DATA, env=env, start_new_session=True,
+            args, cwd=cwd or paths.CAREEROPS_DATA, env=env, start_new_session=True,
             stdin=subprocess.PIPE if payload is not None else subprocess.DEVNULL,
             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
         )
@@ -108,7 +109,7 @@ def run(
 
     def send() -> None:
         try:
-            proc.stdin.write(json.dumps(payload).encode())
+            proc.stdin.write((payload if isinstance(payload, str) else json.dumps(payload)).encode())
             proc.stdin.close()
         except (BrokenPipeError, OSError):
             pass

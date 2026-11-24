@@ -18,13 +18,12 @@ import { SOURCE_LABEL } from '@/components/lead-format'
 import { NativeSelect } from '@/components/native-select'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { dueLabel, relativeDay } from '@/components/time'
+import { relativeDay } from '@/components/time'
 import { allowedTargets, BOARD, CLOSED_COLUMN } from './transitions'
 
 type Props = { apps: ApplicationOut[]; onMove: (app: ApplicationOut, to: AppStatus) => void }
 
 function CardBody({ app }: { app: ApplicationOut }) {
-  const follow = app.next_follow_up_at && !CLOSED.includes(app.status) ? dueLabel(app.next_follow_up_at) : null
   return (
     <>
       <div className="truncate font-medium" title={app.company}>
@@ -38,11 +37,6 @@ function CardBody({ app }: { app: ApplicationOut }) {
         <span>{SOURCE_LABEL[app.source]}</span>
         {app.resume_variant && <span>CV {app.resume_variant}</span>}
       </div>
-      {follow && (
-        <div className={cn('mt-1 text-xs', follow.overdue ? 'font-medium text-destructive' : 'text-muted-foreground')}>
-          Follow-up {follow.overdue ? follow.text.toLowerCase() : follow.text.replace('Due ', 'due ')}
-        </div>
-      )}
     </>
   )
 }

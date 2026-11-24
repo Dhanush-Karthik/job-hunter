@@ -149,7 +149,7 @@ describe('Tracker table', () => {
     const user = userEvent.setup()
     setup('/tracker?view=table')
     const table = await screen.findByRole('table')
-    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Company', 'Title', 'Status', 'Variant', 'Applied', 'Next follow-up', 'Score', 'Source'])
+    expect(within(table).getAllByRole('columnheader').map((h) => h.textContent)).toEqual(['Company', 'Title', 'Status', 'Variant', 'Applied', 'Score', 'Source'])
     expect(within(table).getAllByRole('row')).toHaveLength(7) // header + 6 applications
     const freshworks = within(table).getByRole('row', { name: /Freshworks/ })
     expect(within(freshworks).getByText('Applied')).toBeInTheDocument()

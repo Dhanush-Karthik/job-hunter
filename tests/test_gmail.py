@@ -595,3 +595,27 @@ def test_known_application_thread_can_need_eyes(session, settings, monkeypatch, 
     result = run_intake(session, settings)
     assert result.needs_eyes == 1 and result.inbound == 0
     assert session.exec(select(Proposal)).one().application_id is not None
+
+
+def test_inbound_apply_link_prefers_the_apply_button_and_skips_site_roots():
+    from jobhunter.gmail.inbound import apply_link
+    from jobhunter.gmail.message import Message
+
+    html = ('<a href="https://www.linkedin.com/">Home</a>'
+            '<a href="https://www.linkedin.com/comm/jobs/view/123456/?trackingId=abc">Apply now</a>')
+    mail = Message(message_id='<m@x>', subject='s', sender='r@linkedin.com', text='hello', html=html)
+    assert apply_link(mail) == 'https://www.linkedin.com/comm/jobs/view/123456/'
+    bare = Message(message_id='<m@x>', subject='s', sender='r@linkedin.com', text='t',
+                   html='<a href="https://click.linkedin.com/?x=1">Apply now</a>')
+    assert apply_link(bare) is None  # a tracking redirect that strips down to a site root is no apply link
+
+
+def test_inbound_title_from_invitation_subject_and_untruncated_description():
+    from jobhunter.gmail.message import Message
+
+    text = 'This role is a great match! ' + 'Java Spring Boot Microservices AWS Docker ' * 20
+    mail = Message(message_id='<m@x>', subject="You're invited to apply for the Java Software Engineer role at Aditi Tech",
+                   sender='r@linkedin.com', text=text)
+    raw = parse_inbound(mail)
+    assert raw.title == 'Java Software Engineer' and raw.company == 'Aditi Tech'
+    assert len(raw.description) > 300 and not raw.description.endswith('Docke')

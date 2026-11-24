@@ -34,6 +34,8 @@ const NEEDS_EYES = {
   confidence: 0,
   state: 'pending',
   created_at: new Date().toISOString(),
+  email_url: 'https://mail.google.com/mail/u/0/#search/rfc822msgid:x%40y',
+  apply_url: 'https://careers.example.com/apply/1',
 }
 
 describe('Inbox', () => {
@@ -114,6 +116,33 @@ describe('Inbox', () => {
     await user.click(within(c).getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(moves).toEqual([{ to_status: 'Rejected', rejected_at_stage: 'Applied' }]))
     await waitFor(() => expect(accepts).toEqual([{ payload: null }]))
+  })
+
+  it('lets an unsure email be read in Gmail, then dismissed', async () => {
+    server.use(http.get('/api/proposals', () => HttpResponse.json([NEEDS_EYES])))
+    const user = userEvent.setup()
+    const posts = capture('/api/proposals/7/dismiss')
+    setup()
+    const c = await screen.findByRole('listitem', { name: /Freshworks/ })
+    expect(within(c).getByRole('link', { name: /Open email/ })).toHaveAttribute('href', NEEDS_EYES.email_url)
+    expect(within(c).getByRole('link', { name: /Apply page/ })).toHaveAttribute('href', NEEDS_EYES.apply_url)
+    await user.click(within(c).getByRole('button', { name: 'Dismiss' }))
+    await waitFor(() => expect(posts).toHaveLength(1))
+  })
+
+  it('dismisses a whole group after confirming', async () => {
+    const second = { ...NEEDS_EYES, id: 8, application_id: null, lead_id: null, company: null, title: null, evidence: 'Your application was viewed by Netcomm' }
+    server.use(http.get('/api/proposals', () => HttpResponse.json([NEEDS_EYES, second])))
+    const user = userEvent.setup()
+    const first = capture('/api/proposals/7/dismiss')
+    const other = capture('/api/proposals/8/dismiss')
+    setup()
+    await screen.findByRole('heading', { level: 2, name: /Please check/ })
+    await user.click(screen.getByRole('button', { name: 'Dismiss all' }))
+    expect(await screen.findByText('Dismiss 2 emails?')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Dismiss 2' }))
+    await waitFor(() => expect(first).toHaveLength(1))
+    expect(other).toHaveLength(1)
   })
 
   it('explains the empty state', async () => {

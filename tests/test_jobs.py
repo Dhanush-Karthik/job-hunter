@@ -475,7 +475,8 @@ def test_auto_evaluate_zero_budget(jobs, session):
 def test_reload_replaces_jobs_and_matches_local_hours(jobs):
     scheduler.reload(jobs)
     scheduled = {job.id: job for job in scheduler._scheduler.get_jobs()}
-    assert set(scheduled) == {"intake_boards", "careerops_scan_0800", "careerops_scan_1700", "intake_gmail", "followups"}
+    assert set(scheduled) == {"intake_boards", "careerops_scan_0800", "careerops_scan_1700", "intake_gmail", "followups",
+                              "nightly_start", "nightly_keepawake", "nightly_catchup"}
     boards_job = scheduled["intake_boards"]
     assert str(boards_job.trigger.timezone) == "Asia/Kolkata"
     fire = datetime(2026, 11, 12, 0, tzinfo=scheduler.TIMEZONE)
@@ -487,7 +488,9 @@ def test_reload_replaces_jobs_and_matches_local_hours(jobs):
         hours.append(fire.hour)
         fire += timedelta(seconds=1)
     assert hours == [7, 10, 13, 16, 19, 22]
-    assert all(job.func is scheduler._scheduled for job in scheduled.values())
+    assert all(job.func is scheduler._scheduled for name, job in scheduled.items() if not name.startswith("nightly"))
+    assert str(scheduled["nightly_start"].trigger) == "cron[hour='0', minute='0']"
+    assert str(scheduled["nightly_keepawake"].trigger) == "cron[hour='23', minute='50']"
     assert scheduled["careerops_scan_0800"].args == (RunKind.careerops_scan,)
     jobs.schedules.careerops_scan_times = ["09:15"]
     jobs.schedules.boards_window = (8, 20)
@@ -498,6 +501,7 @@ def test_reload_replaces_jobs_and_matches_local_hours(jobs):
         "careerops_scan_0915",
         "intake_gmail",
         "followups",
+        "nightly_start", "nightly_keepawake", "nightly_catchup",
     }
 
 
@@ -532,7 +536,7 @@ def test_scheduler_start_is_idempotent_and_recovers(jobs, session, monkeypatch):
     scheduler.start()
     scheduler.start()
     assert scheduler.is_running()
-    assert len(scheduler._scheduler.get_jobs()) == 5
+    assert len(scheduler._scheduler.get_jobs()) == 8
     assert runner.event_hooks.count(scheduler._scan_finished) == 1
     assert session.exec(select(Run)).one().error == "server restarted"
     for job in scheduler._scheduler.get_jobs():
@@ -543,15 +547,15 @@ def test_scheduler_start_is_idempotent_and_recovers(jobs, session, monkeypatch):
     assert scheduler.is_running()
 
 
-def test_scan_success_triggers_auto_evaluate(jobs, session, monkeypatch):
+def test_daytime_scan_success_does_not_evaluate(jobs, session, monkeypatch):
+    """Evaluation tokens are spent only by the nightly funnel (tests/test_nightly.py)."""
     monkeypatch.setattr(careerops, "scan", lambda *args, **kwargs: IngestResult())
-    row = lead(session)
+    lead(session)
     scheduler.start()
     scan = runner.submit(RunKind.careerops_scan)
     runner._intake_pool.drain()
     assert stored(session, scan.id).state == RunState.succeeded
-    evaluated = session.exec(select(Run).where(Run.kind == RunKind.evaluate)).one()
-    assert evaluated.lead_id == row.id and evaluated.params == {"auto": True}
+    assert session.exec(select(Run).where(Run.kind == RunKind.evaluate)).all() == []
 
 
 def test_services_reports_runtime_and_board_health(jobs, session, monkeypatch, tmp_path):

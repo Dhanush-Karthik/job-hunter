@@ -108,8 +108,8 @@ function TodayBody({ data }: { data: TodaySummary }) {
         </Card>
         <Card className="lg:col-span-3">
           <CardHeader>
-            <CardTitle>Fresh matches</CardTitle>
-            <CardDescription>Best new jobs from the last 48 hours. Shortlist the ones worth applying to.</CardDescription>
+            <CardTitle>Today&apos;s picks</CardTitle>
+            <CardDescription>Evaluated overnight: the new jobs most likely to get you an interview call. Best first.</CardDescription>
             <CardAction>
               <Link to="/leads" className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
                 All jobs <ArrowRight className="size-3.5" aria-hidden />

@@ -3,6 +3,6 @@
 Entry point: `ingest(session, raw_jobs, settings, *, now=None, cv_text=None) -> IngestResult`.
 """
 
-from jobhunter.pipeline.store import ingest
+from jobhunter.pipeline.store import ingest, rescore
 
-__all__ = ["ingest"]
+__all__ = ["ingest", "rescore"]

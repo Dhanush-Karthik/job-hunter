@@ -28,12 +28,15 @@ const seeds: Seed[] = [
   { company: 'Hashicorp Talent (via Uplers)', title: 'Remote Java Engineer', source: 'gmail_alert', source_detail: 'uplers', location: 'Remote India', work_mode: 'remote', exp_min: 3, exp_max: 7, quick_score: 0.71, apply_channel: 'email', posted_at: ago(40) },
   { company: 'Chargebee', title: 'Platform Engineer', source: 'google', location: 'Chennai', work_mode: 'hybrid', exp_min: 2, exp_max: 4, quick_score: 0.74, apply_channel: 'company_ats', posted_at: ago(70), role_family: 'P2' },
   { company: 'Kissflow', title: 'Java Developer', source: 'indeed', location: 'Chennai', work_mode: 'onsite', exp_min: 2, exp_max: 4, ctc_min: 8, ctc_max: 14, quick_score: 0.66, apply_channel: 'platform_quick', posted_at: ago(100) },
-  { company: 'TalentCorp Consulting', title: 'Keycloak / IAM Engineer', source: 'gmail_inbound', location: 'Bengaluru', work_mode: 'hybrid', quick_score: 0.95, is_inbound: true, apply_channel: 'email', posted_at: ago(2), role_family: 'P1' },
+  { company: 'TalentCorp Consulting', title: 'Keycloak / IAM Engineer', source: 'gmail_inbound', location: 'Bengaluru', work_mode: 'hybrid', quick_score: 0.95, is_inbound: true, apply_channel: 'email', posted_at: ago(2), role_family: 'P1', call_chance: 'high', pick_reason: 'Recruiter-led Java backend role at 2-5 years; Keycloak and OIDC depth match the CV.' },
   { company: 'Atlassian', title: 'Backend Engineer, Jira Cloud', source: 'careerops_scan', location: 'Remote India', work_mode: 'remote', exp_min: 3, exp_max: 6, quick_score: 0.8, eval_score: 3.9, eval_grade: 'B', is_live: true, apply_channel: 'company_ats', posted_at: ago(50) },
   { company: 'Infosys', title: 'Java Developer', source: 'naukri', location: 'Pune', work_mode: 'onsite', exp_min: 3, exp_max: 5, quick_score: 0.2, prefilter_pass: false, prefilter_reasons: ['location: Pune not in target cities'], apply_channel: 'platform_quick', posted_at: ago(15) },
   { company: 'Acme Staffing', title: 'Principal Engineer', source: 'glassdoor', location: 'Bengaluru', work_mode: 'onsite', exp_min: 12, exp_max: 18, quick_score: 0.1, prefilter_pass: false, prefilter_reasons: ['experience: min 12 >= 6'], apply_channel: 'company_ats', posted_at: ago(80) },
   { company: 'Postman', title: 'Software Engineer - Java Services', source: 'linkedin', location: 'Bengaluru', work_mode: 'hybrid', exp_min: 2, exp_max: 4, quick_score: 0.83, apply_channel: 'platform_quick', posted_at: ago(26) },
 ]
+
+/** Mirrors pipeline.experience.exp_fit for the owner's 2-4 year range. */
+const expFit = (min: number | null | undefined): LeadSummary['exp_fit'] => (min == null ? 'unknown' : min <= 3 ? 'ok' : min <= 4 ? 'stretch' : 'above')
 
 const STATUS_BY_INDEX: Record<number, LeadSummary['status']> = { 0: 'Applied', 1: 'Shortlisted', 2: 'Screening', 3: 'Ready', 8: 'Rejected', 11: 'Shortlisted' }
 
@@ -69,6 +72,7 @@ export function makeLeads(): LeadSummary[] {
       duplicates: i === 1 ? 2 : 0,
       application_id: status === 'New' ? null : id,
       ...s,
+      exp_fit: s.exp_fit ?? expFit(s.exp_min),
       posted_at: posted,
       status,
     }
@@ -126,6 +130,7 @@ export function makeDetail(lead: LeadSummary): LeadDetail {
   const application = lead.application_id ? makeApplication(lead) : null
   return {
     ...lead,
+    source_email_url: lead.source === 'gmail_inbound' ? 'https://mail.google.com/mail/u/0/#search/rfc822msgid:example%40mail' : null,
     jd_text: `## ${lead.title}\n\n${lead.company} is hiring a backend engineer with 2-5 years of Java, Spring Boot and microservices experience.\n\n- Build and run REST services\n- Kafka, PostgreSQL, Kubernetes\n- OAuth2 / OIDC a plus`,
     evaluation:
       lead.eval_score != null
@@ -140,9 +145,9 @@ export function makeDetail(lead: LeadSummary): LeadDetail {
 
 export function makeProposals(): ProposalOut[] {
   return [
-    { id: 1, type: 'status_change', application_id: 1, lead_id: 1, company: 'Freshworks', title: 'Senior Software Engineer - Java', payload: { to_status: 'Screening' }, evidence: 'Subject: "Next steps for your application" - "...would like to schedule a 30 min call with our recruiter..."', confidence: 0.93, state: 'pending', created_at: ago(1) },
-    { id: 2, type: 'inbound', application_id: null, lead_id: 8, company: 'TalentCorp Consulting', title: 'Keycloak / IAM Engineer', payload: { recruiter: 'Arun K', phone_shared: false }, evidence: 'Subject: "Keycloak opening - Bengaluru - immediate" - "...found your profile on Naukri..."', confidence: 0.88, state: 'pending', created_at: ago(2) },
-    { id: 3, type: 'ghosted', application_id: 9, lead_id: 9, company: 'Atlassian', title: 'Backend Engineer, Jira Cloud', payload: { to_status: 'Ghosted' }, evidence: 'No reply in 21 days since Applied', confidence: 1, state: 'pending', created_at: ago(5) },
+    { id: 1, type: 'status_change', application_id: 1, lead_id: 1, company: 'Freshworks', title: 'Senior Software Engineer - Java', payload: { to_status: 'Screening' }, evidence: 'Subject: "Next steps for your application" - "...would like to schedule a 30 min call with our recruiter..."', confidence: 0.93, state: 'pending', created_at: ago(1), email_url: 'https://mail.google.com/mail/u/0/#search/rfc822msgid:status%40mail', apply_url: null },
+    { id: 2, type: 'inbound', application_id: null, lead_id: 8, company: 'TalentCorp Consulting', title: 'Keycloak / IAM Engineer', payload: { recruiter: 'Arun K', phone_shared: false }, evidence: 'Subject: "Keycloak opening - Bengaluru - immediate" - "...found your profile on Naukri..."', confidence: 0.88, state: 'pending', created_at: ago(2), email_url: 'https://mail.google.com/mail/u/0/#search/rfc822msgid:inbound%40mail', apply_url: null },
+    { id: 3, type: 'ghosted', application_id: 9, lead_id: 9, company: 'Atlassian', title: 'Backend Engineer, Jira Cloud', payload: { to_status: 'Ghosted' }, evidence: 'No reply in 21 days since Applied', confidence: 1, state: 'pending', created_at: ago(5), email_url: null, apply_url: null },
   ]
 }
 
@@ -212,6 +217,22 @@ export const SETTINGS: Settings = {
   targets: { applied_per_week: 60, referrals_per_week: 15, min_eval_score: 3.5 },
   followups: { follow_up_business_days: 5, second_follow_up_business_days: 7, ghosted_after_days: 21, quiet_hours: [23, 7], gmail_lookback_days: 14, extra_holidays: [] },
   source_weights: { gmail_inbound: 1.5, careerops_scan: 1.15 },
+  evaluator: {
+    mode: 'lean', engines: ['codex', 'claude'], codex_model: 'gpt-6.2-sol', codex_effort: 'low',
+    claude_model: 'sonnet', claude_effort: 'low', timeout_seconds: 180, jd_max_chars: 7000,
+  },
+  nightly: {
+    enabled: true, time: '00:00', candidates: 40, max_age_hours: 72, min_quick_score: 0.35,
+    max_exp_min: 3, per_company: 2,
+    pick_min_eval: 3.5, picks_max: 20, picks_window_hours: 48,
+  },
+  reachout: {
+    enabled: true, daily_cap: 25, cooldown_days: 14, max_jobs: 8, default_attach: 'tailored', look_up_web: true,
+    guess_addresses: true, guess_prefixes: ['careers', 'hr', 'jobs', 'talent', 'recruitment'],
+    subject_one: 'Application for {title} (Job ID {job_id}) - {name}', subject_many: 'Applying for {count} roles at {company} - {name}',
+    body: '{greeting}\n\n{opening}\n{jobs}\n\nRegards,\n{signature}',
+    me: { name: '', phone: '', linkedin: '', github: '', headline: '' },
+  },
 }
 
 export function makeCompanies(): Company[] {

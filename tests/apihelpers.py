@@ -18,7 +18,7 @@ from sqlmodel import Session, select
 from jobhunter import careerops, paths
 from jobhunter.api.app import create_app
 from jobhunter.db import get_engine, get_session, migrate
-from jobhunter.jobs import runner, scheduler
+from jobhunter.jobs import power, runner, scheduler
 from jobhunter.models import (
     Actor,
     Application,
@@ -138,6 +138,9 @@ def fakes(engine, monkeypatch):
     monkeypatch.setattr(runner, "to_out", f.to_out)
     monkeypatch.setattr(runner, "events", f.events)
     monkeypatch.setattr(runner, "shutdown", lambda wait=False: f.lifecycle.append("runner.shutdown"))
+    monkeypatch.setattr(runner, "engine_factory", lambda: engine)  # jobs.nightly opens its own sessions
+    monkeypatch.setattr(power, "ok_to_run", lambda: (True, "AC power"))
+    monkeypatch.setattr(power, "hold_awake", lambda seconds: True)
     monkeypatch.setattr(scheduler, "start", lambda: f.lifecycle.append("scheduler.start"))
     monkeypatch.setattr(scheduler, "shutdown", lambda: f.lifecycle.append("scheduler.shutdown"))
     monkeypatch.setattr(scheduler, "reload", lambda settings: f.reloaded.append(settings))

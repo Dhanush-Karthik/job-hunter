@@ -1,9 +1,9 @@
 import type { Settings } from '@/api/client'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { ChipInput } from './chip-input'
 import { NumberField } from './fields'
+import { SettingsSection } from './settings-section'
 
 type P = Settings['prefilter']
 
@@ -11,12 +11,7 @@ type P = Settings['prefilter']
 export function PrefilterCard({ value: p, onChange }: { value: P; onChange: (p: P) => void }) {
   const set = (patch: Partial<P>) => onChange({ ...p, ...patch })
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Automatic filters</CardTitle>
-        <CardDescription>Jobs that fail these rules are hidden from Jobs. Check “What the filters removed” below before tightening them.</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-4">
+    <SettingsSection title="Automatic filters" description="Jobs that fail these rules are hidden from Jobs. Check “What the filters removed” below before tightening them.">
         <ChipInput label="Accepted cities" values={p.cities} onChange={(cities) => set({ cities })} placeholder="e.g. Chennai" />
         <div className="flex items-center gap-2">
           <Checkbox id="prefilter-remote" checked={p.remote_ok} onCheckedChange={(v) => set({ remote_ok: v === true })} />
@@ -38,7 +33,6 @@ export function PrefilterCard({ value: p, onChange }: { value: P; onChange: (p: 
         {p.max_age_days_pass > p.max_age_days_drop && <p className="text-xs text-destructive">The pass age must not exceed the drop age.</p>}
         <ChipInput label="Stack keywords that help" values={p.stack_positive} onChange={(stack_positive) => set({ stack_positive })} placeholder="e.g. spring boot" />
         <ChipInput label="Stack keywords that hurt" values={p.stack_negative} onChange={(stack_negative) => set({ stack_negative })} placeholder="e.g. php" />
-      </CardContent>
-    </Card>
+    </SettingsSection>
   )
 }

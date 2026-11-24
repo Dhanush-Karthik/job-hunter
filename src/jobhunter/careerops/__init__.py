@@ -112,13 +112,28 @@ def evaluate(session: Session, lead_id: int, *, run_id: int, log: TextIO, should
     """claude -p evaluate (read-only scope, JD pre-fetched from Lead.jd_text or fetched from the URL).
     Persists the report under data/careerops/reports/, parses its Machine Summary, inserts an Evaluation
     (score 1-5, grade letter, report_path relative to CAREEROPS_DATA, run_id) and returns it."""
+    from jobhunter.settings import get_settings
+
+    from . import lean
+
     lead = _lead(session, lead_id)
-    invocation = node(
-        "prompt.mjs", _posting(lead) | {"kind": "evaluate"}, log=log, should_cancel=should_cancel
-    )
-    output = _claude(invocation["args"], log=log, should_cancel=should_cancel)
-    markdown = envelope(output, "report-md")
-    meta = machine_summary(markdown)
+    app_settings = get_settings(session)
+    evaluator = app_settings.evaluator
+    if evaluator.mode == "lean":
+        result, engine = lean.evaluate_lead(
+            lead, evaluator, log=log, should_cancel=should_cancel, max_exp_min=app_settings.nightly.max_exp_min)
+        markdown = lean.report_markdown(lead, result, engine)
+        meta = result | {"legitimacy_tier": "n/a"}
+        extra = {"call_chance": result["call_chance"], "verdict": result["verdict"], "engine": engine}
+        invocation: dict[str, Any] = {}
+    else:
+        invocation = node(
+            "prompt.mjs", _posting(lead) | {"kind": "evaluate"}, log=log, should_cancel=should_cancel
+        )
+        output = _claude(invocation["args"], log=log, should_cancel=should_cancel)
+        markdown = envelope(output, "report-md")
+        meta = machine_summary(markdown)
+        extra = {"engine": "career-ops:claude"}
     reports = paths.CAREEROPS_DATA / "reports"
     reports.mkdir(parents=True, exist_ok=True)
     slug = invocation.get("report_slug") or re.sub(r"[^a-z0-9]+", "-", lead.company.lower()).strip("-")
@@ -136,7 +151,7 @@ def evaluate(session: Session, lead_id: int, *, run_id: int, log: TextIO, should
             number += 1
     evaluation = Evaluation(
         lead_id=lead_id, run_id=run_id, score=meta["score"], grade=meta["grade"],
-        report_path=report.relative_to(paths.CAREEROPS_DATA).as_posix(),
+        report_path=report.relative_to(paths.CAREEROPS_DATA).as_posix(), **extra,
     )
     session.add(evaluation)
     session.commit()

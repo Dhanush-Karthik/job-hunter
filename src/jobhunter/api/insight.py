@@ -14,10 +14,10 @@ from sqlalchemy import or_
 from sqlmodel import Session, select
 
 from jobhunter import analytics
-from jobhunter.api import convert, queries
+from jobhunter.api import convert
 from jobhunter.api.config import ensure_profiles, profile_due
 from jobhunter.api.deps import SessionDep, db_dt, now_utc, week_start
-from jobhunter.jobs import scheduler
+from jobhunter.jobs import nightly, scheduler
 from jobhunter.models import (
     Application,
     ApplyChannel,
@@ -144,10 +144,10 @@ def _actions(session: Session, now: datetime) -> list[ActionItem]:
 def today(session: SessionDep) -> TodaySummary:
     now = now_utc()
     this_week, prev_week = week_start(now), week_start(now, 1)
-    targets = get_settings(session).targets
-    hot = session.exec(
-        queries.lead_query(status=[AppStatus.new], fresh_only=True, sort="eval_score", now=now).limit(10)
-    ).all()
+    settings = get_settings(session)
+    targets = settings.targets
+    # Today's picks: the nightly funnel's evaluated, ranked leads (jobs.nightly.picks), not raw quick scores.
+    hot = nightly.picks(session, settings, now)
     try:
         health = scheduler.services()
     except Exception:

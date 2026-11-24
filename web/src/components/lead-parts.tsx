@@ -1,4 +1,4 @@
-import { Mail, Sparkles } from 'lucide-react'
+import { Mail, Sparkles, TriangleAlert } from 'lucide-react'
 import type { LeadSummary } from '@/api/client'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
@@ -61,6 +61,34 @@ export function InboundBadge() {
   return (
     <Badge className="bg-violet-500/15 text-violet-700 dark:text-violet-400" variant="secondary" title="A recruiter contacted you about this">
       <Mail aria-hidden /> Recruiter
+    </Badge>
+  )
+}
+
+const EXP_HINT = {
+  above: 'Asks for more experience than you have: this posting ranks lower for that reason',
+  stretch: 'Asks for the top of your experience range',
+} as const
+
+/** The experience range, flagged when the posting asks for more than the owner's range. */
+export function ExpText({ lead, text }: { lead: Pick<LeadSummary, 'exp_fit'>; text: string | null }) {
+  if (!text) return <span className="text-muted-foreground">—</span>
+  if (lead.exp_fit !== 'above' && lead.exp_fit !== 'stretch') return <span className="whitespace-nowrap">{text}</span>
+  return (
+    <span
+      className={cn('inline-flex items-center gap-1 whitespace-nowrap', lead.exp_fit === 'above' ? 'text-amber-700 dark:text-amber-400' : '')}
+      title={EXP_HINT[lead.exp_fit]}
+    >
+      {lead.exp_fit === 'above' && <TriangleAlert className="size-3.5" aria-label="Above your experience range" />}
+      {text}
+    </span>
+  )
+}
+
+export function AboveRangeBadge() {
+  return (
+    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-400" variant="secondary" title={EXP_HINT.above}>
+      <TriangleAlert aria-hidden /> Above your range
     </Badge>
   )
 }

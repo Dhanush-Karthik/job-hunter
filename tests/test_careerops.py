@@ -32,7 +32,7 @@ from jobhunter.models import (
     Source,
     SourceHealth,
 )
-from jobhunter.settings import load_defaults
+from jobhunter.settings import load_defaults, save_settings
 
 FIXTURES = Path(__file__).parent / "fixtures" / "careerops"
 SETTINGS = load_defaults(paths.CONFIG_EXAMPLE)
@@ -66,6 +66,9 @@ def lead_run(session, bridge_env):
     session.add(lead)
     session.commit()
     session.refresh(lead)
+    full = SETTINGS.model_copy(deep=True)
+    full.evaluator.mode = "full"  # these tests pin the career-ops A-H path; lean mode has its own tests
+    save_settings(session, full)
     run_row = Run(kind=RunKind.evaluate, lead_id=lead.id)
     session.add(run_row)
     session.commit()

@@ -11,8 +11,21 @@ from jobhunter import models  # noqa: F401  (registers tables)
 from jobhunter.db.engine import get_engine
 from jobhunter.models import SchemaVersion, utcnow
 
+
+def _add_columns(table: str, columns: dict[str, str]) -> Callable[[Connection], None]:
+    def step(conn: Connection) -> None:
+        present = {row[1] for row in conn.exec_driver_sql(f"PRAGMA table_info({table})")}
+        for name, sql_type in columns.items():
+            if name not in present:  # a fresh v1 create_all already has them
+                conn.exec_driver_sql(f"ALTER TABLE {table} ADD COLUMN {name} {sql_type}")
+    return step
+
+
 STEPS: list[Callable[[Connection], None]] = [
     lambda conn: SQLModel.metadata.create_all(conn),  # v1
+    _add_columns("evaluations", {"call_chance": "VARCHAR", "verdict": "VARCHAR", "engine": "VARCHAR"}),  # v2
+    lambda conn: SQLModel.metadata.create_all(conn),  # v3: hr_contacts, hr_emails (create_all skips existing tables)
+    lambda conn: SQLModel.metadata.create_all(conn),  # v4: hr_lookups
 ]
 SCHEMA_VERSION = len(STEPS)
 

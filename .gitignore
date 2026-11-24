@@ -26,3 +26,10 @@ web/playwright-report/
 .DS_Store
 .idea/
 .vscode/
+
+# local tooling
+.claude/settings.local.json
+.env.*
+
+# local agent tooling
+.claude/

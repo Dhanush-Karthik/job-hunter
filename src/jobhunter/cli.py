@@ -94,6 +94,21 @@ def cmd_db_migrate(_: argparse.Namespace) -> int:
     return 0
 
 
+# ---------- rescore ----------
+
+
+def cmd_rescore(_: argparse.Namespace) -> int:
+    from sqlmodel import Session
+
+    from jobhunter.db import engine
+    from jobhunter.pipeline import rescore
+    from jobhunter.settings import get_settings
+
+    with Session(engine.get_engine()) as session:
+        print(f"rescored {rescore(session, get_settings(session))} leads")
+    return 0
+
+
 # ---------- health ----------
 
 
@@ -269,6 +284,8 @@ def build_parser() -> argparse.ArgumentParser:
     db.add_parser("migrate", help="apply pending schema migrations").set_defaults(func=cmd_db_migrate)
 
     sub.add_parser("health", help="print the health JSON; exit 1 if not ok").set_defaults(func=cmd_health)
+    sub.add_parser("rescore", help="recompute every lead's quick score with the current scoring rules").set_defaults(
+        func=cmd_rescore)
 
     run = sub.add_parser("run", help="start a run on the running server")
     run.add_argument("kind", choices=[k.value for k in RunKind])

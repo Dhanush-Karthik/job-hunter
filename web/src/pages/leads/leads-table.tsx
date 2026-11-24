@@ -2,7 +2,7 @@ import { createColumnHelper, flexRender, rowSelectionFeature, tableFeatures, use
 import { Link, useNavigate } from 'react-router-dom'
 import type { LeadSummary } from '@/api/client'
 import { SOURCE_LABEL, formatCtc, formatExp, formatPlace, isRejected, statusLabel } from '@/components/lead-format'
-import { FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
+import { ExpText, FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
 import { StatusBadge } from '@/components/status-badge'
 import { relativeDay } from '@/components/time'
 import { Checkbox } from '@/components/ui/checkbox'
@@ -96,7 +96,7 @@ function buildColumns(a: RowActions, mode: TableMode) {
     col.display({
       id: 'exp',
       header: 'Experience',
-      cell: ({ row }) => <span className="whitespace-nowrap">{formatExp(row.original) ?? <span className="text-muted-foreground">—</span>}</span>,
+      cell: ({ row }) => <ExpText lead={row.original} text={formatExp(row.original)} />,
     }),
     col.display({
       id: 'ctc',

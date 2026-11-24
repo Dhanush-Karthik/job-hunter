@@ -29,13 +29,12 @@ describe('Home page', () => {
     expect(rows).toEqual([
       '1 recruiter reached out',
       '1 email update to confirm',
-      '1 follow-up to send',
       '1 CV to approve',
       '3 shortlisted jobs to apply to',
       'Refresh your Naukri profile',
     ])
     expect(within(todo).getByText('TalentCorp Consulting')).toBeInTheDocument()
-    expect(within(todo).getByText(/Freshworks · oldest overdue by \d+ days?/)).toBeInTheDocument()
+    expect(within(todo).queryByText(/follow-up/i)).not.toBeInTheDocument() // the Follow-ups page is gone
     // raw internal labels never reach the page
     expect(screen.queryByText(/status_change|needs_eyes/)).not.toBeInTheDocument()
 
@@ -52,7 +51,6 @@ describe('Home page', () => {
     const href = (name: RegExp) => screen.getByRole('link', { name }).getAttribute('href')
     expect(href(/Review: 1 recruiter/)).toBe('/replies')
     expect(href(/Confirm: 1 email update/)).toBe('/replies')
-    expect(href(/Send: 1 follow-up/)).toBe('/outreach')
     expect(href(/Approve: 1 CV/)).toBe('/jobs/4')
     expect(await screen.findByRole('link', { name: /Apply: 3 shortlisted jobs/ })).toHaveAttribute('href', '/leads?tab=apply')
     expect(screen.getByRole('link', { name: /Open Naukri/ })).toHaveAttribute('href', 'https://www.naukri.com/mnjuser/profile')
@@ -101,6 +99,13 @@ describe('Home page', () => {
     expect(within(alert).getByRole('button', { name: 'Retry' })).toBeInTheDocument()
   })
 
+  it("shows today's picks with call chance and the evaluator's reason", async () => {
+    setup()
+    expect(await screen.findByText("Today's picks")).toBeInTheDocument()
+    expect(screen.getByText('High call chance')).toBeInTheDocument()
+    expect(screen.getByText(/Keycloak and OIDC depth match the CV/)).toBeInTheDocument()
+  })
+
   it('shows empty states', async () => {
     server.use(
       http.get('/api/today', () =>
@@ -109,7 +114,7 @@ describe('Home page', () => {
       http.get('/api/leads', () => HttpResponse.json({ items: [], total: 0, limit: 1, offset: 0 })),
     )
     setup()
-    expect(await screen.findByText('No fresh matches right now')).toBeInTheDocument()
+    expect(await screen.findByText('No picks yet')).toBeInTheDocument()
     expect(await screen.findByText('All caught up')).toBeInTheDocument()
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })

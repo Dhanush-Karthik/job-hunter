@@ -1,6 +1,6 @@
 # job-hunter — implementation plan
 
-Status: **v3.3, Wave 4: 4.1-4.3 done, 4.4 (owner day) next** (Waves 0-3 done, see section 13). Source: `docs/Dhanush_30_Day_Job_Switch_Plan.pdf`.
+Status: **v3.3, Wave 4: 4.1-4.3 done, 4.4 (owner day) next** (Waves 0-3 done, see section 13).
 
 **Ultimate goal: as many interview calls as possible, as early as possible, with the least manual effort.** Every feature below is ranked by how much it moves that number.
 
@@ -601,7 +601,7 @@ injected into the CV session): drafts must run without user settings.
 
 | # | State |
 |---|---|
-| 0.1 | ◐ D6 decided (reminder-only); CV received → `data/careerops/cv.md` (master), `data/cv/cv_a.md` (variant A, same facts reordered), `data/cv/cv_b.md` (variant B, adds AI Developer Tooling verified from the owner's own repos), career-ops `profile.yml` + `modes/_profile.md` (expected CTC 15 LPA, notice 30 days). Pending from owner: review of variant B wording, alert accounts + `.eml` exports, golden labels. Gmail app password: owner enters in Setup page (Wave 3) |
+| 0.1 | ◐ D6 decided (reminder-only); CV received → `data/careerops/cv.md` (master), `data/cv/cv_a.md` (variant A, same facts reordered), `data/cv/cv_b.md` (variant B, adds AI Developer Tooling verified from the owner's own repos), career-ops `profile.yml` + `modes/_profile.md` (expected CTC, notice period). Pending from owner: review of variant B wording, alert accounts + `.eml` exports, golden labels. Gmail app password: owner enters in Setup page (Wave 3) |
 | 0.2 | ✅ `uv run python -m jobhunter.api.dump_openapi --check`, `uv run pytest` (6 pass) |
 | 0.3 | ✅ `cd web && npm run build && npm run test` (3 pass on MSW) |
 | 0.4 | ✅ `npm install --no-package-lock` (career-ops ships no lockfile; submodule tree stays clean), `doctor.mjs` with `CAREER_OPS_DATA_DIR=data/careerops`: 0 errors, only `portals.yml` missing (Wave 1 `build_portals.py`) |
@@ -657,3 +657,33 @@ Open: no real alerts yet from Naukri, Hirist, foundit, Uplers, Instahyre in the 
 
 **Real scan (run 12, via `jobhunter run careerops_scan --wait`): succeeded in 5 min 45 s** (was a 600 s timeout every run): 7,481 fetched, 7,469 new, 750 pass prefilter (Bengaluru 530, Chennai 29, remote/India ~50), remote boards 78 pass.
 Open: career-page leads score low (avg quick score 0.11 vs Naukri 0.50; only 44% carry a description, and generic non-Java titles like support/GenAI pass recall-first) → tune quick score / title negatives after the owner's first day. "Remote - <non-India city>" still passes the location rule. Owner decides on `./start.sh autostart on`.
+
+## 14. Reach out: direct HR emails (23 Nov 2026)
+
+Owner request. The Follow-ups page, its Home tasks, the tracker follow-up column and the follow-up timing fields in Settings are gone from the dashboard (the background follow-up drafts still run; nothing in the UI shows them). **Reach out** replaces the page.
+
+- **Page** `/reachout` (old `/outreach` redirects). Lists the companies tracked in Settings > Companies, most open jobs first. Per company: save HR email contacts, tick up to 8 jobs (each shows its board job ID, e.g. LinkedIn `4475286970`, else `JH-<lead id>`), edit the generated email, pick the attachment, then **Send** or **Save to Gmail drafts**.
+- **Attachment**: the resume PDF uploaded on the page (`data/cv/resume.pdf`, 5 MB max), or one job's tailored CV PDF when it exists, or none.
+- **Guardrails** (rule 7 stands: nothing is sent without an explicit owner action): every send needs `confirm: true`, set only from the confirm dialog; one email per HR address per 14 days unless "Send anyway"; 25 sends per rolling 24 h; drafts do not count. Sending uses Gmail SMTP with the existing app password; drafts use IMAP APPEND to `[Gmail]/Drafts`. Every attempt (sent, drafted, failed) is logged in `hr_emails` and shown on the Sent tab.
+- **Not automated**: finding HR addresses. The owner pastes them; the app never guesses or scrapes mailboxes.
+- API: `/api/reachout/*` (status, resume, companies, jobs, contacts, draft, send, emails). Schema v3 adds `hr_contacts` and `hr_emails`.
+
+---
+
+## Wave 5: Email HR on the job page, open-source readiness, first-visit tour
+
+**Goal.** Emailing HR becomes part of applying to a job, not a separate page, and the project can be shared with friends.
+
+**Decisions**
+- The Reach out page and its company-centric API (`/companies`, `/contacts` POST, `/jobs?company=`, `/draft`, `/send`) are removed. The nav item is gone; `/reachout` and `/outreach` redirect to Jobs.
+- New job-centric API under `/api/reachout/jobs/{lead_id}`: `GET` (candidates + written email + attachments + history), `POST find` (web lookup, cached in `hr_lookups`), `POST draft`, `POST send` (needs `confirm: true`). `status`, `resume`, `emails` and `DELETE contacts/{id}` stay.
+- Address finder (`reachout/finder.py`), trust order: job description, recruiter sender of an inbound lead (`raw.sender`), posting page, saved contact, company site (own domain only), guesses (`careers@` ...; DNS-checked, never preselected). Web fetches are public http(s) only, 5 pages max.
+- The email is deterministic (no model call), built from templates in `Settings.reachout` (`subject_one`, `subject_many`, `body`, `me`). Caps, cool-down, attach default, lookup and guesses are settings too. Resume upload and the settings live in Settings > CVs & email.
+- One click sends (no extra dialog): the card shows address, text and attachment first; guesses are never preselected; cool-down needs "Send anyway".
+- `secrets.get` falls back to `JOBHUNTER_GMAIL_ADDRESS` / `JOBHUNTER_GMAIL_APP_PASSWORD` for machines without a keychain.
+- Open source: README, LICENSE (MIT), CONTRIBUTING, `docs/configuration.md`, `docs/email-hr.md`, generic `docs/setup.md`, example config documents every `reachout` key, CI workflow.
+- First-visit tour (`web/src/components/tour/`), stored in `localStorage` (`jobhunter.tour.v1`), replay from the sidebar. Targets are `data-tour` attributes on nav links.
+
+**File ownership.** Backend: `reachout/`, `api/reachout.py`, `schemas.py`, `models.py` (`HrLookup`), `db/migrate.py` (v4), `secrets.py`, `gmail/inbound.py`. Web: `pages/job/email-hr-card.tsx`, `pages/settings/reachout-card.tsx`, `components/tour/`, mocks. Docs at repo root and `docs/`.
+
+**Acceptance.** `uv run pytest` and `ruff`; `cd web && npm run typecheck && npm test && npm run build`; `dump_openapi --check`.

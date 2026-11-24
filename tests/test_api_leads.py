@@ -309,3 +309,24 @@ def test_bulk_evaluate_and_verify_return_run_ids(client, db, fakes):
 def test_bulk_validation(client):
     assert client.post("/api/leads/bulk", json={"ids": [], "action": "skip"}).status_code == 422
     assert client.post("/api/leads/bulk", json={"ids": [1], "action": "explode"}).status_code == 422
+
+
+# ---------- experience fit, source email link ----------
+
+
+def test_exp_fit_compares_stated_minimum_with_the_owner_range(client, db):
+    ok = make_lead(db, exp_min=2, exp_max=4)
+    stretch = make_lead(db, exp_min=4, exp_max=8)
+    above = make_lead(db, exp_min=5, exp_max=9)
+    unknown = make_lead(db)
+    fit = {i["id"]: i["exp_fit"] for i in client.get("/api/leads").json()["items"]}
+    assert fit == {ok.id: "ok", stretch.id: "stretch", above.id: "above", unknown.id: "unknown"}
+
+
+def test_detail_links_an_inbound_lead_to_its_email_in_gmail(client, db):
+    inbound = make_lead(db, source=Source.gmail_inbound, source_ref="<abc.123@mail.example>", is_inbound=True,
+                        apply_channel=ApplyChannel.email)
+    other = make_lead(db)
+    url = client.get(f"/api/leads/{inbound.id}").json()["source_email_url"]
+    assert url == "https://mail.google.com/mail/u/0/#search/rfc822msgid:abc.123%40mail.example"
+    assert client.get(f"/api/leads/{other.id}").json()["source_email_url"] is None

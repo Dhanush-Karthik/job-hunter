@@ -93,10 +93,10 @@ function GmailForm() {
         )
       }}
     >
-      <h3 className="font-medium">Gmail (read-only)</h3>
+      <h3 className="font-medium">Gmail</h3>
       <p className="text-sm text-muted-foreground">
-        The app only reads your inbox over IMAP and never sends mail. Use an app password, not your Google password: turn on 2-step verification, open Google Account → Security → App passwords, create one named
-        “job-hunter” and paste the 16 characters here. It is stored in the macOS Keychain and never shown again.
+        The app reads your inbox over IMAP. It sends mail only when you press Send on a job page&apos;s Email HR card. Use an app password, not your Google password: turn on 2-step verification, open Google Account → Security → App passwords, create one named
+        “job-hunter” and paste the 16 characters here. It is stored in your system keychain and never shown again.
       </p>
       {secrets.isError && <ErrorState error={secrets.error} onRetry={() => secrets.refetch()} />}
       <div className="grid gap-3 sm:grid-cols-2">
@@ -115,7 +115,7 @@ function GmailForm() {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         <Button type="submit" size="sm" disabled={save.isPending || (!address.trim() && !password)}>
-          Save to Keychain
+          Save to keychain
         </Button>
         <Button type="button" size="sm" variant="outline" disabled={test.isPending} onClick={() => test.mutate()}>
           Test Gmail

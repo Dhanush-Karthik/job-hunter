@@ -9,7 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from jobhunter import __version__, paths
-from jobhunter.api import applications, companies, config, health, inbox, insight, leads, runs
+from jobhunter.api import applications, companies, config, health, inbox, insight, leads, reachout, runs
 from jobhunter.jobs import runner, scheduler
 
 
@@ -33,7 +33,7 @@ def create_app(serve_web: bool = True) -> FastAPI:
         lifespan=lifespan,
     )
     for r in (health.router, leads.router, applications.router, inbox.proposals, inbox.outreach,
-              runs.router, insight.router, config.router, companies.router):
+              runs.router, insight.router, config.router, companies.router, reachout.router):
         app.include_router(r)
 
     if serve_web and paths.WEB_DIST.is_dir():

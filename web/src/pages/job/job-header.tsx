@@ -1,10 +1,11 @@
-import { ArrowLeft, ExternalLink, ShieldCheck, ShieldX } from 'lucide-react'
+import { ArrowLeft, ExternalLink, Mail, Search, ShieldCheck, ShieldX } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import type { LeadDetail } from '@/api/client'
 import { fmtDateTime } from '@/components/format'
-import { CHANNEL_LABEL, formatCtc, formatExp, formatPlace, SOURCE_LABEL, statusLabel } from '@/components/lead-format'
+import { applyTarget } from '@/components/apply-target'
+import { CHANNEL_LABEL, formatCtc, formatExp, formatPlace, statusLabel } from '@/components/lead-format'
 import { relativeDay } from '@/components/time'
-import { FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
+import { AboveRangeBadge, FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
 import { StatusBadge } from '@/components/status-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,44 @@ function LiveBadge({ lead }: { lead: LeadDetail }) {
     >
       {live ? <ShieldCheck aria-hidden /> : <ShieldX aria-hidden />} {live ? 'Posting is live' : 'Posting closed'}
     </Badge>
+  )
+}
+
+/** Where this job came from and where to go to apply, so no lead is ever a dead end. */
+function WhereToApply({ lead }: { lead: LeadDetail }) {
+  const t = applyTarget(lead)
+  const Icon = lead.source_email_url && t.href === lead.source_email_url ? Mail : ExternalLink
+  return (
+    <section aria-label="Where to apply" className="grid gap-2 rounded-xl border bg-card px-4 py-3 text-sm">
+      <p>
+        <span className="text-muted-foreground">Source:</span> <span className="font-medium">{t.source}</span>
+        <span className="text-muted-foreground"> · found {relativeDay(lead.found_at)}</span>
+      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        {t.href && (
+          <Button asChild size="sm">
+            <a href={t.href} target="_blank" rel="noopener noreferrer">
+              <Icon /> {t.label}
+            </a>
+          </Button>
+        )}
+        {lead.apply_url && lead.canonical_url && lead.canonical_url !== lead.apply_url && (
+          <Button asChild variant="outline" size="sm">
+            <a href={lead.canonical_url} target="_blank" rel="noopener noreferrer">
+              <ExternalLink /> View original posting
+            </a>
+          </Button>
+        )}
+        {!lead.apply_url && !lead.canonical_url && (
+          <Button asChild variant="outline" size="sm">
+            <a href={t.searchHref} target="_blank" rel="noopener noreferrer">
+              <Search /> Search for it
+            </a>
+          </Button>
+        )}
+      </div>
+      {t.note && <p className="text-muted-foreground">{t.note}</p>}
+    </section>
   )
 }
 
@@ -47,31 +86,16 @@ export function JobHeader({ lead }: { lead: LeadDetail }) {
         <StatusBadge status={lead.status} label={statusLabel(lead.status)} />
         {lead.is_fresh && <FreshBadge />}
         {lead.is_inbound && <InboundBadge />}
+        {lead.exp_fit === 'above' && <AboveRangeBadge />}
         <LiveBadge lead={lead} />
-        {lead.apply_channel !== 'unknown' && <Badge variant="outline">{CHANNEL_LABEL[lead.apply_channel]}</Badge>}
-        <Badge variant="outline">{SOURCE_LABEL[lead.source]}</Badge>
+        {lead.apply_channel !== 'unknown' && !lead.is_inbound && <Badge variant="outline">{CHANNEL_LABEL[lead.apply_channel]}</Badge>}
         {lead.duplicate_ids.length > 0 && (
           <Badge variant="outline" title="The same job was found on other sites and merged into this one">
             also on {lead.duplicate_ids.length} other site{lead.duplicate_ids.length === 1 ? '' : 's'}
           </Badge>
         )}
       </div>
-      <div className="flex flex-wrap gap-2">
-        {lead.canonical_url && (
-          <Button asChild variant="outline" size="sm">
-            <a href={lead.canonical_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink /> Open posting
-            </a>
-          </Button>
-        )}
-        {lead.apply_url && (
-          <Button asChild variant="outline" size="sm">
-            <a href={lead.apply_url} target="_blank" rel="noopener noreferrer">
-              <ExternalLink /> Apply link
-            </a>
-          </Button>
-        )}
-      </div>
+      <WhereToApply lead={lead} />
     </header>
   )
 }

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Check, CheckCheck, Circle, CircleCheck, ExternalLink, FlaskConical, Loader2, RotateCcw, ShieldCheck, Wand2, X } from 'lucide-react'
 import { CLOSED, TRANSITIONS, type AppStatus, type LeadDetail, type RunOut } from '@/api/client'
 import { useLeadActions } from '@/app/lead-actions'
+import { applyTarget } from '@/components/apply-target'
 import { isRejected } from '@/components/lead-format'
 import { NativeSelect } from '@/components/native-select'
 import { SkipDialog } from '@/components/skip-dialog'
@@ -42,7 +43,7 @@ export function ActionsCard({ lead, runs, mutations: m }: Props) {
   const can = (s: AppStatus) => TRANSITIONS[status].includes(s)
   const running = (kind: RunOut['kind']) => runs.some((r) => r.kind === kind && isActive(r))
   const active = runs.filter(isActive)
-  const link = lead.apply_url ?? lead.canonical_url
+  const target = applyTarget(lead)
   const preApply = status === 'Shortlisted' || status === 'Ready'
   const afterApply = !preApply && status !== 'New' && !CLOSED.includes(status)
 
@@ -103,15 +104,13 @@ export function ActionsCard({ lead, runs, mutations: m }: Props) {
               <p className="text-xs text-muted-foreground">Use the Tailored CV card below (about a minute).</p>
             </Step>
             <Step n={2} done={!!app?.cv_approved} title="Check and approve the CV" />
-            <Step n={3} done={false} title="Apply on the company site">
+            <Step n={3} done={false} title={`Apply via ${target.source}`}>
               <div className="flex flex-wrap gap-2">
-                {link && (
-                  <Button asChild size="sm" variant="outline">
-                    <a href={link} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink /> Open application page
-                    </a>
-                  </Button>
-                )}
+                <Button asChild size="sm" variant="outline">
+                  <a href={target.href ?? target.searchHref} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink /> {target.label}
+                  </a>
+                </Button>
                 <Button size="sm" variant="secondary" disabled={!app?.cv_approved || m.assist.isPending || running('assist_apply')} onClick={() => m.assist.mutate()}>
                   <Wand2 /> Assist apply
                 </Button>

@@ -36,6 +36,14 @@ export function useProposalActions() {
       return invalidate()
     },
   })
+  // "Dismiss all" on a group: one call per email, then one refresh.
+  const dismissMany = useMutation({
+    mutationFn: async (ids: number[]) => Promise.all(ids.map(async (id) => unwrap(await api.POST('/api/proposals/{proposal_id}/dismiss', path(id))))),
+    onSuccess: (done) => {
+      toast.success(`Dismissed ${done.length}`)
+      return invalidate()
+    },
+  })
   // needs_eyes: the server only acknowledges these on accept, so move the application first, then close the proposal.
   const setStatus = useMutation({
     mutationFn: async ({ id, app, to }: { id: number; app: ApplicationOut; to: AppStatus }) => {
@@ -52,6 +60,6 @@ export function useProposalActions() {
       return invalidate()
     },
   })
-  const busy = accept.isPending || dismiss.isPending || convert.isPending || setStatus.isPending
-  return { accept, dismiss, convert, setStatus, busy }
+  const busy = accept.isPending || dismiss.isPending || dismissMany.isPending || convert.isPending || setStatus.isPending
+  return { accept, dismiss, dismissMany, convert, setStatus, busy }
 }

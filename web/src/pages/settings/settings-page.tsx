@@ -1,3 +1,4 @@
+import { Building2, ListFilter, Mail, SlidersHorizontal, Activity, UserCircle2, type LucideIcon } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
 import { PageHeader } from '@/components/page-header'
 import { ErrorState } from '@/components/query-states'
@@ -8,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { useToday } from '@/pages/today/use-today'
 import { CompaniesPanel } from './companies-panel'
 import { ProfilesPanel } from './profiles-panel'
+import { ResumeCard } from './reachout-card'
 import { RejectsCard } from './rejects-card'
 import { RunLogsPanel } from './runs-panel'
 import { SettingsForm, type Section } from './settings-form'
@@ -17,13 +19,13 @@ import { useSettings } from './use-settings'
 
 type Tab = 'search' | 'companies' | 'goals' | 'profiles' | 'account' | 'system'
 
-const TABS: { value: Tab; label: string; hint: string }[] = [
-  { value: 'search', label: 'Job search', hint: 'What to search for and which jobs to filter out automatically.' },
-  { value: 'companies', label: 'Companies', hint: 'Company career pages scanned twice a day.' },
-  { value: 'goals', label: 'Goals & automation', hint: 'Weekly goals, AI evaluation budget, search schedule and follow-up timing.' },
-  { value: 'profiles', label: 'Profiles', hint: 'Job-site profiles recruiters search. Keep them fresh.' },
-  { value: 'account', label: 'CVs & Gmail', hint: 'Your CVs and the Gmail connection.' },
-  { value: 'system', label: 'System', hint: 'Service health, job sources and background task logs.' },
+const TABS: { value: Tab; label: string; hint: string; Icon: LucideIcon }[] = [
+  { value: 'search', label: 'Job search', Icon: ListFilter, hint: 'What to search for and which jobs to filter out automatically.' },
+  { value: 'companies', label: 'Companies', Icon: Building2, hint: 'Company career pages scanned twice a day.' },
+  { value: 'goals', label: 'Goals & automation', Icon: SlidersHorizontal, hint: 'Weekly goals, AI evaluation budget, search schedule and quiet hours.' },
+  { value: 'profiles', label: 'Profiles', Icon: UserCircle2, hint: 'Job-site profiles recruiters search. Keep them fresh.' },
+  { value: 'account', label: 'CVs & email', Icon: Mail, hint: 'Your CVs, the Gmail connection and how Email HR works.' },
+  { value: 'system', label: 'System', Icon: Activity, hint: 'Service health, job sources and background task logs.' },
 ]
 
 function Form({ sections }: { sections: Section[] }) {
@@ -82,35 +84,48 @@ export function SettingsPage() {
   return (
     <>
       <PageHeader title="Settings" description={TABS.find((t) => t.value === tab)!.hint} />
-      <Tabs value={tab} onValueChange={(v) => setParams(v === 'search' ? {} : { tab: v }, { replace: true })}>
-        <TabsList className="h-auto flex-wrap">
-          {TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value}>
-              {t.label}
+      <Tabs orientation="vertical" value={tab} onValueChange={(v) => setParams(v === 'search' ? {} : { tab: v }, { replace: true })} className="gap-6 lg:flex-row lg:gap-10">
+        <TabsList variant="line" className="h-auto w-full shrink-0 flex-row justify-start gap-1 overflow-x-auto p-0 lg:sticky lg:top-6 lg:w-52 lg:flex-col lg:items-stretch lg:self-start lg:overflow-visible">
+          {TABS.map(({ value, label, Icon }) => (
+            <TabsTrigger
+              key={value}
+              value={value}
+              className="h-9 flex-none justify-start gap-2.5 rounded-lg px-3 data-active:bg-muted data-active:font-semibold lg:flex-none group-data-[variant=line]/tabs-list:data-active:bg-muted dark:group-data-[variant=line]/tabs-list:data-active:bg-muted after:hidden"
+            >
+              <Icon aria-hidden />
+              {label}
             </TabsTrigger>
           ))}
         </TabsList>
-        <TabsContent value="search" className="mt-4 grid gap-6">
-          <Form sections={['query', 'prefilter']} />
-          <RejectsCard />
-        </TabsContent>
-        <TabsContent value="companies" className="mt-4">
-          <CompaniesPanel />
-        </TabsContent>
-        <TabsContent value="goals" className="mt-4">
-          <Form sections={['targets', 'evaluation', 'schedules', 'followups']} />
-        </TabsContent>
-        <TabsContent value="profiles" className="mt-4">
-          <ProfilesPanel />
-        </TabsContent>
-        <TabsContent value="account" className="mt-4">
-          <SetupPanel />
-        </TabsContent>
-        <TabsContent value="system" className="mt-4 grid gap-6">
-          <HealthCard />
-          <SourcesPanel />
-          <RunLogsPanel />
-        </TabsContent>
+        <div className="min-w-0 max-w-4xl flex-1">
+          <TabsContent value="search" className="grid">
+            <Form sections={['query', 'prefilter']} />
+            <div className="pt-7">
+              <RejectsCard />
+            </div>
+          </TabsContent>
+          <TabsContent value="companies">
+            <CompaniesPanel />
+          </TabsContent>
+          <TabsContent value="goals">
+            <Form sections={['targets', 'evaluation', 'schedules', 'notifications']} />
+          </TabsContent>
+          <TabsContent value="profiles">
+            <ProfilesPanel />
+          </TabsContent>
+          <TabsContent value="account" className="grid gap-6">
+            <SetupPanel />
+            <ResumeCard />
+            <div className="-mt-7">
+              <Form sections={['reachout']} />
+            </div>
+          </TabsContent>
+          <TabsContent value="system" className="grid gap-6">
+            <HealthCard />
+            <SourcesPanel />
+            <RunLogsPanel />
+          </TabsContent>
+        </div>
       </Tabs>
     </>
   )

@@ -1,4 +1,4 @@
-import { BarChart3, Briefcase, Home, Inbox, KanbanSquare, Send, Settings, type LucideIcon } from 'lucide-react'
+import { BarChart3, Briefcase, Home, Inbox, KanbanSquare, Settings, type LucideIcon } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import { cn } from '@/lib/utils'
 import { useNavCounts, type NavCounts } from './nav-counts'
@@ -14,7 +14,6 @@ const NAV: Group[] = [
     items: [
       { to: '/leads', label: 'Jobs', hint: 'Review new matches and apply', Icon: Briefcase, count: 'toApply' },
       { to: '/replies', label: 'Inbox', hint: 'Recruiter mail and status updates to confirm', Icon: Inbox, count: 'proposals' },
-      { to: '/outreach', label: 'Follow-ups', hint: 'Messages to send', Icon: Send, count: 'followUps' },
     ],
   },
   {
@@ -35,6 +34,7 @@ function NavItem({ item: { to, label, hint, Icon, end, count }, counts, onNaviga
       to={to}
       end={end}
       title={hint}
+      data-tour={`nav-${to}`}
       onClick={onNavigate}
       className={({ isActive }) =>
         cn(

@@ -433,3 +433,13 @@ def test_make_event_helper_is_used(db):
     app = make_app(db, make_lead(db), AppStatus.applied)
     make_event(db, app, AppStatus.applied)
     assert len(events_of(db, app)) == 1
+
+
+def test_proposals_carry_the_gmail_link_and_the_apply_link_of_their_job(client, db):
+    lead = make_lead(db, apply_url="https://careers.example.com/apply/1", canonical_url="https://board.example.com/1")
+    p = make_proposal(db, type=ProposalType.needs_eyes, lead_id=lead.id, payload={"message_id": "<m1@mail.example>"})
+    bare = make_proposal(db, type=ProposalType.needs_eyes, payload={})
+    by_id = {x["id"]: x for x in client.get("/api/proposals").json()}
+    assert by_id[p.id]["email_url"] == "https://mail.google.com/mail/u/0/#search/rfc822msgid:m1%40mail.example"
+    assert by_id[p.id]["apply_url"] == "https://careers.example.com/apply/1"
+    assert by_id[bare.id]["email_url"] is None and by_id[bare.id]["apply_url"] is None

@@ -7,6 +7,8 @@ from jobhunter.db import get_engine, migrate
 
 # The API lifespan starts the real scheduler unless told not to; no test wants that.
 os.environ.setdefault("JOBHUNTER_NO_SCHEDULER", "1")
+# Never spend real model tokens from tests: lean evaluation tests point these at tests/fixtures fakes.
+os.environ["JOBHUNTER_CODEX_BIN"] = "/nonexistent/codex-disabled-in-tests"
 
 
 @pytest.fixture()

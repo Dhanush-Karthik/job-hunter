@@ -1845,6 +1845,58 @@
         }
       }
     },
+    "/api/nightly/run": {
+      "post": {
+        "tags": [
+          "runs"
+        ],
+        "summary": "Run Nightly",
+        "description": "Run tonight's funnel now: start = fresh intake then lean evaluation; evaluate = skip intake. Idempotent per\nIST date (a second call the same day queues nothing).",
+        "operationId": "runNightly",
+        "parameters": [
+          {
+            "name": "stage",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "start",
+                "evaluate"
+              ],
+              "type": "string",
+              "default": "start",
+              "title": "Stage"
+            }
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RunOut"
+                  },
+                  "title": "Response Runnightly"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/today": {
       "get": {
         "tags": [
@@ -2723,6 +2775,372 @@
           }
         }
       }
+    },
+    "/api/reachout/status": {
+      "get": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Status",
+        "operationId": "getReachoutStatus",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReachoutStatus"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachout/resume": {
+      "put": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Put Resume",
+        "operationId": "putReachoutResume",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResumeUpload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResumeStatus"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Delete Resume",
+        "operationId": "deleteReachoutResume",
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          }
+        }
+      }
+    },
+    "/api/reachout/jobs/{lead_id}": {
+      "get": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Job Reachout",
+        "description": "The Email-HR card for one job: candidate addresses found so far, the written email, attachments, history.",
+        "operationId": "getJobReachout",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lead Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobReachout"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachout/jobs/{lead_id}/find": {
+      "post": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Find Hr Emails",
+        "description": "Look the HR address up on the web (job page, company site, common addresses) and remember what was found.",
+        "operationId": "findJobHrEmails",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lead Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobReachout"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachout/jobs/{lead_id}/draft": {
+      "post": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Draft",
+        "description": "The email text for this job (and any extra jobs of the same company). Nothing is sent.",
+        "operationId": "draftJobEmail",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lead Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReachoutDraftRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmailDraft"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachout/jobs/{lead_id}/send": {
+      "post": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Send",
+        "description": "Send (or save as a Gmail draft) the email. Needs confirm=true; refuses repeats and over-the-cap sends.",
+        "operationId": "sendJobEmail",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Lead Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReachoutSend"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HrEmailOut"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachout/emails": {
+      "get": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "List Emails",
+        "operationId": "listReachoutEmails",
+        "parameters": [
+          {
+            "name": "company",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Company"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/HrEmailOut"
+                  },
+                  "title": "Response Listreachoutemails"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reachout/contacts/{contact_id}": {
+      "delete": {
+        "tags": [
+          "reachout"
+        ],
+        "summary": "Delete Contact",
+        "operationId": "deleteHrContact",
+        "parameters": [
+          {
+            "name": "contact_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "title": "Contact Id"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -3373,6 +3791,101 @@
         ],
         "title": "CvUpload"
       },
+      "EmailCandidate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "job_post",
+              "recruiter",
+              "posting_page",
+              "saved",
+              "company_site",
+              "guess"
+            ],
+            "title": "Source"
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "where it came from, in words"
+          },
+          "confidence": {
+            "type": "string",
+            "enum": [
+              "high",
+              "medium",
+              "low"
+            ],
+            "title": "Confidence"
+          },
+          "contact_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Contact Id",
+            "description": "set when saved for this company"
+          },
+          "last_emailed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Emailed At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email",
+          "source",
+          "label",
+          "confidence"
+        ],
+        "title": "EmailCandidate"
+      },
+      "EmailDraft": {
+        "properties": {
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "title": "Body"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subject",
+          "body"
+        ],
+        "title": "EmailDraft"
+      },
       "Evaluation": {
         "properties": {
           "id": {
@@ -3447,6 +3960,83 @@
           "created_at"
         ],
         "title": "Evaluation"
+      },
+      "EvaluatorSettings": {
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "lean",
+              "full"
+            ],
+            "title": "Mode",
+            "description": "full = career-ops A-H report (slow, many tokens)",
+            "default": "lean"
+          },
+          "engines": {
+            "items": {
+              "type": "string",
+              "enum": [
+                "codex",
+                "claude"
+              ]
+            },
+            "type": "array",
+            "title": "Engines",
+            "description": "tried in order",
+            "default": [
+              "codex",
+              "claude"
+            ]
+          },
+          "codex_model": {
+            "type": "string",
+            "title": "Codex Model",
+            "default": "gpt-6.2-sol"
+          },
+          "codex_effort": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Codex Effort",
+            "default": "low"
+          },
+          "claude_model": {
+            "type": "string",
+            "title": "Claude Model",
+            "default": "sonnet"
+          },
+          "claude_effort": {
+            "type": "string",
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Claude Effort",
+            "default": "low"
+          },
+          "timeout_seconds": {
+            "type": "integer",
+            "maximum": 900.0,
+            "minimum": 30.0,
+            "title": "Timeout Seconds",
+            "default": 180
+          },
+          "jd_max_chars": {
+            "type": "integer",
+            "maximum": 30000.0,
+            "minimum": 1000.0,
+            "title": "Jd Max Chars",
+            "default": 7000
+          }
+        },
+        "type": "object",
+        "title": "EvaluatorSettings",
+        "description": "Lean evaluation: one structured-JSON call per posting, no tools, no web research."
       },
       "EventOut": {
         "properties": {
@@ -3684,6 +4274,91 @@
         ],
         "title": "Health"
       },
+      "HrEmailOut": {
+        "properties": {
+          "id": {
+            "type": "integer",
+            "title": "Id"
+          },
+          "company": {
+            "type": "string",
+            "title": "Company"
+          },
+          "to_email": {
+            "type": "string",
+            "title": "To Email"
+          },
+          "to_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Name"
+          },
+          "subject": {
+            "type": "string",
+            "title": "Subject"
+          },
+          "lead_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "title": "Lead Ids"
+          },
+          "attachment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "sent",
+              "drafted",
+              "failed"
+            ],
+            "title": "State"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "company",
+          "to_email",
+          "subject",
+          "lead_ids",
+          "state",
+          "created_at"
+        ],
+        "title": "HrEmailOut"
+      },
       "Insight": {
         "properties": {
           "kind": {
@@ -3755,6 +4430,92 @@
         },
         "type": "object",
         "title": "IntakeRequest"
+      },
+      "JobReachout": {
+        "properties": {
+          "lead_id": {
+            "type": "integer",
+            "title": "Lead Id"
+          },
+          "company": {
+            "type": "string",
+            "title": "Company"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id"
+          },
+          "status": {
+            "$ref": "#/components/schemas/ReachoutStatus"
+          },
+          "candidates": {
+            "items": {
+              "$ref": "#/components/schemas/EmailCandidate"
+            },
+            "type": "array",
+            "title": "Candidates"
+          },
+          "searched_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Searched At",
+            "description": "when the web lookup last ran; null = never"
+          },
+          "other_jobs": {
+            "items": {
+              "$ref": "#/components/schemas/ReachoutJob"
+            },
+            "type": "array",
+            "title": "Other Jobs",
+            "description": "other open jobs at this company",
+            "default": []
+          },
+          "draft": {
+            "$ref": "#/components/schemas/EmailDraft"
+          },
+          "attach_default": {
+            "type": "string",
+            "enum": [
+              "tailored",
+              "base",
+              "none"
+            ],
+            "title": "Attach Default"
+          },
+          "has_tailored_cv": {
+            "type": "boolean",
+            "title": "Has Tailored Cv"
+          },
+          "history": {
+            "items": {
+              "$ref": "#/components/schemas/HrEmailOut"
+            },
+            "type": "array",
+            "title": "History",
+            "description": "emails already sent or drafted for this job",
+            "default": []
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_id",
+          "company",
+          "job_id",
+          "status",
+          "candidates",
+          "draft",
+          "attach_default",
+          "has_tailored_cv"
+        ],
+        "title": "JobReachout",
+        "description": "Everything the job page's \"Email HR\" card needs, with the email already written."
       },
       "LeadDetail": {
         "properties": {
@@ -3918,6 +4679,35 @@
             ],
             "title": "Eval Grade"
           },
+          "call_chance": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Chance",
+            "description": "lean evaluation's interview-call estimate"
+          },
+          "pick_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pick Reason",
+            "description": "lean evaluation's one-sentence verdict"
+          },
           "is_live": {
             "anyOf": [
               {
@@ -3975,6 +4765,30 @@
               }
             ],
             "title": "Application Id"
+          },
+          "exp_fit": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "stretch",
+              "above",
+              "unknown"
+            ],
+            "title": "Exp Fit",
+            "description": "stated experience vs the owner's range: ok, stretch (top of it), above (asks for more)",
+            "default": "unknown"
+          },
+          "source_email_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source Email Url",
+            "description": "Gmail link to the email this lead came from (recruiter outreach)"
           },
           "jd_text": {
             "anyOf": [
@@ -4215,6 +5029,35 @@
             ],
             "title": "Eval Grade"
           },
+          "call_chance": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "high",
+                  "medium",
+                  "low"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Call Chance",
+            "description": "lean evaluation's interview-call estimate"
+          },
+          "pick_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pick Reason",
+            "description": "lean evaluation's one-sentence verdict"
+          },
           "is_live": {
             "anyOf": [
               {
@@ -4272,6 +5115,18 @@
               }
             ],
             "title": "Application Id"
+          },
+          "exp_fit": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "stretch",
+              "above",
+              "unknown"
+            ],
+            "title": "Exp Fit",
+            "description": "stated experience vs the owner's range: ok, stretch (top of it), above (asks for more)",
+            "default": "unknown"
           }
         },
         "type": "object",
@@ -4345,6 +5200,84 @@
           "title"
         ],
         "title": "ManualLead"
+      },
+      "NightlySettings": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "time": {
+            "type": "string",
+            "title": "Time",
+            "description": "HH:MM local",
+            "default": "00:00"
+          },
+          "candidates": {
+            "type": "integer",
+            "maximum": 150.0,
+            "minimum": 1.0,
+            "title": "Candidates",
+            "description": "leads evaluated per night",
+            "default": 40
+          },
+          "max_age_hours": {
+            "type": "integer",
+            "maximum": 336.0,
+            "minimum": 24.0,
+            "title": "Max Age Hours",
+            "description": "older postings are never evaluated",
+            "default": 72
+          },
+          "min_quick_score": {
+            "type": "number",
+            "maximum": 1.0,
+            "minimum": 0.0,
+            "title": "Min Quick Score",
+            "default": 0.35
+          },
+          "max_exp_min": {
+            "type": "number",
+            "maximum": 15.0,
+            "minimum": 0.0,
+            "title": "Max Exp Min",
+            "description": "posts asking more years than this are never evaluated or picked",
+            "default": 3
+          },
+          "per_company": {
+            "type": "integer",
+            "maximum": 10.0,
+            "minimum": 1.0,
+            "title": "Per Company",
+            "default": 2
+          },
+          "pick_min_eval": {
+            "type": "number",
+            "maximum": 5.0,
+            "minimum": 1.0,
+            "title": "Pick Min Eval",
+            "default": 3.5
+          },
+          "picks_max": {
+            "type": "integer",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Picks Max",
+            "default": 20
+          },
+          "picks_window_hours": {
+            "type": "integer",
+            "maximum": 168.0,
+            "minimum": 12.0,
+            "title": "Picks Window Hours",
+            "description": "evaluations newer than this can be picks",
+            "default": 48
+          }
+        },
+        "type": "object",
+        "title": "NightlySettings",
+        "description": "Midnight run: fresh intake, then lean evaluation of the best new leads, then Today's picks."
       },
       "OutreachKind": {
         "type": "string",
@@ -4809,6 +5742,30 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "email_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email Url",
+            "description": "Gmail link to the email behind this proposal"
+          },
+          "apply_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Apply Url",
+            "description": "where to apply, when the proposal is linked to a job with a link"
           }
         },
         "type": "object",
@@ -4887,6 +5844,382 @@
         ],
         "title": "QueryMatrix"
       },
+      "ReachoutDraftRequest": {
+        "properties": {
+          "to_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Name"
+          },
+          "extra_lead_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 7,
+            "title": "Extra Lead Ids",
+            "description": "other open jobs at the same company to list too",
+            "default": []
+          }
+        },
+        "type": "object",
+        "title": "ReachoutDraftRequest"
+      },
+      "ReachoutJob": {
+        "properties": {
+          "lead_id": {
+            "type": "integer",
+            "title": "Lead Id"
+          },
+          "job_id": {
+            "type": "string",
+            "title": "Job Id",
+            "description": "the job board's own id when known, else JH-<lead id>"
+          },
+          "title": {
+            "type": "string",
+            "title": "Title"
+          },
+          "location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Location"
+          },
+          "url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Url"
+          },
+          "source": {
+            "$ref": "#/components/schemas/Source"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AppStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "has_tailored_cv": {
+            "type": "boolean",
+            "title": "Has Tailored Cv",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "lead_id",
+          "job_id",
+          "title",
+          "source"
+        ],
+        "title": "ReachoutJob"
+      },
+      "ReachoutMe": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 120,
+            "title": "Name",
+            "default": ""
+          },
+          "phone": {
+            "type": "string",
+            "maxLength": 40,
+            "title": "Phone",
+            "default": ""
+          },
+          "linkedin": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Linkedin",
+            "default": ""
+          },
+          "github": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Github",
+            "default": ""
+          },
+          "headline": {
+            "type": "string",
+            "maxLength": 200,
+            "title": "Headline",
+            "description": "one line used as {role}, e.g. 'Java backend engineer'",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "ReachoutMe",
+        "description": "Who signs the email. Blank fields fall back to data/careerops/config/profile.yml (candidate / narrative)."
+      },
+      "ReachoutSend": {
+        "properties": {
+          "to_email": {
+            "type": "string",
+            "maxLength": 254,
+            "minLength": 3,
+            "title": "To Email"
+          },
+          "to_name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "To Name"
+          },
+          "extra_lead_ids": {
+            "items": {
+              "type": "integer"
+            },
+            "type": "array",
+            "maxItems": 7,
+            "title": "Extra Lead Ids",
+            "default": []
+          },
+          "subject": {
+            "type": "string",
+            "maxLength": 300,
+            "minLength": 1,
+            "title": "Subject"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 20000,
+            "minLength": 1,
+            "title": "Body"
+          },
+          "attach": {
+            "type": "string",
+            "enum": [
+              "tailored",
+              "base",
+              "none"
+            ],
+            "title": "Attach",
+            "default": "tailored"
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "send",
+              "draft"
+            ],
+            "title": "Mode",
+            "default": "send"
+          },
+          "confirm": {
+            "type": "boolean",
+            "title": "Confirm",
+            "description": "must be true: the owner pressed the button",
+            "default": false
+          },
+          "force": {
+            "type": "boolean",
+            "title": "Force",
+            "description": "send even if this address was emailed inside the cool-down",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "to_email",
+          "subject",
+          "body"
+        ],
+        "title": "ReachoutSend"
+      },
+      "ReachoutSettings": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "daily_cap": {
+            "type": "integer",
+            "maximum": 200.0,
+            "minimum": 1.0,
+            "title": "Daily Cap",
+            "description": "emails sent per rolling 24 h; a new Gmail account that blasts recruiters gets flagged",
+            "default": 25
+          },
+          "cooldown_days": {
+            "type": "integer",
+            "maximum": 180.0,
+            "minimum": 0.0,
+            "title": "Cooldown Days",
+            "description": "one email per address per this many days unless forced",
+            "default": 14
+          },
+          "max_jobs": {
+            "type": "integer",
+            "maximum": 8.0,
+            "minimum": 1.0,
+            "title": "Max Jobs",
+            "description": "jobs listed in one email",
+            "default": 8
+          },
+          "default_attach": {
+            "type": "string",
+            "enum": [
+              "tailored",
+              "base",
+              "none"
+            ],
+            "title": "Default Attach",
+            "description": "tailored = the job's approved CV PDF when it exists, else the uploaded resume",
+            "default": "tailored"
+          },
+          "look_up_web": {
+            "type": "boolean",
+            "title": "Look Up Web",
+            "description": "open the job page and the company's careers/contact pages to find an HR address",
+            "default": true
+          },
+          "guess_addresses": {
+            "type": "boolean",
+            "title": "Guess Addresses",
+            "description": "offer careers@ / hr@ ... at the company domain as last-resort suggestions",
+            "default": true
+          },
+          "guess_prefixes": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "maxItems": 10,
+            "title": "Guess Prefixes",
+            "default": [
+              "careers",
+              "hr",
+              "jobs",
+              "talent",
+              "recruitment"
+            ]
+          },
+          "subject_one": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Subject One",
+            "description": "subject for one job; {title} {job_id} {company} {name} ...",
+            "default": "Application for {title} (Job ID {job_id}) - {name}"
+          },
+          "subject_many": {
+            "type": "string",
+            "maxLength": 300,
+            "title": "Subject Many",
+            "description": "subject when several jobs of one company are listed",
+            "default": "Applying for {count} roles at {company} - {name}"
+          },
+          "body": {
+            "type": "string",
+            "maxLength": 6000,
+            "title": "Body",
+            "description": "{greeting} {opening} {jobs} {role} {company} {title} {job_id} {count} {name} {phone} {linkedin} {github} {signature} {location} {url}",
+            "default": "{greeting}\n\n{opening}\n{jobs}\n\nI am a {role}. My resume is attached; the roles above match my recent work, and I would be glad to share more detail or speak with the hiring team.\n\nThank you for your time.\n\nRegards,\n{signature}"
+          },
+          "me": {
+            "$ref": "#/components/schemas/ReachoutMe",
+            "default": {
+              "name": "",
+              "phone": "",
+              "linkedin": "",
+              "github": "",
+              "headline": ""
+            }
+          }
+        },
+        "type": "object",
+        "title": "ReachoutSettings",
+        "description": "Emailing a job's HR from the job page. Nothing is ever sent without the owner pressing Send."
+      },
+      "ReachoutStatus": {
+        "properties": {
+          "enabled": {
+            "type": "boolean",
+            "title": "Enabled",
+            "default": true
+          },
+          "gmail_ready": {
+            "type": "boolean",
+            "title": "Gmail Ready"
+          },
+          "sender": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sender"
+          },
+          "sent_today": {
+            "type": "integer",
+            "title": "Sent Today"
+          },
+          "daily_cap": {
+            "type": "integer",
+            "title": "Daily Cap"
+          },
+          "cooldown_days": {
+            "type": "integer",
+            "title": "Cooldown Days"
+          },
+          "resume": {
+            "$ref": "#/components/schemas/ResumeStatus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "gmail_ready",
+          "sent_today",
+          "daily_cap",
+          "cooldown_days",
+          "resume"
+        ],
+        "title": "ReachoutStatus"
+      },
       "RejectAuditRow": {
         "properties": {
           "reason": {
@@ -4947,6 +6280,74 @@
           "samples"
         ],
         "title": "ResponseTimes"
+      },
+      "ResumeStatus": {
+        "properties": {
+          "present": {
+            "type": "boolean",
+            "title": "Present"
+          },
+          "filename": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Filename"
+          },
+          "size_kb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size Kb"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "present"
+        ],
+        "title": "ResumeStatus"
+      },
+      "ResumeUpload": {
+        "properties": {
+          "filename": {
+            "type": "string",
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Filename"
+          },
+          "data_base64": {
+            "type": "string",
+            "minLength": 8,
+            "title": "Data Base64"
+          }
+        },
+        "type": "object",
+        "required": [
+          "filename",
+          "data_base64"
+        ],
+        "title": "ResumeUpload"
       },
       "ResumeVariant": {
         "type": "string",
@@ -5292,6 +6693,66 @@
             "type": "object",
             "title": "Source Weights",
             "default": {}
+          },
+          "evaluator": {
+            "$ref": "#/components/schemas/EvaluatorSettings",
+            "default": {
+              "mode": "lean",
+              "engines": [
+                "codex",
+                "claude"
+              ],
+              "codex_model": "gpt-6.2-sol",
+              "codex_effort": "low",
+              "claude_model": "sonnet",
+              "claude_effort": "low",
+              "timeout_seconds": 180,
+              "jd_max_chars": 7000
+            }
+          },
+          "nightly": {
+            "$ref": "#/components/schemas/NightlySettings",
+            "default": {
+              "enabled": true,
+              "time": "00:00",
+              "candidates": 40,
+              "max_age_hours": 72,
+              "min_quick_score": 0.35,
+              "max_exp_min": 3.0,
+              "per_company": 2,
+              "pick_min_eval": 3.5,
+              "picks_max": 20,
+              "picks_window_hours": 48
+            }
+          },
+          "reachout": {
+            "$ref": "#/components/schemas/ReachoutSettings",
+            "default": {
+              "enabled": true,
+              "daily_cap": 25,
+              "cooldown_days": 14,
+              "max_jobs": 8,
+              "default_attach": "tailored",
+              "look_up_web": true,
+              "guess_addresses": true,
+              "guess_prefixes": [
+                "careers",
+                "hr",
+                "jobs",
+                "talent",
+                "recruitment"
+              ],
+              "subject_one": "Application for {title} (Job ID {job_id}) - {name}",
+              "subject_many": "Applying for {count} roles at {company} - {name}",
+              "body": "{greeting}\n\n{opening}\n{jobs}\n\nI am a {role}. My resume is attached; the roles above match my recent work, and I would be glad to share more detail or speak with the hiring team.\n\nThank you for your time.\n\nRegards,\n{signature}",
+              "me": {
+                "github": "",
+                "headline": "",
+                "linkedin": "",
+                "name": "",
+                "phone": ""
+              }
+            }
           }
         },
         "type": "object",

@@ -190,6 +190,9 @@ class Evaluation(SQLModel, table=True):
     live_verified_at: datetime | None = None
     run_id: int | None = Field(default=None, foreign_key="runs.id")
     created_at: datetime = Field(default_factory=utcnow)
+    call_chance: str | None = None  # lean evaluation: high | medium | low
+    verdict: str | None = None  # lean evaluation: one-sentence reason shown on Today's picks
+    engine: str | None = None  # "codex:<model>" or "claude:<model>"
 
 
 class Application(SQLModel, table=True):
@@ -251,6 +254,50 @@ class Outreach(SQLModel, table=True):
     snoozed_until: datetime | None = None
     sent_at: datetime | None = None
     created_at: datetime = Field(default_factory=utcnow)
+
+
+class HrContact(SQLModel, table=True):
+    """An HR / recruiter mailbox the owner added for a company, for direct reach-out emails."""
+
+    __tablename__ = "hr_contacts"
+    __table_args__ = (UniqueConstraint("company_key", "email"),)
+
+    id: int | None = Field(default=None, primary_key=True)
+    company: str = Field(index=True)  # display name, as tracked in portals.yml
+    company_key: str = Field(index=True)  # casefolded company, so renames of case never duplicate
+    email: str
+    name: str | None = None
+    role: str | None = None  # e.g. "Talent Acquisition"
+    created_at: datetime = Field(default_factory=utcnow)
+
+
+class HrLookup(SQLModel, table=True):
+    """Cached result of the HR-email search for one job (posting page, company site, guesses)."""
+
+    __tablename__ = "hr_lookups"
+
+    lead_id: int = Field(primary_key=True, foreign_key="leads.id")
+    found: list[dict[str, Any]] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    searched_at: datetime = Field(default_factory=utcnow)
+
+
+class HrEmail(SQLModel, table=True):
+    """Log of every reach-out email: sent, saved as a Gmail draft, or failed."""
+
+    __tablename__ = "hr_emails"
+
+    id: int | None = Field(default=None, primary_key=True)
+    contact_id: int | None = Field(default=None, foreign_key="hr_contacts.id", index=True)
+    company: str = Field(index=True)
+    to_email: str
+    to_name: str | None = None
+    subject: str
+    body: str
+    lead_ids: list[int] = Field(default_factory=list, sa_column=Column(JSON, nullable=False))
+    attachment: str | None = None  # file name attached, None = no attachment
+    state: str = Field(index=True)  # sent | drafted | failed
+    error: str | None = None
+    created_at: datetime = Field(default_factory=utcnow, index=True)
 
 
 class Profile(SQLModel, table=True):

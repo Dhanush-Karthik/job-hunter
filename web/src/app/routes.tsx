@@ -9,7 +9,6 @@ const JobDetailPage = lazy(() => import('@/pages/job/job-page').then((m) => ({ d
 const TrackerPage = lazy(() => import('@/pages/tracker/tracker-page').then((m) => ({ default: m.TrackerPage })))
 const RepliesPage = lazy(() => import('@/pages/replies/replies-page').then((m) => ({ default: m.RepliesPage })))
 const SettingsPage = lazy(() => import('@/pages/settings/settings-page').then((m) => ({ default: m.SettingsPage })))
-const OutreachPage = lazy(() => import('@/pages/outreach/outreach-page').then((m) => ({ default: m.OutreachPage })))
 const AnalyticsPage = lazy(() => import('@/pages/analytics/analytics-page').then((m) => ({ default: m.AnalyticsPage })))
 
 function NotFound() {
@@ -34,7 +33,9 @@ export function AppRoutes() {
         <Route path="jobs/:id" element={<JobDetailPage />} />
         <Route path="tracker" element={<TrackerPage />} />
         <Route path="replies" element={<RepliesPage />} />
-        <Route path="outreach" element={<OutreachPage />} />
+        {/* Emailing HR now lives on each job page ("Email HR" card); the old Reach out and Follow-ups pages are gone. */}
+        <Route path="reachout" element={<Navigate to="/leads" replace />} />
+        <Route path="outreach" element={<Navigate to="/leads" replace />} />
         <Route path="analytics" element={<AnalyticsPage />} />
         <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFound />} />

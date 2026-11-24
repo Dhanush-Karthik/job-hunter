@@ -1,8 +1,7 @@
-import { CheckCircle2, ChevronRight, ExternalLink, FileCheck2, Inbox, MailQuestion, RefreshCw, Send, Sparkles, UserPlus, type LucideIcon } from 'lucide-react'
+import { CheckCircle2, ChevronRight, ExternalLink, FileCheck2, Inbox, MailQuestion, RefreshCw, Sparkles, type LucideIcon } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import type { ActionItem } from '@/api/client'
 import { Button } from '@/components/ui/button'
-import { dueLabel } from '@/components/time'
 import { cn } from '@/lib/utils'
 import { usePatchProfile } from '@/pages/settings/use-settings'
 
@@ -69,21 +68,6 @@ function buildTasks(actions: ActionItem[], toApply: number): Task[] {
       cta: 'Confirm',
     })
 
-  const followUps = of('follow_up')
-  if (followUps.length) {
-    const oldest = followUps.map((a) => a.due_at).filter((d): d is string => !!d).sort()[0]
-    const due = oldest ? dueLabel(oldest) : null
-    tasks.push({
-      key: 'follow_up',
-      Icon: Send,
-      urgent: due?.overdue,
-      title: `${plural(followUps.length, 'follow-up')} to send`,
-      detail: [names(followUps), due?.overdue ? `oldest ${due.text.toLowerCase()}` : null].filter(Boolean).join(' · '),
-      href: '/outreach',
-      cta: 'Send',
-    })
-  }
-
   const cvs = of('cv_review')
   if (cvs.length) {
     const one = cvs.length === 1 && cvs[0].lead_id != null
@@ -99,10 +83,6 @@ function buildTasks(actions: ActionItem[], toApply: number): Task[] {
       href: '/leads?tab=apply',
       cta: 'Apply',
     })
-
-  const referrals = of('referral')
-  if (referrals.length)
-    tasks.push({ key: 'referral', Icon: UserPlus, title: `${plural(referrals.length, 'referral request')} to send`, detail: names(referrals), href: '/outreach?tab=referrals', cta: 'Send' })
 
   for (const p of of('profile_refresh'))
     tasks.push({

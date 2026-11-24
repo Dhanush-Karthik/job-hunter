@@ -1,7 +1,8 @@
 """Quick score, deterministic, in [0, 1]. Orders every lead; the top N get the LLM evaluation.
 
-    base = .28*kw + .20*role + .15*fresh + .05*hot + .20*title + .07*exp + .03*ctc + .02*iam
+    base = .28*kw + .20*role + .15*fresh + .08*hot + .20*title + .07*exp + .03*ctc + .02*iam
            - .06*seniority - .06*mixed
+    base *= exp_factor                                  # postings asking more years than the owner has rank lower
     score = clamp(base * source_weight)                 # settings.source_weights[source], default 1.0
     if is_inbound: score = clamp(score + 0.30)          # unchanged recruiter boost, after source weighting
 
@@ -12,7 +13,8 @@
         of CV overlap. Springboot, back-end, CIAM and identity & access management aliases count.
   role  P1 = 1.0, P2 = 0.6, other = 0.15.
   fresh 1.0 up to 48 h old, then linear decay to 0 at 9 days (about 7 days of decay). Age is measured from
-        posted_at, or found_at when the posting has no date. hot = 1 before 48 h, otherwise 0.
+        posted_at, or found_at when the posting has no date. hot = 1 when posted within 24 h (date-only postings:
+        dated today or yesterday IST, see pipeline.freshness), .5 within 48 h, otherwise 0.
   exp   1 for stated experience overlapping settings.prefilter.exp_years (owner: 2-4), .5 for inferred title
         levels that overlap, 0 for unknown/outside that range. Uses the shared experience parser.
   ctc   1 when stated minimum pay is at least settings.prefilter.ctc_min_lpa; otherwise 0. Uses the shared
@@ -21,7 +23,10 @@
   seniority 1 for lead, senior/sr (including senior associate), staff, principal, architect or manager titles.
   mixed 1 for .NET/Angular titles or full-stack titles without backend/Spring/microservices emphasis.
 
-Experience and pay bonuses use title/JD evidence: the existing scorer caller does not pass structured fields.
+exp_factor 1 when the stated minimum is at most (owner's top years - 1); minus 15% per extra year of minimum
+        (title-inferred levels: 7.5%), never below 40%. See pipeline.experience.exp_factor.
+Experience uses the caller's parsed ExpInfo (structured field, title, JD); without one it parses title/JD itself.
+Pay bonuses use title/JD evidence.
 All components are bounded; clamp means [0, 1], and rounding is to four decimals. No location bonus: the
 prefilter already admits the owner's cities and remote roles, and uncertain locations remain recall-first.
 
@@ -36,7 +41,8 @@ from datetime import datetime
 from jobhunter import paths
 from jobhunter.models import RoleFamily, Source
 from jobhunter.pipeline import ctc
-from jobhunter.pipeline.experience import parse_experience
+from jobhunter.pipeline.experience import ExpInfo, exp_factor, parse_experience
+from jobhunter.pipeline.freshness import within_24h
 from jobhunter.pipeline.normalize import as_utc
 from jobhunter.pipeline.prefilter import positive_terms
 from jobhunter.schemas import Settings
@@ -86,8 +92,7 @@ class Scorer:
         hits = 2 * len(head) + len(body)
         return hits / (hits + self.target)
 
-    def _experience_fit(self, title: str, description: str | None) -> float:
-        exp = parse_experience(title, description, None, None)
+    def _experience_fit(self, exp: ExpInfo) -> float:
         low, high = self.exp_years
         if exp.flags or exp.exp_min is None or exp.exp_min > high:
             return 0.0
@@ -107,13 +112,16 @@ class Scorer:
         posted_at: datetime | None,
         found_at: datetime,
         now: datetime,
+        exp: ExpInfo | None = None,
     ) -> float:
+        exp = exp or parse_experience(title, description, None, None)
         ref = as_utc(posted_at) or as_utc(found_at)
         age_h = max(0.0, (as_utc(now) - ref).total_seconds() / 3600)
         if age_h < _FRESH_BOOST_HOURS:
             fresh = 1.0
         else:
             fresh = max(0.0, 1 - (age_h / 24 - 2) / (_FRESH_ZERO_DAYS - 2))
+        hot = 1.0 if within_24h(posted_at, found_at, now) else .5 if age_h < _FRESH_BOOST_HOURS else 0.0
         title_fit = min(1.0, .35 * bool(_JAVA.search(title)) + .30 * bool(_SPRING.search(title))
                         + .35 * bool(_BACKEND.search(title)) + .40 * bool(_IAM.search(title)))
         seniority = bool(_SENIORITY.search(title))
@@ -123,9 +131,10 @@ class Scorer:
         ctc_fit = salary_min is not None and salary_min >= self.ctc_floor
         iam_fit = bool(_IAM.search(" ".join([title, *skills, description or ""])))
         base = (.28 * self.keyword_overlap(title, skills, description) + .20 * _ROLE_WEIGHT[role_family]
-                + .15 * fresh + (.05 if age_h < _FRESH_BOOST_HOURS else 0.0) + .20 * title_fit
-                + .07 * self._experience_fit(title, description) + .03 * ctc_fit + .02 * iam_fit
+                + .15 * fresh + .08 * hot + .20 * title_fit
+                + .07 * self._experience_fit(exp) + .03 * ctc_fit + .02 * iam_fit
                 - .06 * seniority - .06 * mixed)
+        base *= exp_factor(exp, self.exp_years)
         value = max(0.0, min(1.0, base * self.weights.get(source.value, 1.0)))
         if is_inbound:
             value = min(1.0, value + 0.30)

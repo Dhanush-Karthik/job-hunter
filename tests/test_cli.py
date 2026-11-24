@@ -12,6 +12,7 @@ import pytest
 from jobhunter import cli, paths
 from jobhunter.api import health as health_module
 from jobhunter.db import get_engine
+from jobhunter.db.migrate import SCHEMA_VERSION
 from jobhunter.schemas import Health
 
 
@@ -40,7 +41,7 @@ def data_root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def test_db_migrate_creates_database(data_root: Path, capsys: pytest.CaptureFixture[str]) -> None:
     assert cli.main(["db", "migrate"]) == 0
     assert (data_root / "jobhunter.sqlite").is_file()
-    assert capsys.readouterr().out.strip() == "schema version 1"
+    assert capsys.readouterr().out.strip() == f"schema version {SCHEMA_VERSION}"
     assert cli.main(["db", "migrate"]) == 0  # idempotent
 
 

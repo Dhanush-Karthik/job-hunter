@@ -7,8 +7,9 @@ from datetime import datetime
 from sqlmodel import Session, select
 
 from jobhunter.intake.types import IngestResult, RawJob
-from jobhunter.models import Lead, utcnow
+from jobhunter.models import Lead, Source, utcnow
 from jobhunter.pipeline.dedupe import DedupeIndex
+from jobhunter.pipeline.experience import ExpInfo, parse_experience
 from jobhunter.pipeline.normalize import Normalized, as_utc, normalize
 from jobhunter.pipeline.prefilter import prefilter
 from jobhunter.pipeline.score import Scorer, read_default_cv
@@ -89,7 +90,7 @@ def ingest(
         lead.quick_score = scorer.score(
             title=norm.title, skills=norm.skills, description=norm.description, role_family=norm.role_family,
             source=raw.source, is_inbound=lead.is_inbound, posted_at=norm.posted_at, found_at=lead.found_at,
-            now=now)
+            now=now, exp=norm.exp)
 
         if is_new:
             match = index.find(norm)
@@ -115,3 +116,39 @@ def ingest(
     session.commit()
     result.lead_ids = list(ids)
     return result
+
+
+def _stored_exp(lead: Lead) -> ExpInfo:
+    """Experience as ingest saw it, rebuilt from the stored columns. The 'inferred' marker is not stored, so it is
+    re-derived: a title-level guess that equals the stored numbers is still treated as a guess."""
+    parsed = parse_experience(lead.title, lead.jd_text, None, None)
+    inferred = parsed.inferred if parsed.inferred and parsed.exp_min == lead.exp_min else None
+    return ExpInfo(exp_min=lead.exp_min, exp_max=lead.exp_max, flags=parsed.flags, inferred=inferred)
+
+
+def _stored_skills(lead: Lead) -> list[str]:
+    if lead.source != Source.naukri:
+        return []
+    skills = lead.raw.get("skills") or []
+    if isinstance(skills, str):
+        skills = [part.strip() for part in skills.split(",") if part.strip()]
+    return [str(s) for s in skills]
+
+
+def rescore(session: Session, settings: Settings, *, now: datetime | None = None, cv_text: str | None = None) -> int:
+    """Recompute `quick_score` for every stored lead with the current scorer (after a scoring rule or settings
+    change). Only the score moves: prefilter verdicts, dedupe groups and found_at stay. Returns rows changed."""
+    now = as_utc(now) or utcnow()
+    scorer = Scorer(settings, cv_text if cv_text is not None else read_default_cv())
+    changed = 0
+    for lead in session.exec(select(Lead)):
+        value = scorer.score(
+            title=lead.title, skills=_stored_skills(lead), description=lead.jd_text, role_family=lead.role_family,
+            source=lead.source, is_inbound=lead.is_inbound, posted_at=as_utc(lead.posted_at),
+            found_at=lead.found_at, now=now, exp=_stored_exp(lead))
+        if abs(value - lead.quick_score) > 1e-9:
+            lead.quick_score = value
+            session.add(lead)
+            changed += 1
+    session.commit()
+    return changed

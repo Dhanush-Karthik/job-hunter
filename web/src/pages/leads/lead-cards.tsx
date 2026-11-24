@@ -2,7 +2,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import type { LeadSummary } from '@/api/client'
 import { CHANNEL_LABEL, SOURCE_LABEL, formatCtc, formatExp, formatPlace, isRejected, statusLabel } from '@/components/lead-format'
 import { StatusBadge } from '@/components/status-badge'
-import { FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
+import { AboveRangeBadge, FreshBadge, InboundBadge, ScoreCell } from '@/components/lead-parts'
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -54,6 +54,7 @@ export function LeadCards({
                   <ScoreCell lead={l} />
                   {l.is_fresh && <FreshBadge />}
                   {l.is_inbound && <InboundBadge />}
+                  {l.exp_fit === 'above' && <AboveRangeBadge />}
                 </div>
                 <div className="mt-1 font-medium">{l.company}</div>
                 <Link to={`/jobs/${l.id}`} onClick={stop} className="block text-sm hover:underline">

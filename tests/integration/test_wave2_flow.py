@@ -21,7 +21,7 @@ from jobhunter.db import get_engine, migrate
 from jobhunter.intake.boards import fetch_boards
 from jobhunter.jobs import runner
 from jobhunter.pipeline import ingest
-from jobhunter.settings import get_settings
+from jobhunter.settings import get_settings, save_settings
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -49,6 +49,10 @@ def real_client(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Tes
     get_engine.cache_clear()
     engine = get_engine()
     migrate(engine)
+    with Session(engine) as session:  # this flow drives the career-ops fake, not lean evaluation
+        pinned = get_settings(session)
+        pinned.evaluator.mode = "full"
+        save_settings(session, pinned)
     try:
         with TestClient(create_app(serve_web=False)) as client:
             yield client

@@ -4,8 +4,9 @@ import { http, HttpResponse } from 'msw'
 import { Route, Routes } from 'react-router-dom'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderWithProviders } from '@/app/test-utils'
-import type { RunOut } from '@/api/client'
+import { api, type RunOut } from '@/api/client'
 import { makeDetail, makeLeads, makeRuns } from '@/mocks/fixtures'
+import { resetMockDb } from '@/mocks/handlers'
 import { server } from '@/mocks/node'
 import { JobDetailPage } from './job-page'
 import { polling } from './use-job'
@@ -48,6 +49,41 @@ function capture(method: 'POST' | 'PATCH', pathname: string) {
 }
 afterEach(() => server.events.removeAllListeners())
 
+const detail = (patch: Record<string, unknown>) => {
+  const base = makeDetail(makeLeads()[7]) // the inbound recruiter lead
+  server.use(http.get('/api/leads/:id', () => HttpResponse.json({ ...base, ...patch })))
+}
+
+describe('Where to apply', () => {
+  it('points an inbound lead with no job link at the recruiter email in Gmail', async () => {
+    detail({ apply_url: null, canonical_url: null, source_email_url: 'https://mail.google.com/mail/u/0/#search/rfc822msgid:a%40b' })
+    show(8)
+    const region = await screen.findByRole('region', { name: 'Where to apply' })
+    expect(within(region).getByText('Recruiter email')).toBeInTheDocument()
+    const open = within(region).getByRole('link', { name: /recruiter's email/ })
+    expect(open).toHaveAttribute('href', expect.stringContaining('mail.google.com'))
+    expect(within(region).getByText(/no job link in it/)).toBeInTheDocument()
+    expect(within(region).getByRole('link', { name: /Search for it/ })).toHaveAttribute('href', expect.stringContaining('google.com/search'))
+  })
+
+  it('falls back to a search when nothing is stored, and flags postings above the experience range', async () => {
+    detail({ apply_url: null, canonical_url: null, source_email_url: null, source: 'linkedin', is_inbound: false, exp_fit: 'above' })
+    show(8)
+    const region = await screen.findByRole('region', { name: 'Where to apply' })
+    expect(within(region).getByText('LinkedIn')).toBeInTheDocument()
+    expect(within(region).getByRole('link', { name: 'Search for it' })).toBeInTheDocument()
+    expect(screen.getByText('Above your range')).toBeInTheDocument()
+  })
+
+  it('shows the apply page first and keeps the original posting one click away', async () => {
+    detail({ apply_url: 'https://careers.hcl.example/apply/9', canonical_url: 'https://in.indeed.com/viewjob?jk=1' })
+    show(8)
+    const region = await screen.findByRole('region', { name: 'Where to apply' })
+    expect(within(region).getByRole('link', { name: 'Apply on careers.hcl.example' })).toHaveAttribute('href', 'https://careers.hcl.example/apply/9')
+    expect(within(region).getByRole('link', { name: /View original posting/ })).toHaveAttribute('href', 'https://in.indeed.com/viewjob?jk=1')
+  })
+})
+
 describe('Job detail', () => {
   it('shows the header, the rendered report, the JD and the timeline', async () => {
     const user = userEvent.setup()
@@ -61,10 +97,10 @@ describe('Job detail', () => {
     expect(screen.getByText('Company ATS')).toBeInTheDocument()
     expect(screen.getByText('Career pages')).toBeInTheDocument()
 
-    const open = screen.getByRole('link', { name: /Open posting/ })
-    expect(open).toHaveAttribute('href', 'https://example.com/jobs/3')
-    expect(open).toHaveAttribute('target', '_blank')
-    expect(screen.getByRole('link', { name: /Apply link/ })).toHaveAttribute('rel', expect.stringContaining('noopener'))
+    const apply = screen.getByRole('link', { name: /Apply on example\.com/ })
+    expect(apply).toHaveAttribute('href', 'https://example.com/jobs/3')
+    expect(apply).toHaveAttribute('target', '_blank')
+    expect(apply).toHaveAttribute('rel', expect.stringContaining('noopener'))
 
     // report markdown: headings, list items, bold
     expect(screen.getByRole('heading', { name: 'Match' })).toBeInTheDocument()
@@ -292,5 +328,64 @@ describe('Job detail', () => {
       expect(await screen.findByText('fact-check failed: invented employer')).toBeInTheDocument()
       expect(screen.queryByTestId('pdf')).not.toBeInTheDocument()
     })
+  })
+})
+
+
+describe('Email HR', () => {
+  const connectGmail = async () => {
+    await api.PUT('/api/secrets/{name}', { params: { path: { name: 'gmail_address' } }, body: { value: 'me@example.com' } })
+    await api.PUT('/api/secrets/{name}', { params: { path: { name: 'gmail_app_password' } }, body: { value: 'abcdabcdabcdabcd' } })
+  }
+  beforeEach(resetMockDb)
+
+  it('finds the HR address by itself and sends the filled-in email with one click', async () => {
+    await connectGmail()
+    const user = userEvent.setup()
+    const sends = capture('POST', '/api/reachout/jobs/1/send')
+    show(1)
+    const card = await screen.findByRole('region', { name: 'Email HR' }, { timeout: 3000 })
+    // the lookup ran without a click and the best address is already chosen
+    const found = await within(card).findByRole('radio', { name: /jobs@freshworks\.com/ })
+    expect(found).toBeChecked()
+    expect(within(card).getByRole('radio', { name: /careers@freshworks\.com/ })).not.toBeChecked() // unverified guesses are never preselected
+    const preview = within(card).getByLabelText('Email preview')
+    expect(within(preview).getByText(/Application for Senior Software Engineer - Java/)).toBeInTheDocument()
+    await user.click(within(card).getByRole('button', { name: 'Send to jobs@freshworks.com' }))
+    await waitFor(() => expect(sends).toHaveLength(1))
+    expect(sends[0]).toMatchObject({ to_email: 'jobs@freshworks.com', mode: 'send', confirm: true, attach: 'base', extra_lead_ids: [] })
+    expect(await within(card).findByText(/You emailed jobs@freshworks\.com on/)).toBeInTheDocument()
+    expect(within(card).getByText(/less than 14 days ago/)).toBeInTheDocument() // a second email to the same address needs "Send anyway"
+  })
+
+  it('lets you type an address by hand and greets the name you give', async () => {
+    await connectGmail()
+    const user = userEvent.setup()
+    const sends = capture('POST', '/api/reachout/jobs/2/send')
+    show(2)
+    const card = await screen.findByRole('region', { name: 'Email HR' }, { timeout: 3000 })
+    await within(card).findByRole('radio', { name: /jobs@zoho\.com/ })
+    await user.click(within(card).getByRole('radio', { name: 'Type an address' }))
+    const send = within(card).getByRole('button', { name: 'Send email' })
+    expect(send).toBeDisabled()
+    await user.type(within(card).getByLabelText('HR email'), 'asha@zoho.com')
+    await user.type(within(card).getByLabelText('Their name (optional)'), 'Asha Rao')
+    await waitFor(() => expect(within(card).getByText(/Hi Asha,/)).toBeInTheDocument())
+    await user.click(within(card).getByRole('button', { name: 'Send to asha@zoho.com' }))
+    await waitFor(() => expect(sends).toHaveLength(1))
+    expect(sends[0]).toMatchObject({ to_email: 'asha@zoho.com', to_name: 'Asha Rao' })
+  })
+
+  it('does not offer to send until Gmail is connected, and can save a Gmail draft instead', async () => {
+    const user = userEvent.setup()
+    show(1)
+    const card = await screen.findByRole('region', { name: 'Email HR' }, { timeout: 3000 })
+    await within(card).findByRole('radio', { name: /jobs@freshworks\.com/ })
+    expect(within(card).getByText(/Gmail is not connected/)).toBeInTheDocument()
+    expect(within(card).getByRole('button', { name: /Send to/ })).toBeDisabled()
+    expect(within(card).getByRole('button', { name: /Save as Gmail draft/ })).toBeDisabled()
+    await connectGmail()
+    await user.click(within(card).getByRole('button', { name: 'Search again' })) // refetches the card data
+    await waitFor(() => expect(within(card).getByRole('button', { name: /Save as Gmail draft/ })).toBeEnabled())
   })
 })

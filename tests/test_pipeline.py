@@ -541,7 +541,7 @@ def test_stated_experience_fit_bonus_uses_owner_range():
     unknown = score(description="Java Spring Boot backend", **common)
     assert score(description="Java Spring Boot backend. 2-4 years experience.", **common) > unknown
     assert score(description="Java Spring Boot backend. 3+ years experience.", **common) > unknown
-    assert score(description="Java Spring Boot backend. 5+ years experience.", **common) == unknown
+    assert score(description="Java Spring Boot backend. 5+ years experience.", **common) < unknown
     assert score(description="Java Spring Boot backend. 0-1 years experience.", **common) == unknown
     settings = SETTINGS.model_copy(deep=True)
     settings.prefilter.exp_years = (5, 7)
@@ -549,6 +549,50 @@ def test_stated_experience_fit_bonus_uses_owner_range():
     assert score(scorer, description="5-7 years experience.", **common) > score(
         scorer, description="2-4 years experience.", **common,
     )
+
+
+def test_postings_asking_more_years_than_the_owner_has_rank_lower_the_more_they_ask():
+    common = {"title": "Java Backend Developer"}
+    by_min = {m: score(description=f"Java Spring Boot backend. {m}+ years experience.", **common) for m in (2, 3, 4, 5, 6, 7, 8, 12)}
+    assert by_min[2] == by_min[3]  # inside the owner's 2-4 range: no penalty
+    assert by_min[3] > by_min[4] > by_min[5] > by_min[6] > by_min[7] > 0  # then the penalty grows
+    assert by_min[7] == by_min[8] == by_min[12]  # until the multiplier hits its 40% floor
+
+
+def test_structured_experience_beats_what_the_description_says():
+    scorer = Scorer(SETTINGS, "")
+    kw = {"title": "Java Backend Developer", "skills": [], "description": "Java Spring Boot backend", "role_family": RoleFamily.p1,
+              "source": Source.naukri, "is_inbound": False, "posted_at": NOW, "found_at": NOW, "now": NOW}
+    fits = scorer.score(exp=parse_experience("x", None, "2-4 Yrs", None), **kw)
+    stretch = scorer.score(exp=parse_experience("x", None, "5-9 Yrs", None), **kw)
+    assert stretch < fits
+
+
+def test_exp_fit_labels_against_owner_range():
+    from jobhunter.pipeline.experience import exp_fit
+
+    assert [exp_fit(m, None, (2, 4)) for m in (None, 2, 3, 4, 5, 8)] == ["unknown", "ok", "ok", "stretch", "above", "above"]
+    assert exp_fit(None, 6, (2, 4)) == "ok"
+
+
+def test_rescore_applies_the_current_rules_to_stored_leads(session):
+    settings = SETTINGS.model_copy(deep=True)
+    raw = [
+        RawJob(source=Source.naukri, source_ref="n1", title="Java Backend Developer", company="A", location="Chennai",
+               description="Java Spring Boot backend", experience_text="5-9 Yrs", posted_at=NOW),
+        RawJob(source=Source.naukri, source_ref="n2", title="Java Backend Developer", company="B", location="Chennai",
+               description="Java Spring Boot backend", experience_text="2-4 Yrs", posted_at=NOW),
+    ]
+    ingest(session, raw, settings, now=NOW, cv_text="")
+    before = {lead.source_ref: lead.quick_score for lead in session.exec(select(Lead))}
+    assert before["n1"] < before["n2"]
+    from jobhunter.pipeline import rescore
+
+    settings.prefilter.exp_years = (5, 9)  # the owner now wants senior roles
+    assert rescore(session, settings, now=NOW, cv_text="") == 2
+    after = {lead.source_ref: lead.quick_score for lead in session.exec(select(Lead))}
+    assert after["n1"] > after["n2"]
+    assert rescore(session, settings, now=NOW, cv_text="") == 0  # idempotent
 
 
 def test_ctc_bonus_is_small_and_requires_salary_evidence():

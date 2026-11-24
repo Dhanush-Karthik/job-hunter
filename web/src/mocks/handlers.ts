@@ -1,6 +1,6 @@
 // MSW handlers covering every contract route (lead-owned). Stateful in memory; resetMockDb() between tests.
 import { http, HttpResponse } from 'msw'
-import { TRANSITIONS, type AppStatus, type ApplicationOut, type LeadSummary, type RunOut } from '@/api/client'
+import { TRANSITIONS, type AppStatus, type ApplicationOut, type EmailCandidate, type HrEmailOut, type JobReachout, type LeadSummary, type ReachoutJob, type RunOut } from '@/api/client'
 import {
   ago,
   INSIGHTS,
@@ -34,10 +34,17 @@ function fresh() {
     settings: structuredClone(SETTINGS),
     secrets: { gmail_address: false, gmail_app_password: false } as Record<string, boolean>,
     cv: { A: true, B: false } as Record<string, boolean>,
+    hr: [] as HrContactOut[],
+    hrEmails: [] as HrEmailOut[],
+    hrSearched: new Set<number>(),
+    resume: true,
+    nextHr: 1,
     nextRun: 100,
     nextEvent: 1000,
   }
 }
+
+type HrContactOut = { id: number; company: string; email: string; name: string | null; role: string | null; last_emailed_at: string | null }
 
 let db = fresh()
 export function resetMockDb() {
@@ -45,6 +52,10 @@ export function resetMockDb() {
 }
 
 const notFound = () => HttpResponse.json({ detail: 'not found' }, { status: 404 })
+const reachoutJobs = (company: string): ReachoutJob[] =>
+  db.leads
+    .filter((l) => l.company.toLowerCase() === company.toLowerCase() && l.prefilter_pass && !['Skipped', 'Expired'].includes(l.status))
+    .map((l) => ({ lead_id: l.id, job_id: String(4400000000 + l.id), title: l.title, location: l.location, url: `https://example.com/jobs/${l.id}`, source: l.source, score: l.eval_score ?? null, status: l.status, has_tailored_cv: false }))
 const lead = (id: string | readonly string[] | undefined) => db.leads.find((l) => l.id === Number(id))
 const detail = (l: LeadSummary) => {
   const d = makeDetail(l)
@@ -54,6 +65,52 @@ const detail = (l: LeadSummary) => {
   }
   d.outreach = db.outreach.filter((o) => o.lead_id === l.id)
   return d
+}
+
+const reachoutStatus = () => ({
+  enabled: true,
+  gmail_ready: !!(db.secrets.gmail_address && db.secrets.gmail_app_password),
+  sender: 'me@example.com',
+  sent_today: db.hrEmails.filter((e) => e.state === 'sent').length,
+  daily_cap: 25,
+  cooldown_days: 14,
+  resume: db.resume ? { present: true, filename: 'resume.pdf', size_kb: 84, updated_at: ago(24) } : { present: false },
+})
+const domainOf = (company: string) => `${company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`
+const draftFor = (l: LeadSummary, toName: string | null, extra: number[]) => {
+  const jobs = [l.id, ...extra].map((id) => lead(String(id))).filter((x): x is LeadSummary => !!x)
+  const greeting = toName ? `Hi ${toName.split(' ')[0]},` : 'Hello,'
+  const lines = jobs.map((j) => `  - ${j.title} (Job ID ${4400000000 + j.id})`).join('\n')
+  return {
+    subject: jobs.length === 1 ? `Application for ${l.title} (Job ID ${4400000000 + l.id}) - Test Owner` : `Applying for ${jobs.length} roles at ${l.company} - Test Owner`,
+    body: `${greeting}\n\nI am writing to apply for the ${l.title} role at ${l.company}.\n${lines}\n\nRegards,\nTest Owner\n`,
+  }
+}
+function jobReachout(l: LeadSummary): JobReachout {
+  const dom = domainOf(l.company)
+  const saved: EmailCandidate[] = db.hr
+    .filter((h) => h.company === l.company)
+    .map((h) => ({ email: h.email, name: h.name, source: 'saved', label: 'You saved this contact', confidence: 'high', contact_id: h.id, last_emailed_at: h.last_emailed_at }))
+  const web: EmailCandidate[] = db.hrSearched.has(l.id)
+    ? [
+        { email: `jobs@${dom}`, name: null, source: 'posting_page', label: "On the job's web page", confidence: 'high', contact_id: null, last_emailed_at: null },
+        { email: `careers@${dom}`, name: null, source: 'guess', label: 'Common HR address (unverified guess)', confidence: 'low', contact_id: null, last_emailed_at: null },
+      ]
+    : []
+  const have = new Set(saved.map((c) => c.email))
+  return {
+    lead_id: l.id,
+    company: l.company,
+    job_id: String(4400000000 + l.id),
+    status: reachoutStatus(),
+    candidates: [...saved, ...web.filter((c) => !have.has(c.email))],
+    searched_at: db.hrSearched.has(l.id) ? new Date().toISOString() : null,
+    other_jobs: reachoutJobs(l.company).filter((j) => j.lead_id !== l.id),
+    draft: draftFor(l, null, []),
+    attach_default: db.resume ? 'base' : 'none',
+    has_tailored_cv: false,
+    history: db.hrEmails.filter((e) => e.lead_ids.includes(l.id)),
+  }
 }
 
 function newRun(kind: RunOut['kind'], lead_id: number | null = null, params: Record<string, unknown> = {}): RunOut {
@@ -362,6 +419,55 @@ export const handlers = [
   ),
 
   http.get('/api/analytics/insights', () => HttpResponse.json(INSIGHTS)),
+
+  // ---- reach-out (HR emails from the job page). Sending only records the email; nothing leaves the mock.
+  http.get('/api/reachout/status', () => HttpResponse.json(reachoutStatus())),
+  http.put('/api/reachout/resume', () => {
+    db.resume = true
+    return HttpResponse.json({ present: true, filename: 'resume.pdf', size_kb: 84, updated_at: new Date().toISOString() })
+  }),
+  http.delete('/api/reachout/resume', () => {
+    db.resume = false
+    return new HttpResponse(null, { status: 204 })
+  }),
+  http.get('/api/reachout/jobs/:id', ({ params }) => {
+    const l = lead(params.id)
+    return l ? HttpResponse.json(jobReachout(l)) : notFound()
+  }),
+  http.post('/api/reachout/jobs/:id/find', ({ params }) => {
+    const l = lead(params.id)
+    if (!l) return notFound()
+    db.hrSearched.add(l.id)
+    return HttpResponse.json(jobReachout(l))
+  }),
+  http.post('/api/reachout/jobs/:id/draft', async ({ params, request }) => {
+    const l = lead(params.id)
+    if (!l) return notFound()
+    const b = (await request.json()) as { to_name?: string | null; extra_lead_ids?: number[] }
+    return HttpResponse.json(draftFor(l, b.to_name ?? null, b.extra_lead_ids ?? []))
+  }),
+  http.post('/api/reachout/jobs/:id/send', async ({ params, request }) => {
+    const l = lead(params.id)
+    if (!l) return notFound()
+    const b = (await request.json()) as { to_email: string; to_name?: string | null; extra_lead_ids?: number[]; subject: string; attach: string; mode: 'send' | 'draft'; confirm: boolean; force: boolean }
+    if (!b.confirm) return HttpResponse.json({ detail: "sending needs the owner's confirmation" }, { status: 422 })
+    const saved = db.hr.find((h) => h.company === l.company && h.email.toLowerCase() === b.to_email.toLowerCase())
+    if (b.mode === 'send' && saved?.last_emailed_at && !b.force) return HttpResponse.json({ detail: `${b.to_email} was emailed less than 14 days ago.` }, { status: 409 })
+    const row: HrEmailOut = {
+      id: db.hrEmails.length + 1, company: l.company, to_email: b.to_email, to_name: b.to_name ?? null, subject: b.subject, lead_ids: [l.id, ...(b.extra_lead_ids ?? [])],
+      attachment: b.attach === 'none' ? null : 'resume.pdf', state: b.mode === 'send' ? 'sent' : 'drafted', error: null, created_at: new Date().toISOString(),
+    }
+    db.hrEmails.unshift(row)
+    const contact = saved ?? { id: db.nextHr++, company: l.company, email: b.to_email, name: b.to_name ?? null, role: null, last_emailed_at: null }
+    if (!saved) db.hr.push(contact)
+    if (b.mode === 'send') contact.last_emailed_at = row.created_at
+    return HttpResponse.json(row)
+  }),
+  http.delete('/api/reachout/contacts/:id', ({ params }) => {
+    db.hr = db.hr.filter((h) => h.id !== Number(params.id))
+    return new HttpResponse(null, { status: 204 })
+  }),
+  http.get('/api/reachout/emails', () => HttpResponse.json(db.hrEmails)),
 
   // ---- config
   http.get('/api/companies', () => HttpResponse.json(db.companies)),

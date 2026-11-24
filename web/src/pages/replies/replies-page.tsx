@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ArrowRight, CircleHelp, ExternalLink, MailCheck, Sparkles } from 'lucide-react'
+import { ArrowRight, CircleHelp, ExternalLink, Mail, MailCheck, Sparkles } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { TRANSITIONS, type ApplicationOut, type AppStatus, type ProposalOut } from '@/api/client'
 import { emailBody, emailHeadline } from '@/components/email-text'
@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/page-header'
 import { ErrorState } from '@/components/query-states'
 import { StatusBadge } from '@/components/status-badge'
 import { relativeDay } from '@/components/time'
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
@@ -17,9 +18,9 @@ import { usePendingProposals, useProposalActions } from './use-replies'
 type Actions = ReturnType<typeof useProposalActions>
 
 const GROUPS: { key: string; types: ProposalOut['type'][]; label: string; hint: string; Icon: typeof Sparkles }[] = [
-  { key: 'inbound', types: ['inbound'], label: 'Recruiters reaching out', hint: 'Add the role to your jobs to apply, or ignore it.', Icon: Sparkles },
-  { key: 'status', types: ['status_change', 'ghosted'], label: 'Application updates', hint: 'The app read these emails and suggests a new status. Nothing changes until you confirm.', Icon: MailCheck },
-  { key: 'unsure', types: ['needs_eyes'], label: 'Please check', hint: 'The app could not tell what these emails mean. Set a status yourself, or ignore them.', Icon: CircleHelp },
+  { key: 'inbound', types: ['inbound'], label: 'Recruiters reaching out', hint: 'A recruiter emailed you about a role. Add it to your jobs to apply, or ignore it.', Icon: Sparkles },
+  { key: 'status', types: ['status_change', 'ghosted'], label: 'Application updates', hint: 'These look like replies to your applications. Confirm the status the app suggests, or pick another.', Icon: MailCheck },
+  { key: 'unsure', types: ['needs_eyes'], label: 'Please check', hint: 'The app could not tell what these emails mean. Open one to read it, then dismiss it or set a status.', Icon: CircleHelp },
 ]
 
 const str = (v: unknown) => (typeof v === 'string' && v ? v : null)
@@ -38,23 +39,72 @@ function subjectOf(p: ProposalOut) {
   return [p.company, role].filter(Boolean).join(' · ') || emailHeadline(p.evidence) || 'Unmatched email'
 }
 
+/** The email's subject (only when the title above does not already say it) and a short, expandable snippet. */
 function EmailPreview({ p }: { p: ProposalOut }) {
   const [open, setOpen] = useState(false)
   const headline = emailHeadline(p.evidence)
   const body = emailBody(p.evidence)
-  if (!headline && !body) return null
+  const showHeadline = headline && headline !== subjectOf(p)
+  if (!showHeadline && !body) return null
   return (
-    <div className="rounded-lg bg-muted/50 px-3 py-2 text-sm">
-      {headline && <div className="font-medium">{headline}</div>}
+    <div className="grid gap-1 rounded-lg bg-muted/50 px-3 py-2 text-sm">
+      {showHeadline && <div className="font-medium">{headline}</div>}
       {body && (
         <>
-          <p className={open ? 'mt-1 text-muted-foreground' : 'mt-1 line-clamp-2 text-muted-foreground'}>{body}</p>
-          <button type="button" className="mt-1 text-xs font-medium text-muted-foreground underline-offset-2 hover:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
+          <p className={open ? 'text-muted-foreground' : 'line-clamp-2 text-muted-foreground'}>{body}</p>
+          <button type="button" className="w-fit text-xs font-medium text-muted-foreground underline-offset-2 hover:underline" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
             {open ? 'Show less' : 'Show more'}
           </button>
         </>
       )}
     </div>
+  )
+}
+
+/** Links out of the Inbox: the full email in Gmail (the app only keeps a snippet) and, when known, where to apply. */
+function Links({ p }: { p: ProposalOut }) {
+  return (
+    <>
+      {p.email_url && (
+        <Button asChild size="sm" variant="outline">
+          <a href={p.email_url} target="_blank" rel="noopener noreferrer">
+            <Mail /> Open email
+          </a>
+        </Button>
+      )}
+      {p.apply_url && (
+        <Button asChild size="sm" variant="outline">
+          <a href={p.apply_url} target="_blank" rel="noopener noreferrer">
+            <ExternalLink /> Apply page
+          </a>
+        </Button>
+      )}
+    </>
+  )
+}
+
+/** Confirm, then dismiss every email in a group at once. */
+function DismissAll({ ids, label, actions }: { ids: number[]; label: string; actions: Actions }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="ghost" disabled={actions.busy}>
+          Dismiss all
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Dismiss {ids.length} emails?</AlertDialogTitle>
+          <AlertDialogDescription>
+            All of “{label}” leave the Inbox. Nothing changes on your jobs or applications, and the emails stay in Gmail.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => actions.dismissMany.mutate(ids)}>Dismiss {ids.length}</AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   )
 }
 
@@ -77,7 +127,7 @@ function Header({ p, children }: { p: ProposalOut; children?: React.ReactNode })
 
 function InboundCard({ p, actions }: { p: ProposalOut; actions: Actions }) {
   return (
-    <li className="grid gap-2 rounded-xl border p-3 text-sm" aria-label={subjectOf(p)}>
+    <li className="grid gap-3 rounded-xl border bg-card p-4 text-sm" aria-label={subjectOf(p)}>
       <Header p={p}>{str(p.payload.recruiter) && <span className="text-muted-foreground">from {str(p.payload.recruiter)}</span>}</Header>
       <EmailPreview p={p} />
       <div className="flex flex-wrap gap-2">
@@ -86,12 +136,11 @@ function InboundCard({ p, actions }: { p: ProposalOut; actions: Actions }) {
         </Button>
         {p.lead_id != null && (
           <Button asChild size="sm" variant="outline">
-            <Link to={`/jobs/${p.lead_id}`}>
-              <ExternalLink /> View job
-            </Link>
+            <Link to={`/jobs/${p.lead_id}`}>View job</Link>
           </Button>
         )}
-        <Button size="sm" variant="ghost" disabled={actions.busy} onClick={() => actions.dismiss.mutate(p.id)}>
+        <Links p={p} />
+        <Button size="sm" variant="ghost" className="ml-auto" disabled={actions.busy} onClick={() => actions.dismiss.mutate(p.id)}>
           Ignore
         </Button>
       </div>
@@ -106,7 +155,7 @@ function StatusCard({ p, actions, app }: { p: ProposalOut; actions: Actions; app
   const final = edited || target
   const subject = subjectOf(p)
   return (
-    <li className="grid gap-2 rounded-xl border p-3 text-sm" aria-label={subject}>
+    <li className="grid gap-3 rounded-xl border bg-card p-4 text-sm" aria-label={subject}>
       <Header p={p}>
         {target && (
           <span className="flex items-center gap-1 text-muted-foreground">
@@ -137,7 +186,8 @@ function StatusCard({ p, actions, app }: { p: ProposalOut; actions: Actions; app
         <Button size="sm" variant="outline" disabled={actions.busy} aria-pressed={editing} onClick={() => setEditing((e) => !e)}>
           Different status
         </Button>
-        <Button size="sm" variant="ghost" disabled={actions.busy} onClick={() => actions.dismiss.mutate(p.id)}>
+        <Links p={p} />
+        <Button size="sm" variant="ghost" className="ml-auto" disabled={actions.busy} onClick={() => actions.dismiss.mutate(p.id)}>
           Ignore
         </Button>
       </div>
@@ -151,8 +201,10 @@ function UnsureCard({ p, actions, app }: { p: ProposalOut; actions: Actions; app
   const subject = subjectOf(p)
   const targets = app ? TRANSITIONS[app.status] : []
   return (
-    <li className="grid gap-2 rounded-xl border p-3 text-sm" aria-label={subject}>
-      <Header p={p}>{app && <StatusBadge status={app.status} />}</Header>
+    <li className="grid gap-3 rounded-xl border bg-card p-4 text-sm" aria-label={subject}>
+      <Header p={p}>
+        {app ? <StatusBadge status={app.status} /> : <Badge variant="outline">Not in your applications</Badge>}
+      </Header>
       <EmailPreview p={p} />
       <div className="flex flex-wrap items-center gap-2">
         {app && targets.length > 0 && (
@@ -172,10 +224,10 @@ function UnsureCard({ p, actions, app }: { p: ProposalOut; actions: Actions; app
             </Button>
           </>
         )}
-        <Button size="sm" variant={app ? 'ghost' : 'outline'} disabled={actions.busy} onClick={() => actions.accept.mutate({ id: p.id })}>
-          Nothing to do
+        <Links p={p} />
+        <Button size="sm" variant="outline" className="ml-auto" disabled={actions.busy} onClick={() => actions.dismiss.mutate(p.id)}>
+          Dismiss
         </Button>
-        {!app && <span className="text-xs text-muted-foreground">Not linked to any of your applications.</span>}
       </div>
     </li>
   )
@@ -208,13 +260,16 @@ export function RepliesPage() {
             .filter((g) => g.items.length)
             .map((g) => (
               <section key={g.key} aria-labelledby={`rp-${g.key}`} className="grid gap-3">
-                <div>
-                  <h2 id={`rp-${g.key}`} className="flex items-center gap-2 font-medium">
-                    <g.Icon className="size-4 text-muted-foreground" aria-hidden />
-                    {g.label}
-                    <Badge variant="secondary">{g.items.length}</Badge>
-                  </h2>
-                  <p className="mt-0.5 text-sm text-muted-foreground">{g.hint}</p>
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <h2 id={`rp-${g.key}`} className="flex items-center gap-2 font-medium">
+                      <g.Icon className="size-4 text-muted-foreground" aria-hidden />
+                      {g.label}
+                      <Badge variant="secondary">{g.items.length}</Badge>
+                    </h2>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{g.hint}</p>
+                  </div>
+                  {g.key !== 'status' && g.items.length > 1 && <DismissAll ids={g.items.map((p) => p.id)} label={g.label} actions={actions} />}
                 </div>
                 <ul className="grid gap-3">
                   {g.items.map((p) =>

@@ -23,7 +23,6 @@ const columns = col.columns([
   col.display({ id: 'status', header: 'Status', cell: ({ row }) => <StatusBadge status={row.original.status} /> }),
   col.display({ id: 'variant', header: 'Variant', cell: ({ row }) => row.original.resume_variant ?? '—' }),
   col.display({ id: 'applied', header: 'Applied', cell: ({ row }) => date(row.original.applied_at) }),
-  col.display({ id: 'follow', header: 'Next follow-up', cell: ({ row }) => date(row.original.next_follow_up_at) }),
   col.display({ id: 'score', header: 'Score', cell: ({ row }) => row.original.eval_score?.toFixed(1) ?? '—' }),
   col.display({ id: 'source', header: 'Source', cell: ({ row }) => SOURCE_LABEL[row.original.source] }),
 ])

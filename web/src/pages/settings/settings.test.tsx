@@ -52,7 +52,7 @@ describe('Settings form', () => {
     expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled() // nothing changed
   })
 
-  it('loads goals, evaluation, schedules and follow-up rules on Goals & automation', async () => {
+  it('loads goals, evaluation, schedules and notification rules on Goals & automation', async () => {
     setup('goals')
     expect(await screen.findByLabelText('Auto-evaluate top N per day')).toHaveValue(10)
     expect(screen.getByLabelText('Evaluations running at once')).toHaveValue(2)
@@ -62,7 +62,8 @@ describe('Settings form', () => {
     expect(within(screen.getByRole('list', { name: 'Company career pages at list' })).getAllByRole('listitem').map((l) => l.textContent)).toEqual(['08:00', '17:00'])
     expect(screen.getByLabelText('Job boards every (hours)')).toHaveValue(3)
     expect(screen.getByLabelText('Check Gmail every (minutes)')).toHaveValue(30)
-    expect(screen.getByLabelText('First follow-up after (business days)')).toHaveValue(5)
+    expect(screen.getByLabelText('First Gmail run reads back (days)')).toHaveValue(SETTINGS.followups.gmail_lookback_days)
+    expect(screen.queryByLabelText(/follow-up after/i)).not.toBeInTheDocument()
     expect(screen.getByLabelText('Suggest ghosted after (days of silence)')).toHaveValue(21)
     expect(screen.queryByRole('list', { name: 'Titles list' })).not.toBeInTheDocument()
   })
@@ -215,14 +216,14 @@ describe('Profiles', () => {
   })
 })
 
-describe('Prefilter, schedules and follow-up rules', () => {
-  it('saves edited follow-up rules and schedule times in the full object', async () => {
+describe('Prefilter, schedules and notification rules', () => {
+  it('saves edited notification rules and schedule times in the full object', async () => {
     const user = userEvent.setup()
     const puts = capture('PUT', '/api/settings')
     setup('goals')
-    const first = await screen.findByLabelText('First follow-up after (business days)')
+    const first = await screen.findByLabelText('First Gmail run reads back (days)')
     await user.clear(first)
-    await user.type(first, '3')
+    await user.type(first, '45')
     const ghost = screen.getByLabelText('Suggest ghosted after (days of silence)')
     await user.clear(ghost)
     await user.type(ghost, '30')
@@ -232,12 +233,12 @@ describe('Prefilter, schedules and follow-up rules', () => {
     await user.click(screen.getByRole('button', { name: 'Save settings' }))
     await waitFor(() => expect(puts).toHaveLength(1))
     const sent = puts[0] as Settings
-    expect(sent.followups).toEqual({ ...SETTINGS.followups, follow_up_business_days: 3, ghosted_after_days: 30, extra_holidays: ['2026-12-25'] })
+    expect(sent.followups).toEqual({ ...SETTINGS.followups, gmail_lookback_days: 45, ghosted_after_days: 30, extra_holidays: ['2026-12-25'] })
     expect(sent.schedules).toEqual({ ...SETTINGS.schedules, careerops_scan_times: ['08:00', '17:00', '12:30'] })
     expect(sent.prefilter).toEqual(SETTINGS.prefilter)
     expect(sent.targets).toEqual(SETTINGS.targets)
     await waitFor(() => expect(screen.getByRole('button', { name: 'Save settings' })).toBeDisabled())
-    expect(screen.getByLabelText('First follow-up after (business days)')).toHaveValue(3)
+    expect(screen.getByLabelText('First Gmail run reads back (days)')).toHaveValue(45)
   })
 
   it('saves edited prefilter rules', async () => {
@@ -309,7 +310,7 @@ describe('Setup', () => {
 
     await user.type(screen.getByLabelText(/Gmail address/), 'me@gmail.com')
     await user.type(password, 'abcd efgh ijkl mnop')
-    await user.click(screen.getByRole('button', { name: 'Save to Keychain' }))
+    await user.click(screen.getByRole('button', { name: 'Save to keychain' }))
     await waitFor(() => expect(addr).toEqual([{ value: 'me@gmail.com' }]))
     await waitFor(() => expect(pw).toEqual([{ value: 'abcdefghijklmnop' }])) // spaces from Google's display stripped
     await waitFor(() => expect(screen.getAllByText('saved')).toHaveLength(2))

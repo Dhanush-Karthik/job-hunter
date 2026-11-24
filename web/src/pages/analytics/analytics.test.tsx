@@ -29,11 +29,18 @@ describe('Insights', () => {
     expect(screen.getByText('Call rate', { selector: 'dt' }).nextElementSibling).toHaveTextContent('10.7%') // 9 of 84
     expect(await screen.findByText('4.5 d')).toBeInTheDocument()
     expect(screen.getByText(/90% within 11 d, 14 replies/)).toBeInTheDocument()
-    const funnel = await screen.findByRole('list', { name: 'Funnel stages' })
-    const applied = within(funnel).getByRole('listitem', { name: 'Applied' })
-    expect(within(applied).getByText('84')).toBeInTheDocument()
-    expect(within(applied).getByText('70%')).toBeInTheDocument()
-    expect(within(within(funnel).getByRole('listitem', { name: 'Screening' })).getByText('10.7%')).toBeInTheDocument()
+    const flow = await screen.findByRole('list', { name: 'Pipeline flow: numbers' })
+    expect(within(flow).getByText('Applied: 84, 84 · 70%')).toBeInTheDocument()
+    expect(within(flow).getByText('Screening: 9, 9 · 10.7%')).toBeInTheDocument()
+    expect(within(flow).getAllByText(/^Stopped here: /).length).toBeGreaterThan(0)
+  })
+
+  it('draws the pipeline as a flow diagram with a ribbon for every hop', async () => {
+    setup()
+    const diagram = await screen.findByRole('group', { name: 'Pipeline flow' })
+    expect(diagram.querySelectorAll('[data-node]').length).toBeGreaterThanOrEqual(8)
+    expect(diagram.querySelectorAll('path').length).toBeGreaterThanOrEqual(7)
+    expect(diagram.querySelector('title')).toHaveTextContent(/→/)
   })
 
   it('renders insights with severity styling', async () => {
@@ -47,29 +54,26 @@ describe('Insights', () => {
     expect(items[2]).toHaveAttribute('data-severity', 'info')
   })
 
-  it('breaks calls down by source, channel, title and variant', async () => {
+  it('flows calls from source, channel, title and variant into interview calls', async () => {
     const user = userEvent.setup()
     setup()
-    const naukri = await screen.findByRole('row', { name: /^Naukri/ })
-    expect(within(naukri).getAllByRole('cell').map((c) => c.textContent)).toEqual(['Naukri', '26', '3', '', '11.5%'])
+    const list = await screen.findByRole('list', { name: 'Calls by source: numbers' })
+    expect(within(list).getByText('Naukri: 26, 26 applied · 11.5%')).toBeInTheDocument()
+    expect(within(list).getByText(/^Interview call: /)).toBeInTheDocument()
+    expect(within(list).getByText(/^No call yet: /)).toBeInTheDocument()
 
-    for (const [tab, text] of [['Channel', 'Company ATS'], ['Title', 'Backend Engineer'], ['CV variant', 'Variant B']] as const) {
+    for (const [tab, by, text] of [['Channel', 'channel', 'Company ATS'], ['Title', 'title', 'Backend Engineer'], ['CV variant', 'variant', 'Variant B']] as const) {
       await user.click(screen.getByRole('tab', { name: tab }))
-      expect(await screen.findByText(text)).toBeInTheDocument()
+      const rows = await screen.findByRole('list', { name: `Calls by ${by}: numbers` })
+      expect(within(rows).getByText(new RegExp(`^${text}: `))).toBeInTheDocument()
     }
   })
 
   it('shows weekly pace against targets', async () => {
     setup()
-    const heading = await screen.findByText('Weekly pace')
-    const card = heading.closest('[data-slot="card"]') as HTMLElement
-    const rows = await waitFor(() => {
-      const r = within(card).getAllByRole('row')
-      expect(r.length).toBe(9)
-      return r
-    })
-    expect(rows.at(-1)).toHaveTextContent('52 / 60')
-    expect(rows.at(-1)).toHaveTextContent('9 / 15')
+    const weeks = within(await screen.findByRole('list', { name: 'Weekly pace' })).getAllByRole('listitem')
+    expect(weeks).toHaveLength(8)
+    expect(weeks.at(-1)).toHaveAccessibleName(/52 of 60 applications, 9 of 15 referrals/)
   })
 
   it('sends the chosen date range with the queries', async () => {

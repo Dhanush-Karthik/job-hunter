@@ -16,6 +16,7 @@ from sqlmodel import Session, create_engine
 from jobhunter.careerops import BridgeError, evaluate
 from jobhunter.db import migrate
 from jobhunter.models import Lead, Run, RunKind, Source
+from jobhunter.settings import get_settings, save_settings
 
 
 def main() -> int:
@@ -30,6 +31,9 @@ def main() -> int:
         try:
             migrate(engine)
             with Session(engine) as session:
+                settings = get_settings(session)  # this smoke checks the full career-ops pipeline
+                settings.evaluator.mode = "full"
+                save_settings(session, settings)
                 lead = Lead(
                     source=Source.manual, source_ref=args.lead_url, canonical_url=args.lead_url,
                     company="Smoke evaluation", title="Manual posting", restored=True,

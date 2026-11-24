@@ -1,10 +1,12 @@
 import { useParams } from 'react-router-dom'
+import { isRejected } from '@/components/lead-format'
 import { Markdown } from '@/components/markdown'
 import { EmptyState, ErrorState } from '@/components/query-states'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { ActionsCard } from './actions-card'
 import { CvPanel } from './cv-panel'
+import { EmailHrCard } from './email-hr-card'
 import { JobHeader } from './job-header'
 import { RunsPanel } from './runs-panel'
 import { NotesCard, OutreachCard, Timeline } from './side-cards'
@@ -62,6 +64,7 @@ export function JobDetailPage() {
         </div>
         <div className="grid min-w-0 content-start gap-4">
           <ActionsCard lead={lead!} runs={runList} mutations={mutations} />
+          {!isRejected(lead!) && <EmailHrCard lead={lead!} />}
           {lead!.application && <CvPanel application={lead!.application} runs={runList} mutations={mutations} />}
           {lead!.application && (
             <OutreachCard items={lead!.outreach} searching={mutations.contacts.isPending || runList.some((r) => r.kind === 'contacts' && isActive(r))} onFind={() => mutations.contacts.mutate()} />

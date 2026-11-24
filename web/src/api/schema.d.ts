@@ -599,6 +599,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/nightly/run": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Run Nightly
+         * @description Run tonight's funnel now: start = fresh intake then lean evaluation; evaluate = skip intake. Idempotent per
+         *     IST date (a second call the same day queues nothing).
+         */
+        post: operations["runNightly"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/today": {
         parameters: {
             query?: never;
@@ -943,6 +964,155 @@ export interface paths {
         patch: operations["patchCompany"];
         trace?: never;
     };
+    "/api/reachout/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Status */
+        get: operations["getReachoutStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/resume": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Put Resume */
+        put: operations["putReachoutResume"];
+        post?: never;
+        /** Delete Resume */
+        delete: operations["deleteReachoutResume"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/jobs/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Job Reachout
+         * @description The Email-HR card for one job: candidate addresses found so far, the written email, attachments, history.
+         */
+        get: operations["getJobReachout"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/jobs/{lead_id}/find": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Find Hr Emails
+         * @description Look the HR address up on the web (job page, company site, common addresses) and remember what was found.
+         */
+        post: operations["findJobHrEmails"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/jobs/{lead_id}/draft": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Draft
+         * @description The email text for this job (and any extra jobs of the same company). Nothing is sent.
+         */
+        post: operations["draftJobEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/jobs/{lead_id}/send": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send
+         * @description Send (or save as a Gmail draft) the email. Needs confirm=true; refuses repeats and over-the-cap sends.
+         */
+        post: operations["sendJobEmail"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/emails": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Emails */
+        get: operations["listReachoutEmails"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reachout/contacts/{contact_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Contact */
+        delete: operations["deleteHrContact"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1148,6 +1318,42 @@ export interface components {
             /** Markdown */
             markdown: string;
         };
+        /** EmailCandidate */
+        EmailCandidate: {
+            /** Email */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "job_post" | "recruiter" | "posting_page" | "saved" | "company_site" | "guess";
+            /**
+             * Label
+             * @description where it came from, in words
+             */
+            label: string;
+            /**
+             * Confidence
+             * @enum {string}
+             */
+            confidence: "high" | "medium" | "low";
+            /**
+             * Contact Id
+             * @description set when saved for this company
+             */
+            contact_id?: number | null;
+            /** Last Emailed At */
+            last_emailed_at?: string | null;
+        };
+        /** EmailDraft */
+        EmailDraft: {
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+        };
         /** Evaluation */
         Evaluation: {
             /** Id */
@@ -1167,6 +1373,60 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * EvaluatorSettings
+         * @description Lean evaluation: one structured-JSON call per posting, no tools, no web research.
+         */
+        EvaluatorSettings: {
+            /**
+             * Mode
+             * @description full = career-ops A-H report (slow, many tokens)
+             * @default lean
+             * @enum {string}
+             */
+            mode: "lean" | "full";
+            /**
+             * Engines
+             * @description tried in order
+             * @default [
+             *       "codex",
+             *       "claude"
+             *     ]
+             */
+            engines: ("codex" | "claude")[];
+            /**
+             * Codex Model
+             * @default gpt-6.2-sol
+             */
+            codex_model: string;
+            /**
+             * Codex Effort
+             * @default low
+             * @enum {string}
+             */
+            codex_effort: "low" | "medium" | "high";
+            /**
+             * Claude Model
+             * @default sonnet
+             */
+            claude_model: string;
+            /**
+             * Claude Effort
+             * @default low
+             * @enum {string}
+             */
+            claude_effort: "low" | "medium" | "high";
+            /**
+             * Timeout Seconds
+             * @default 180
+             */
+            timeout_seconds: number;
+            /**
+             * Jd Max Chars
+             * @default 7000
+             */
+            jd_max_chars: number;
         };
         /** EventOut */
         EventOut: {
@@ -1265,6 +1525,35 @@ export interface components {
             /** Services */
             services: components["schemas"]["ServiceHealth"][];
         };
+        /** HrEmailOut */
+        HrEmailOut: {
+            /** Id */
+            id: number;
+            /** Company */
+            company: string;
+            /** To Email */
+            to_email: string;
+            /** To Name */
+            to_name?: string | null;
+            /** Subject */
+            subject: string;
+            /** Lead Ids */
+            lead_ids: number[];
+            /** Attachment */
+            attachment?: string | null;
+            /**
+             * State
+             * @enum {string}
+             */
+            state: "sent" | "drafted" | "failed";
+            /** Error */
+            error?: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /**
          * Insight
          * @description One plain-English, rule-based observation for the Analytics page (no LLM).
@@ -1296,6 +1585,46 @@ export interface components {
              * @description None = all enabled sources
              */
             sources?: components["schemas"]["Source"][] | null;
+        };
+        /**
+         * JobReachout
+         * @description Everything the job page's "Email HR" card needs, with the email already written.
+         */
+        JobReachout: {
+            /** Lead Id */
+            lead_id: number;
+            /** Company */
+            company: string;
+            /** Job Id */
+            job_id: string;
+            status: components["schemas"]["ReachoutStatus"];
+            /** Candidates */
+            candidates: components["schemas"]["EmailCandidate"][];
+            /**
+             * Searched At
+             * @description when the web lookup last ran; null = never
+             */
+            searched_at?: string | null;
+            /**
+             * Other Jobs
+             * @description other open jobs at this company
+             * @default []
+             */
+            other_jobs: components["schemas"]["ReachoutJob"][];
+            draft: components["schemas"]["EmailDraft"];
+            /**
+             * Attach Default
+             * @enum {string}
+             */
+            attach_default: "tailored" | "base" | "none";
+            /** Has Tailored Cv */
+            has_tailored_cv: boolean;
+            /**
+             * History
+             * @description emails already sent or drafted for this job
+             * @default []
+             */
+            history: components["schemas"]["HrEmailOut"][];
         };
         /** LeadDetail */
         LeadDetail: {
@@ -1343,6 +1672,16 @@ export interface components {
             eval_score?: number | null;
             /** Eval Grade */
             eval_grade?: string | null;
+            /**
+             * Call Chance
+             * @description lean evaluation's interview-call estimate
+             */
+            call_chance?: ("high" | "medium" | "low") | null;
+            /**
+             * Pick Reason
+             * @description lean evaluation's one-sentence verdict
+             */
+            pick_reason?: string | null;
             /** Is Live */
             is_live?: boolean | null;
             /** Is Inbound */
@@ -1365,6 +1704,18 @@ export interface components {
             status: components["schemas"]["AppStatus"];
             /** Application Id */
             application_id?: number | null;
+            /**
+             * Exp Fit
+             * @description stated experience vs the owner's range: ok, stretch (top of it), above (asks for more)
+             * @default unknown
+             * @enum {string}
+             */
+            exp_fit: "ok" | "stretch" | "above" | "unknown";
+            /**
+             * Source Email Url
+             * @description Gmail link to the email this lead came from (recruiter outreach)
+             */
+            source_email_url?: string | null;
             /** Jd Text */
             jd_text?: string | null;
             evaluation?: components["schemas"]["Evaluation"] | null;
@@ -1431,6 +1782,16 @@ export interface components {
             eval_score?: number | null;
             /** Eval Grade */
             eval_grade?: string | null;
+            /**
+             * Call Chance
+             * @description lean evaluation's interview-call estimate
+             */
+            call_chance?: ("high" | "medium" | "low") | null;
+            /**
+             * Pick Reason
+             * @description lean evaluation's one-sentence verdict
+             */
+            pick_reason?: string | null;
             /** Is Live */
             is_live?: boolean | null;
             /** Is Inbound */
@@ -1453,6 +1814,13 @@ export interface components {
             status: components["schemas"]["AppStatus"];
             /** Application Id */
             application_id?: number | null;
+            /**
+             * Exp Fit
+             * @description stated experience vs the owner's range: ok, stretch (top of it), above (asks for more)
+             * @default unknown
+             * @enum {string}
+             */
+            exp_fit: "ok" | "stretch" | "above" | "unknown";
         };
         /** ManualLead */
         ManualLead: {
@@ -1466,6 +1834,67 @@ export interface components {
             location?: string | null;
             /** Jd Text */
             jd_text?: string | null;
+        };
+        /**
+         * NightlySettings
+         * @description Midnight run: fresh intake, then lean evaluation of the best new leads, then Today's picks.
+         */
+        NightlySettings: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Time
+             * @description HH:MM local
+             * @default 00:00
+             */
+            time: string;
+            /**
+             * Candidates
+             * @description leads evaluated per night
+             * @default 40
+             */
+            candidates: number;
+            /**
+             * Max Age Hours
+             * @description older postings are never evaluated
+             * @default 72
+             */
+            max_age_hours: number;
+            /**
+             * Min Quick Score
+             * @default 0.35
+             */
+            min_quick_score: number;
+            /**
+             * Max Exp Min
+             * @description posts asking more years than this are never evaluated or picked
+             * @default 3
+             */
+            max_exp_min: number;
+            /**
+             * Per Company
+             * @default 2
+             */
+            per_company: number;
+            /**
+             * Pick Min Eval
+             * @default 3.5
+             */
+            pick_min_eval: number;
+            /**
+             * Picks Max
+             * @default 20
+             */
+            picks_max: number;
+            /**
+             * Picks Window Hours
+             * @description evaluations newer than this can be picks
+             * @default 48
+             */
+            picks_window_hours: number;
         };
         /**
          * OutreachKind
@@ -1632,6 +2061,16 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /**
+             * Email Url
+             * @description Gmail link to the email behind this proposal
+             */
+            email_url?: string | null;
+            /**
+             * Apply Url
+             * @description where to apply, when the proposal is linked to a job with a link
+             */
+            apply_url?: string | null;
         };
         /**
          * ProposalState
@@ -1662,6 +2101,230 @@ export interface components {
              */
             results_wanted: number;
         };
+        /** ReachoutDraftRequest */
+        ReachoutDraftRequest: {
+            /** To Name */
+            to_name?: string | null;
+            /**
+             * Extra Lead Ids
+             * @description other open jobs at the same company to list too
+             * @default []
+             */
+            extra_lead_ids: number[];
+        };
+        /** ReachoutJob */
+        ReachoutJob: {
+            /** Lead Id */
+            lead_id: number;
+            /**
+             * Job Id
+             * @description the job board's own id when known, else JH-<lead id>
+             */
+            job_id: string;
+            /** Title */
+            title: string;
+            /** Location */
+            location?: string | null;
+            /** Url */
+            url?: string | null;
+            source: components["schemas"]["Source"];
+            /** Score */
+            score?: number | null;
+            status?: components["schemas"]["AppStatus"] | null;
+            /**
+             * Has Tailored Cv
+             * @default false
+             */
+            has_tailored_cv: boolean;
+        };
+        /**
+         * ReachoutMe
+         * @description Who signs the email. Blank fields fall back to data/careerops/config/profile.yml (candidate / narrative).
+         */
+        ReachoutMe: {
+            /**
+             * Name
+             * @default
+             */
+            name: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
+            /**
+             * Linkedin
+             * @default
+             */
+            linkedin: string;
+            /**
+             * Github
+             * @default
+             */
+            github: string;
+            /**
+             * Headline
+             * @description one line used as {role}, e.g. 'Java backend engineer'
+             * @default
+             */
+            headline: string;
+        };
+        /** ReachoutSend */
+        ReachoutSend: {
+            /** To Email */
+            to_email: string;
+            /** To Name */
+            to_name?: string | null;
+            /**
+             * Extra Lead Ids
+             * @default []
+             */
+            extra_lead_ids: number[];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+            /**
+             * Attach
+             * @default tailored
+             * @enum {string}
+             */
+            attach: "tailored" | "base" | "none";
+            /**
+             * Mode
+             * @default send
+             * @enum {string}
+             */
+            mode: "send" | "draft";
+            /**
+             * Confirm
+             * @description must be true: the owner pressed the button
+             * @default false
+             */
+            confirm: boolean;
+            /**
+             * Force
+             * @description send even if this address was emailed inside the cool-down
+             * @default false
+             */
+            force: boolean;
+        };
+        /**
+         * ReachoutSettings
+         * @description Emailing a job's HR from the job page. Nothing is ever sent without the owner pressing Send.
+         */
+        ReachoutSettings: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /**
+             * Daily Cap
+             * @description emails sent per rolling 24 h; a new Gmail account that blasts recruiters gets flagged
+             * @default 25
+             */
+            daily_cap: number;
+            /**
+             * Cooldown Days
+             * @description one email per address per this many days unless forced
+             * @default 14
+             */
+            cooldown_days: number;
+            /**
+             * Max Jobs
+             * @description jobs listed in one email
+             * @default 8
+             */
+            max_jobs: number;
+            /**
+             * Default Attach
+             * @description tailored = the job's approved CV PDF when it exists, else the uploaded resume
+             * @default tailored
+             * @enum {string}
+             */
+            default_attach: "tailored" | "base" | "none";
+            /**
+             * Look Up Web
+             * @description open the job page and the company's careers/contact pages to find an HR address
+             * @default true
+             */
+            look_up_web: boolean;
+            /**
+             * Guess Addresses
+             * @description offer careers@ / hr@ ... at the company domain as last-resort suggestions
+             * @default true
+             */
+            guess_addresses: boolean;
+            /**
+             * Guess Prefixes
+             * @default [
+             *       "careers",
+             *       "hr",
+             *       "jobs",
+             *       "talent",
+             *       "recruitment"
+             *     ]
+             */
+            guess_prefixes: string[];
+            /**
+             * Subject One
+             * @description subject for one job; {title} {job_id} {company} {name} ...
+             * @default Application for {title} (Job ID {job_id}) - {name}
+             */
+            subject_one: string;
+            /**
+             * Subject Many
+             * @description subject when several jobs of one company are listed
+             * @default Applying for {count} roles at {company} - {name}
+             */
+            subject_many: string;
+            /**
+             * Body
+             * @description {greeting} {opening} {jobs} {role} {company} {title} {job_id} {count} {name} {phone} {linkedin} {github} {signature} {location} {url}
+             * @default {greeting}
+             *
+             *     {opening}
+             *     {jobs}
+             *
+             *     I am a {role}. My resume is attached; the roles above match my recent work, and I would be glad to share more detail or speak with the hiring team.
+             *
+             *     Thank you for your time.
+             *
+             *     Regards,
+             *     {signature}
+             */
+            body: string;
+            /**
+             * @default {
+             *       "name": "",
+             *       "phone": "",
+             *       "linkedin": "",
+             *       "github": "",
+             *       "headline": ""
+             *     }
+             */
+            me: components["schemas"]["ReachoutMe"];
+        };
+        /** ReachoutStatus */
+        ReachoutStatus: {
+            /**
+             * Enabled
+             * @default true
+             */
+            enabled: boolean;
+            /** Gmail Ready */
+            gmail_ready: boolean;
+            /** Sender */
+            sender?: string | null;
+            /** Sent Today */
+            sent_today: number;
+            /** Daily Cap */
+            daily_cap: number;
+            /** Cooldown Days */
+            cooldown_days: number;
+            resume: components["schemas"]["ResumeStatus"];
+        };
         /** RejectAuditRow */
         RejectAuditRow: {
             /** Reason */
@@ -1679,6 +2342,24 @@ export interface components {
             p90_days_to_first_response?: number | null;
             /** Samples */
             samples: number;
+        };
+        /** ResumeStatus */
+        ResumeStatus: {
+            /** Present */
+            present: boolean;
+            /** Filename */
+            filename?: string | null;
+            /** Size Kb */
+            size_kb?: number | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
+        /** ResumeUpload */
+        ResumeUpload: {
+            /** Filename */
+            filename: string;
+            /** Data Base64 */
+            data_base64: string;
         };
         /**
          * ResumeVariant
@@ -1849,6 +2530,66 @@ export interface components {
             source_weights: {
                 [key: string]: number;
             };
+            /**
+             * @default {
+             *       "mode": "lean",
+             *       "engines": [
+             *         "codex",
+             *         "claude"
+             *       ],
+             *       "codex_model": "gpt-6.2-sol",
+             *       "codex_effort": "low",
+             *       "claude_model": "sonnet",
+             *       "claude_effort": "low",
+             *       "timeout_seconds": 180,
+             *       "jd_max_chars": 7000
+             *     }
+             */
+            evaluator: components["schemas"]["EvaluatorSettings"];
+            /**
+             * @default {
+             *       "enabled": true,
+             *       "time": "00:00",
+             *       "candidates": 40,
+             *       "max_age_hours": 72,
+             *       "min_quick_score": 0.35,
+             *       "max_exp_min": 3,
+             *       "per_company": 2,
+             *       "pick_min_eval": 3.5,
+             *       "picks_max": 20,
+             *       "picks_window_hours": 48
+             *     }
+             */
+            nightly: components["schemas"]["NightlySettings"];
+            /**
+             * @default {
+             *       "enabled": true,
+             *       "daily_cap": 25,
+             *       "cooldown_days": 14,
+             *       "max_jobs": 8,
+             *       "default_attach": "tailored",
+             *       "look_up_web": true,
+             *       "guess_addresses": true,
+             *       "guess_prefixes": [
+             *         "careers",
+             *         "hr",
+             *         "jobs",
+             *         "talent",
+             *         "recruitment"
+             *       ],
+             *       "subject_one": "Application for {title} (Job ID {job_id}) - {name}",
+             *       "subject_many": "Applying for {count} roles at {company} - {name}",
+             *       "body": "{greeting}\n\n{opening}\n{jobs}\n\nI am a {role}. My resume is attached; the roles above match my recent work, and I would be glad to share more detail or speak with the hiring team.\n\nThank you for your time.\n\nRegards,\n{signature}",
+             *       "me": {
+             *         "github": "",
+             *         "headline": "",
+             *         "linkedin": "",
+             *         "name": "",
+             *         "phone": ""
+             *       }
+             *     }
+             */
+            reachout: components["schemas"]["ReachoutSettings"];
         };
         /** SetupStatus */
         SetupStatus: {
@@ -3149,6 +3890,37 @@ export interface operations {
             };
         };
     };
+    runNightly: {
+        parameters: {
+            query?: {
+                stage?: "start" | "evaluate";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     getToday: {
         parameters: {
             query?: never;
@@ -3742,6 +4514,270 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Company"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    getReachoutStatus: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReachoutStatus"];
+                };
+            };
+        };
+    };
+    putReachoutResume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResumeUpload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResumeStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteReachoutResume: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    getJobReachout: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobReachout"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    findJobHrEmails: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobReachout"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    draftJobEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReachoutDraftRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailDraft"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sendJobEmail: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                lead_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReachoutSend"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrEmailOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    listReachoutEmails: {
+        parameters: {
+            query?: {
+                company?: string | null;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HrEmailOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    deleteHrContact: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                contact_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

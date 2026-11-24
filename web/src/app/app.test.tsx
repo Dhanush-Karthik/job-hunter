@@ -1,13 +1,11 @@
 import { cleanup, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { http, HttpResponse } from 'msw'
 import { MemoryRouter } from 'react-router-dom'
-import { afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { makeOutreach } from '@/mocks/fixtures'
-import { server } from '@/mocks/node'
+import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import './test-utils' // ResizeObserver stub for Radix form controls
 import { AppProviders } from './providers'
 import { AppRoutes } from './routes'
+import { TOUR_KEY } from '@/components/tour/tour'
 import { THEME_STORAGE_KEY } from './theme'
 
 // jsdom has no matchMedia; the theme provider and sonner read it.
@@ -23,6 +21,7 @@ beforeAll(() => {
     dispatchEvent: () => false,
   })) as typeof window.matchMedia
 })
+beforeEach(() => localStorage.setItem(TOUR_KEY, 'done')) // the first-visit tour has its own tests
 afterEach(() => {
   cleanup()
   localStorage.clear()
@@ -48,7 +47,6 @@ describe('app shell', () => {
       ['Home', '/'],
       ['Jobs', '/leads'],
       ['Inbox', '/replies'],
-      ['Follow-ups', '/outreach'],
       ['Applications', '/tracker'],
       ['Insights', '/analytics'],
       ['Settings', '/settings'],
@@ -58,12 +56,10 @@ describe('app shell', () => {
   })
 
   it('shows pending counts from the API on the nav', async () => {
-    // the mock's due dates are relative to a fixed clock, so pin "due" here
-    server.use(http.get('/api/outreach', () => HttpResponse.json(makeOutreach().slice(0, 2))))
     setup('/')
     const nav = screen.getByRole('navigation', { name: 'Main' })
     expect(await within(nav).findByRole('link', { name: /Inbox\s*3\s*pending/ })).toBeInTheDocument()
-    expect(await within(nav).findByRole('link', { name: /Follow-ups\s*2\s*pending/ })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: /Follow-ups/ })).not.toBeInTheDocument()
     expect(await within(nav).findByRole('link', { name: /Jobs\s*3\s*pending/ })).toBeInTheDocument() // shortlisted, not applied
     expect(await within(nav).findByRole('link', { name: /Settings\s*2\s*problems/ })).toBeInTheDocument() // services down
   })
@@ -91,10 +87,12 @@ describe('app shell', () => {
     expect(await screen.findByText('What to search for')).toBeInTheDocument()
   })
 
-  it('routes follow-ups and insights', async () => {
+  it('sends the retired Reach out and Follow-ups URLs to Jobs, and routes insights', async () => {
+    setup('/reachout')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Jobs' })).toBeInTheDocument()
+    cleanup()
     setup('/outreach')
-    expect(await screen.findByRole('heading', { level: 1, name: 'Follow-ups' })).toBeInTheDocument()
-    expect(await screen.findByRole('tab', { name: 'Due now' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { level: 1, name: 'Jobs' })).toBeInTheDocument()
     cleanup()
     setup('/analytics')
     expect(await screen.findByRole('heading', { name: 'Insights' })).toBeInTheDocument()

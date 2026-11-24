@@ -5,7 +5,7 @@ from sqlmodel import Session
 
 from jobhunter import paths
 from jobhunter.db import get_engine, migrate
-from jobhunter.settings import get_settings
+from jobhunter.settings import get_settings, save_settings
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -30,4 +30,6 @@ def settings(session, monkeypatch, tmp_path):
     settings = get_settings(session)
     settings.query_matrix.titles = ["Java Developer"]
     settings.query_matrix.locations = ["Chennai"]
+    settings.evaluator.mode = "full"  # these flows drive the career-ops fake (tests/fakes/claude)
+    save_settings(session, settings)
     return settings

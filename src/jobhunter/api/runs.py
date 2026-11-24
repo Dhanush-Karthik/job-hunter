@@ -1,12 +1,14 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from fastapi import APIRouter, HTTPException, Query
 from sqlmodel import select
 from sse_starlette.sse import EventSourceResponse
 
 from jobhunter import secrets
 from jobhunter.api.deps import SessionDep, fits
-from jobhunter.jobs import runner
+from jobhunter.jobs import nightly, runner
 from jobhunter.models import Run, RunKind, RunState, Source, SourceHealth
 from jobhunter.schemas import IntakeRequest, RunLog, RunOut
 
@@ -106,3 +108,11 @@ def _intake_plan(session: SessionDep, sources: list[Source] | None) -> list[tupl
 @router.post("/intake/run", response_model=list[RunOut], status_code=202, operation_id="runIntake")
 def run_intake(body: IntakeRequest, session: SessionDep) -> list[RunOut]:
     return [runner.to_out(runner.submit(kind, params=params)) for kind, params in _intake_plan(session, body.sources)]
+
+
+@router.post("/nightly/run", response_model=list[RunOut], status_code=202, operation_id="runNightly")
+def run_nightly(stage: Literal["start", "evaluate"] = "start") -> list[RunOut]:
+    """Run tonight's funnel now: start = fresh intake then lean evaluation; evaluate = skip intake. Idempotent per
+    IST date (a second call the same day queues nothing)."""
+    runs = nightly.start(reason="manual") if stage == "start" else nightly.evaluate()
+    return [runner.to_out(r) for r in runs]
